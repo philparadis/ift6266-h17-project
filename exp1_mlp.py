@@ -58,13 +58,13 @@ from keras.layers import Dense, Activation, Dropout
 
 root_dir = os.environ['HOME'] + '/git-repos/ift6266-h2017-project/'
 
-path_mscoco_dataset="./datasets/mscoco_inpainting/inpainting/"
+path_mscoco_dataset="./small_datasets/mscoco_inpainting/inpainting/"
 path_train="train2014"
 path_val="val2014"
 path_caption_dict="dict_key_imgID_value_caps_train_and_valid.pkl"
 
 #%% PATHS
-mscoco="datasets/mscoco_inpainting/inpainting/"
+mscoco="small_datasets/mscoco_inpainting/inpainting/"
 split="train2014"
 caption_path="dict_key_imgID_value_caps_train_and_valid.pkl"
 
@@ -145,7 +145,7 @@ print(X_train_inner[1, range(10)])
 print(X_train_inner[2, range(10)])
 
 input_dim = 64*64*3 - 32*32*3
-input_dim = 32*32*3
+output_dim = 32*32*3
 batch_size = 128
 
 # model = Sequential([
@@ -170,30 +170,39 @@ batch_size = 128
 
 # split into input (X) and output (Y) variables
 from sklearn.cross_validation import train_test_split
-data, labels = np.arange(10).reshape((5, 2)), range(5)
 X_train, X_test, Y_train, Y_test = train_test_split(X_train_outer,
                                                     X_train_inner,
                                                     test_size=0.20,
                                                     random_state=1)
 
+print("Splitting dataset into training and testing sets with shuffling...")
+print("X_train.shape = ", X_train.shape)
+print("X_test.shape  = ", X_test.shape)
+print("Y_train.shape = ", Y_train.shape)
+print("Y_test.shape  = ", Y_test.shape)
+
+
+print("Creating MLP model...")
 # create model
 model = Sequential()
-model.add(Dense(input_dim/2, input_size=(None, input_dim), init='normal', activation='relu'))
+model.add(Dense(units=512, input_shape=(input_dim, )))
+model.add(Activation('relu'))
 model.add(Dropout(0.5))
-model.add(Dense((64*64*3-32*32*3)/4, init='normal', activation='relu'))
+model.add(Dense(units=256))
+model.add(Activation('relu'))
 model.add(Dropout(0.5))
-model.add(Dense(32*32*3, init='normal', activation='relu'))
+model.add(Dense(units=output_dim))
+model.add(Activation('relu'))
 
 # Compile model
 model.compile(loss='mse', optimizer='adam', metrics=['accuracy'])
 
 # Fit the model
-model.fit(X_train, Y_train, nb_epoch=150, batch_size=batch_size)
+model.fit(X_train, Y_train, epochs=150, batch_size=batch_size)
 
 # evaluate the model
-scores = model.evaluate(X_train, Y_train)
+scores = model.evaluate(X_train, Y_train, batch_size=batch_size)
 print("Training score %s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
 
-scores = model.evaluate(X_test, Y_test)
+scores = model.evaluate(X_test, Y_test, batch_size=batch_size)
 print("Testing score %s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
-
