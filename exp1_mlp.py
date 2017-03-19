@@ -144,8 +144,8 @@ print(X_train_inner[0, range(10)])
 print(X_train_inner[1, range(10)])
 print(X_train_inner[2, range(10)])
 
-input_dim = 32*32
-output_dim = 64*64 - 32*32
+input_dim = 64*64*3 - 32*32*3
+input_dim = 32*32*3
 batch_size = 128
 
 # model = Sequential([
@@ -178,11 +178,11 @@ X_train, X_test, Y_train, Y_test = train_test_split(X_train_outer,
 
 # create model
 model = Sequential()
-model.add(Dense(batch_size, input_dim=input_dim, init='normal', activation='relu'))
+model.add(Dense(input_dim/2, input_size=(None, input_dim), init='normal', activation='relu'))
 model.add(Dropout(0.5))
-model.add(Dense((64*64*3-32*32*3)/2, init='uniform', activation='relu'))
+model.add(Dense((64*64*3-32*32*3)/4, init='normal', activation='relu'))
 model.add(Dropout(0.5))
-model.add(Dense(32*32*3, init='uniform', activation='relu'))
+model.add(Dense(32*32*3, init='normal', activation='relu'))
 
 # Compile model
 model.compile(loss='mse', optimizer='adam', metrics=['accuracy'])
