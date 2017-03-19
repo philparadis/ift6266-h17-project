@@ -15,7 +15,7 @@ import PIL.Image as Image
 
 from keras.datasets import mnist
 from keras.models import Sequential
-from keras.layers import Dense, Activation
+from keras.layers import Dense, Activation, Dropout
 
 
 #%% Experiment with MNIST dataset
@@ -86,13 +86,16 @@ X_train_inner = []
 X_train_caption = []
 
 def flatten_outer_frame(img_array, dim_outer=(64, 64), dim_inner=(32, 32)):
-    flat = img_array.flatten()
-    img_top = flat[0:64*16]
-    img_bottom = flat[64*48:64*64]
+    flat = np.copy(img_array)
+    flat = flat.flatten()
+    img_top = flat[0:64*16,:]
+    img_bottom = flat[64*48:64*64,:]
     no_middle_cols = np.delete(img_array, range(16,48))
-    img_middle = no_middle_cols.flatten()[64*16:64*32]
+    img_middle = no_middle_cols.flatten()[32*16:32*48]
 
-    return np.concatenate((img_top, img_middle, img_bottom), axis=0)
+    final_img = np.concatenate((img_top, img_middle, img_bottom), axis=0)
+    print("outer_frame shape = ", np.shape(final_img))
+    return final_img
     
 for i, img_path in enumerate(train_images_paths):
     img = Image.open(img_path)
@@ -105,32 +108,41 @@ for i, img_path in enumerate(train_images_paths):
     center = (int(np.floor(img_array.shape[0] / 2.)), int(np.floor(img_array.shape[1] / 2.)))
     if len(img_array.shape) == 3:
         X_outer = np.copy(img_array)
-        X_outer[center[0]-16:center[0]+16, center[1]-16:center[1]+16, :] = 0
+        X_outer_mask = np.array(np.ones(np.shape(img_array)), dtype='bool')
+        X_outer_mask[center[0]-16:center[0]+16, center[1]-16:center[1]+16, :] = False
+        zipped = zip(X_outer, X_outer_mask)
+        X_outer = X_outer.flatten()
+        X_outer_mask = X_outer_mask.flatten()
+        X_outer = X_outer[X_outer_mask]
+        
         X_inner = img_array[center[0]-16:center[0]+16, center[1] - 16:center[1]+16, :]
+        X_inner = X_inner.flatten()
     else:
-        X_outer = np.copy(img_array)
-        X_outer[center[0]-16:center[0]+16, center[1]-16:center[1]+16] = 0
-        X_inner = img_array[center[0]-16:center[0]+16, center[1] - 16:center[1]+16]
+        continue
+        #X_outer = np.copy(img_array)
+        #X_outer[center[0]-16:center[0]+16, center[1]-16:center[1]+16] = 0
+        #X_inner = img_array[center[0]-16:center[0]+16, center[1] - 16:center[1]+16]
 
     
     #Image.fromarray(img_array).show()
-    X_train_inner.append(X_inner.flatten())
-    X_train_outer.append(flatten_outer_frame(X_outer))
+    X_train_inner.append(X_inner)
+    X_train_outer.append(X_outer)
     captions = np.array([cap_id] + caption_dict[cap_id])
     X_train_caption.append(captions)
 
-print(X_train_inner[0, range(10)])
-print(X_train_inner[1, range(10)])
-print(X_train_inner[2, range(10)])
-
-X_train_inner = np.array(X_train_inner, dtype="float32")
+X_train_inner = np.array(X_train_inner)
 X_train_outer = np.array(X_train_outer)
 X_train_caption = np.array(X_train_caption)
 
 print("Finished loading full dataset...")
-print("X_train_inner shape   = ", X_train_inner.shape())
-print("X_train_outer shape   = ", X_train_outer.shape())
-print("X_train_caption shape = ", X_train_caption.shape())
+print("X_train_inner shape   = ", np.shape(X_train_inner))
+print("X_train_outer shape   = ", np.shape(X_train_outer))
+print("X_train_caption shape = ", np.shape(X_train_caption))
+
+print("First 3 rows and first 10 pixels of X_train_inner:")
+print(X_train_inner[0, range(10)])
+print(X_train_inner[1, range(10)])
+print(X_train_inner[2, range(10)])
 
 input_dim = 32*32
 output_dim = 64*64 - 32*32
