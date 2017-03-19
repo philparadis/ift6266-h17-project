@@ -114,13 +114,14 @@ for i, img_path in enumerate(train_images_paths):
 
     
     #Image.fromarray(img_array).show()
-    X_train_inner += X_inner.flatten()
-    X_train_outer += flatten_outer_frame(X_outer)
-    captions = [cap_id] + caption_dict[cap_id]
-    X_train_caption += np.array(cap_id, captions)
+    X_train_inner.append(X_inner.flatten())
+    X_train_outer.append(flatten_outer_frame(X_outer))
+    captions = np.array([cap_id] + caption_dict[cap_id])
+    X_train_caption.append(captions)
 
-print(X_train_inner[range(10),range(5)])
-
+print(X_train_inner[0, 0:10])
+print(X_train_inner[1, 0:10])
+print(X_train_inner[2, 0:10])
 
 X_train_inner = np.array(X_train_inner, dtype="float32")
 X_train_outer = np.array(X_train_outer)
