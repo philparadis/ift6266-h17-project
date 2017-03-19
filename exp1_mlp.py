@@ -114,18 +114,22 @@ for i, img_path in enumerate(train_images_paths):
 
     
     #Image.fromarray(img_array).show()
-    X_train_inner.append(X_inner.flatten())
-    X_train_outer.append(flatten_outer_frame(X_outer))
-    X_train_caption.append((cap_id, caption_dict[cap_id]))
+    X_train_inner += X_inner.flatten()
+    X_train_outer += flatten_outer_frame(X_outer)
+    captions = [cap_id] + caption_dict[cap_id]
+    X_train_caption += np.array(cap_id, captions)
 
-X_train_inner = np.array(X_train_inner)
+print(X_train_inner[range(10),range(5)])
+
+
+X_train_inner = np.array(X_train_inner, dtype="float32")
 X_train_outer = np.array(X_train_outer)
 X_train_caption = np.array(X_train_caption)
-print("Finished loading dataset...")
 
-print("X_train_inner = ", X_train_inner.shape())
-print("X_train_outer = ", X_train_outer.shape())
-print("X_train_caption = ", X_train_caption.shape())
+print("Finished loading full dataset...")
+print("X_train_inner shape   = ", X_train_inner.shape())
+print("X_train_outer shape   = ", X_train_outer.shape())
+print("X_train_caption shape = ", X_train_caption.shape())
 
 input_dim = 32*32
 output_dim = 64*64 - 32*32
