@@ -119,9 +119,9 @@ for i, img_path in enumerate(train_images_paths):
     captions = np.array([cap_id] + caption_dict[cap_id])
     X_train_caption.append(captions)
 
-print(X_train_inner[0, 0:10])
-print(X_train_inner[1, 0:10])
-print(X_train_inner[2, 0:10])
+print(X_train_inner[0, range(10)])
+print(X_train_inner[1, range(10)])
+print(X_train_inner[2, range(10)])
 
 X_train_inner = np.array(X_train_inner, dtype="float32")
 X_train_outer = np.array(X_train_outer)
