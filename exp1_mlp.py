@@ -1,14 +1,10 @@
-
 # coding: utf-8
-
-# In[289]:
-
 #!/usr/bin/env python2
 
 """
 Created on Wed Mar 15 14:54:01 2017
 
-@author: paradiph
+@author: Philippe Paradis
 """
 
 import os, sys
@@ -25,40 +21,13 @@ from keras import optimizers
 from keras import losses
 from keras.utils import plot_model
 
-#%%
-
-
-# In[290]:
+import argparse
 
 #################################################
-# Run experiments here
-# Define your global options and experiment name
-# Then run the desired model
+# FIXED GLOBAL VARIABLES AND STATE VARIABLES
 #################################################
 
-### The experiment name is very important.
-
-## Your model will be saved in:                           models/<experiment_name>.h5
-## A summary of your model architecture will saved be in: models/summary_<experiment_name>.txt
-## Your model's performance will be saved in:             models/performance_<experiment_name>.txt
-
-## Your predictions will be saved in: predictions/<experiment_name>/assets/Y_pred_<i>.jpg
-##                                    predictions/<experiment_name>/assets/Y_<i>.jpg
-##                                    predictions/<experiment_name>/assets/X_outer_<i>.jpg
-##                                    predictions/<experiment_name>/assets/X_full_<i>.jpg
-##                                    predictions/<experiment_name>/assets/X_full_pred_<i>.jpg
-
-#experiment_name = "exp1_mlp_mse_dropout"
-experiment_name = "exp2_mlp_mse_nodropout"
-#experiment_name = "exp3_mlp_mse_sigmoid_final_layer"
-#TODO: Which ever first 3 experiments work best, repeat it with msa instead of mse. i.e. experiment_name = "exp4_mlp_msa_sigmoid_final_layer"
-batch_size = 64
-num_epochs = 25
-loss_function = 'mse'
-use_dropout = False
-use_sigmoid_final_layer = False
-
-### Fixed variables: DO NOT CHANGE THOSE
+### FIXED GLOBAL VARIABLES
 input_dim = 64*64*3 - 32*32*3
 output_dim = 32*32*3
 path_mscoco="datasets/mscoco_inpainting/inpainting/"
@@ -66,16 +35,10 @@ path_traindata="train2014"
 path_caption_dict="dict_key_imgID_value_caps_train_and_valid.pkl"
 
 
-# In[291]:
-
-### State variables: DO NOT EDIT
-### ONLY RUN THIS CELL IF YOU WANNA RESET EVERYTHING AND RELOAD THE DATA, RETRAIN THE MODEL, ETC.
-
+### STATE VARIABLES
 is_dataset_loaded = False
 is_model_trained = False
 
-
-# In[292]:
 
 #######################################
 # Info about the dataset
@@ -92,8 +55,6 @@ is_model_trained = False
 # .jpg extension) to a list of 5 strings (the 5 human-generated captions).
 # This dictionary is an OrderedDict with 123286 entries.
 
-
-# In[313]:
 
 ### Utilities functions
 
@@ -121,6 +82,7 @@ def save_model_info(exp_name, model):
         fd.write("Training score %s: %.4f\n" % (model.metrics_names[1], scores[1]))
         scores = model.evaluate(X_test, Y_test, batch_size=batch_size)
         fd.write("Testing score %s: %.4f\n" % (model.metrics_names[1], scores[1]))
+        model.
         
 ## Your predictions will be saved in: predictions/<experiment_name>/Y_pred_<i>.jpg
 ##                                    predictions/<experiment_name>/Y_<i>.jpg
@@ -157,11 +119,13 @@ def save_predictions_info(exp_name, pred, pred_indices, dataset,
             Image.fromarray(fullimg_pred).save(os.path.join(out_dir, 'fullimages_pred_' + str(row) + '.jpg'))
             #img.show()
 
-def print_results_as_html(exp_name, pred, dataset, num_images=10):    
-    out_dir = os.path.join("predictions/", exp_name)
+
+def print_results_as_html(exp_name, pred, dataset, num_images=10):
+    img_dir = os.path.join('assets/', exp_name)
+    out_dir = os.path.join("predictions/", img_dir)
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
-    path_html = os.path.join(out_dir, "results.html")
+    path_html = os.path.join("predictions/", "results_" + exp_name + ".html")
     print("Saving results as html to: " + path_html)
 
     with open(path_html, 'w') as fd:
@@ -174,17 +138,20 @@ def print_results_as_html(exp_name, pred, dataset, num_images=10):
     <th>Input + prediction</th>
     <th>Input + correct output)</th>
   </tr>
+  <span class='icons'>
 """)
 
         for row in range(num_images):
             fd.write("  <tr>\n")
-            fd.write('    <td><img src="assets/images_outer2d_' + str(row) + '.jpg" width="128" height="128"></td>\n')
-            fd.write('    <td><img src="assets/images_pred_' + str(row) + '.jpg" width="64" height="64"></td>\n')
-            fd.write('    <td><img src="assets/images_inner2d_' + str(row) + '.jpg" width="64" height="64"></td>\n')
-            fd.write('    <td><img src="assets/fullimages_pred_' + str(row) + '.jpg" width="128" height="128"></td>\n')
-            fd.write('    <td><img src="assets/fullimages_' + str(row) + '.jpg" width="128" height="128"></td>\n')
+            fd.write('    <td><img src="' + os.path.join(img_dir, '/images_outer2d_' + str(row) + '.jpg') + '" width="128" height="128"></td>\n')
+            fd.write('    <td><img src="' + os.path.join(img_dir, '/images_pred_' + str(row) + '.jpg') + '" width="64" height="64"></td>\n')
+            fd.write('    <td><img src="' + os.path.join(img_dir, '/images_inner2d_' + str(row) + '.jpg') + '" width="64" height="64"></td>\n')
+            fd.write('    <td><img src="' + os.path.join(img_dir, '/fullimages_pred_' + str(row) + '.jpg') + '" width="128" height="128"></td>\n')
+            fd.write('    <td><img src="' + os.path.join(img_dir, '/fullimages_' + str(row) + '.jpg') + '" width="128" height="128"></td>\n')
             fd.write('</tr>\n')
-                  
+
+        fd.write('</table>')
+        fd.write("<span class='icons'>")
 
 def normalize_data(data):
     data = data.astype('float32')
@@ -196,9 +163,6 @@ def denormalize_data(data):
     data = data.astype('uint8')
     return data
     
-
-
-# In[294]:
 
 ### Define the main class for handling our dataset called InpaintingDataset
 
@@ -306,13 +270,9 @@ class InpaintingDataset(object):
             print("Dataset is already loaded. Skipping this call. Please pass the argument force_reload=True to force reloading of dataset.")
 
 
-# In[295]:
-
 ### Create and initialize an empty InpaintingDataset object
 Dataset = InpaintingDataset(input_dim, output_dim)
 
-
-# In[296]:
 
 ### Load training images and captions
 
@@ -336,8 +296,6 @@ print("captions_ids.shape      = " + str(Dataset.captions_ids.shape))
 print("captions_dict.shape     = " + str(Dataset.captions_dict.shape))
 
 
-# In[297]:
-
 ### Sanity check:
 print("Performing sanity check using first 10 elements of first 3 rows:")
 sanity_check_values = np.array([[57,   69,  57,  65,  79,  56,  63,  81,  43,  53],
@@ -349,8 +307,6 @@ for i in range(3):
     np.testing.assert_array_equal(top10, sanity_check_values[i])
     print("Row " + str(i) + " passed sanity check!")
 
-
-# In[298]:
 
 ### Normalize datasets
 Dataset.normalize()
@@ -376,8 +332,6 @@ print("id_train.shape = " + str(id_train.shape))
 print("id_test.shape  = " + str(id_test.shape))
 
 
-# In[300]:
-
 ### Sanity check:
 print("id_train = " + str(id_train))
 print("id_test  = " + str(id_test))
@@ -388,13 +342,6 @@ idx = id_train[0]
 img = Image.fromarray(Dataset.images[0])
 img.show()
 
-
-# In[301]:
-
-is_model_trained = False
-
-
-# In[302]:
 
 if not is_model_trained:
     print("Creating MLP model...")
@@ -441,14 +388,6 @@ else:
     print("Model was already trained, instead loading: " + model_path)
     model = load_model(model_path)
 
-
-# In[231]:
-
-save_model_info(experiment_name, model)
-
-
-# In[303]:
-
 ### Produce predictions
 Y_test_pred = model.predict(X_test, batch_size=batch_size)
 
@@ -460,13 +399,39 @@ Y_test_pred_2d = np.reshape(Y_test_pred, (num_rows, 32, 32, 3))
 # Denormalize all datasets
 Dataset.denormalize()
 
-
-# In[314]:
-
 ### Save predictions to disk
 save_predictions_info(experiment_name, Y_test_pred_2d, id_test, Dataset)
 print_results_as_html(experiment_name, Y_test_pred_2d, Dataset)
 
+if __name__ == "__main__":
+    parser = argparse.ArgumentParse(description="This is my IFT6266 project python architecture")
 
+    ### The experiment name is very important.
 
+    ## Your model will be saved in:                           models/<experiment_name>.h5
+    ## A summary of your model architecture will saved be in: models/summary_<experiment_name>.txt
+    ## Your model's performance will be saved in:             models/performance_<experiment_name>.txt
 
+    ## Your predictions will be saved in: predictions/assets/<experiment_name>/images_pred_<i>.jpg
+    ##                                    predictions/assets/<experiment_name>/images_inner2d_<i>.jpg
+    ##                                    predictions/assets/<experiment_name>/images_outer2d_<i>.jpg
+    ##                                    predictions/assets/<experiment_name>/fullimg_pred__<i>.jpg
+    ##                                    predictions/assets/<experiment_name>/fullimg_<i>.jpg
+
+    parser.add_argument('experiment_name', action="store", type=string, dest="option.experiment_name"))
+    parser.add_argument('num_epochs', action="store", type=int, dest="options.num_epochs")
+
+    parser.add_argument('--use_dropout', action="store_true", type=bool,
+                        dest="option.use_dropout", default=False)
+    parser.add_argument('--loss_function', action="store", type=string
+                        dest="options.loss_function", default="mse")
+    parser.add_argument("--output_num_images", action="store", type=int, 
+                        dest="options.output_num_images", default=50)
+    parser.add_argument("--sigmoid-final-layer", action="store_true", type=bool, 
+                        dest="options.sigmoid_final_layer", default=False)
+    parser.add_argument("--batch_sizes", action="store", type=int,
+                        dest="options.batch_sizes", default=128)
+
+    options = parser.parse_args()
+
+    run_experiment(options)
