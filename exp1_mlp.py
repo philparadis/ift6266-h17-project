@@ -13,28 +13,10 @@ import numpy as np
 import PIL.Image as Image
 #from skimage.transform import resize
 
-from keras.datasets import mnist
 from keras.models import Sequential
+from keras.models import load_model
 from keras.layers import Dense, Activation, Dropout
-
-
-#%% Experiment with MNIST dataset
-#loading data
-(X_train, y_train), (X_test, y_test) = mnist.load_data()
-
-#some preprocessing
-# y_train = np_utils.to_categorical(y_train,10)
-# X_train = X_train.reshape(X_train.shape[0], 1, img_rows, img_cols)
-# X_test = X_test.reshape(X_test.shape[0], 1, img_rows, img_cols)
-# X_train = X_train.astype('float32')
-# X_test = X_test.astype('float32')
-# X_train /= 255
-# X_test /= 255
-# while 1:
-#     for i in range(1875):
-#         if i%125==0:
-#             print "i = " + str(i)
-#         yield X_train[i*32:(i+1)*32], y_train[i*32:(i+1)*32]
+from keras import losses
 
 #%%
 
@@ -56,15 +38,8 @@ from keras.layers import Dense, Activation, Dropout
 # .jpg extension) to a list of 5 strings (the 5 human-generated captions).
 # This dictionary is an OrderedDict with 123286 entries.
 
-root_dir = os.environ['HOME'] + '/git-repos/ift6266-h2017-project/'
-
-path_mscoco_dataset="./small_datasets/mscoco_inpainting/inpainting/"
-path_train="train2014"
-path_val="val2014"
-path_caption_dict="dict_key_imgID_value_caps_train_and_valid.pkl"
-
 #%% PATHS
-mscoco="small_datasets/mscoco_inpainting/inpainting/"
+mscoco="datasets/mscoco_inpainting/inpainting/"
 split="train2014"
 caption_path="dict_key_imgID_value_caps_train_and_valid.pkl"
 
@@ -147,6 +122,7 @@ print(X_train_inner[2, range(10)])
 input_dim = 64*64*3 - 32*32*3
 output_dim = 32*32*3
 batch_size = 128
+num_epochs = 10
 
 # model = Sequential([
 #     Dense(32, input_dim=input_dim),
@@ -181,24 +157,40 @@ print("X_test.shape  = ", X_test.shape)
 print("Y_train.shape = ", Y_train.shape)
 print("Y_test.shape  = ", Y_test.shape)
 
+#some preprocessing
+# X_train = X_train.astype('float32')
+# X_test = X_test.astype('float32')
+# Y_train = Y_train.astype('float32')
+# Y_test = Y_test.astype('float32')
+# X_train /= 255
+# X_test /= 255
+# Y_train /= 255
+# Y_test /= 255
 
 print("Creating MLP model...")
-# create model
+# Create model
 model = Sequential()
-model.add(Dense(units=512, input_shape=(input_dim, )))
+model.add(Dense(units=2000, input_shape=(input_dim, )))
 model.add(Activation('relu'))
 model.add(Dropout(0.5))
-model.add(Dense(units=256))
+model.add(Dense(units=(1000)))
 model.add(Activation('relu'))
 model.add(Dropout(0.5))
 model.add(Dense(units=output_dim))
 model.add(Activation('relu'))
 
-# Compile model
-model.compile(loss='mse', optimizer='adam', metrics=['accuracy'])
+# Print model summary
+print("Model summary:")
+print(model.summary())
 
+print("Compiling model...")
+# Compile model
+#model.compile(loss='mse', optimizer='adam', metrics=['accuracy'])
+model.compile(loss=losses.mean_absolute_error, optimizer='adam', metrics=['accuracy'])
+
+print("Fitting model...")
 # Fit the model
-model.fit(X_train, Y_train, epochs=150, batch_size=batch_size)
+model.fit(X_train, Y_train, epochs=num_epochs, batch_size=batch_size)
 
 # evaluate the model
 scores = model.evaluate(X_train, Y_train, batch_size=batch_size)
@@ -206,3 +198,28 @@ print("Training score %s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
 
 scores = model.evaluate(X_test, Y_test, batch_size=batch_size)
 print("Testing score %s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
+
+#%% Save model
+print("Saving model as 'last_model.h5'")
+model.save('last_model.h5')
+
+#%% Load model
+print("Loading model from disk 'last_model.h5'...")
+model = load_model('last_model.h5')
+
+X_test_predict = model.predict(X_test, batch_size=batch_size)
+
+num_rows = X_test_predict.shape[0]
+X_test_predict = np.reshape(X_test_predict, (num_rows, 32, 32, 3))
+
+num_rows = Y_test.shape[0]
+Y_test = np.reshape(Y_test, (num_rows, 32, 32, 3))
+
+for row in range(10):
+    img = Image.fromarray(X_test_predict[row,:,:,:])
+    img.show()
+    img.save('X_test_predict_' + str(row) + '.jpg')
+
+    img = Image.fromarray(Y_test[row,:,:,:])
+    img.show()
+    img.save('Y_test_' + str(row) + '.jpg')

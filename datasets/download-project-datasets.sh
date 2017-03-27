@@ -7,7 +7,7 @@ if [[ ! $(basename $(pwd)) == "datasets" ]]; then
     exit -1
 fi
 
-dirname=/tmp/mscoco_inpainting
+dirname=/Tmp/mscoco_inpainting
 mkdir -p "$dirname"
 pushd "$dirname"
 wget http://lisaweb.iro.umontreal.ca/transfert/lisa/datasets/mscoco_inpaiting/TO_READ.txt
@@ -17,4 +17,4 @@ tar xf inpainting.tar.bz2
 #rm inpainting.tar.bz2
 popd
 
-ln -s /tmp/mscoco_inpainting
+ln -sf "$dirname"
