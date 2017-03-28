@@ -1,10 +1,12 @@
+# -*- coding: utf-8 -*-
+"""
+Spyder Editor
 
-# coding: utf-8
-
-# In[289]:
+This is a temporary script file.
+"""
 
 #!/usr/bin/env python2
-
+# -*- coding: utf-8 -*-
 """
 Created on Wed Mar 15 14:54:01 2017
 
@@ -25,8 +27,7 @@ from keras import optimizers
 from keras import losses
 from keras.utils import plot_model
 
-# In[290]:
-
+#%%
 #################################################
 # Run experiments here
 # Define your global options and experiment name
@@ -39,21 +40,27 @@ from keras.utils import plot_model
 ## A summary of your model architecture will saved be in: models/summary_<experiment_name>.txt
 ## Your model's performance will be saved in:             models/performance_<experiment_name>.txt
 
-## Your predictions will be saved in: predictions/<experiment_name>/assets/Y_pred_<i>.jpg
-##                                    predictions/<experiment_name>/assets/Y_<i>.jpg
-##                                    predictions/<experiment_name>/assets/X_outer_<i>.jpg
-##                                    predictions/<experiment_name>/assets/X_full_<i>.jpg
-##                                    predictions/<experiment_name>/assets/X_full_pred_<i>.jpg
+## Your predictions will be saved in: predictions/assets/<experiment_name>/Y_pred_<i>.jpg
+##                                    predictions/assets/<experiment_name>/Y_<i>.jpg
+##                                    predictions/assets/<experiment_name>/X_outer_<i>.jpg
+##                                    predictions/assets/<experiment_name>/X_full_<i>.jpg
+##                                    predictions/assets/<experiment_name>/X_full_pred_<i>.jpg
 
-#experiment_name = "exp1_mlp_mse_dropout"
-experiment_name = "exp2_mlp_mse_nodropout"
+#experiment_name = "exp2_mlp_msa_nodropout"
 #experiment_name = "exp3_mlp_mse_sigmoid_final_layer"
 #TODO: Which ever first 3 experiments work best, repeat it with msa instead of mse. i.e. experiment_name = "exp4_mlp_msa_sigmoid_final_layer"
 batch_size = 64
-num_epochs = 25
+num_epochs = 50
+architecture = 'mlp'
 loss_function = 'mse'
+#loss_function = 'mae'
 use_dropout = False
-use_sigmoid_final_layer = False
+use_sigmoid_final_layer = True
+
+experiment_name = "exp_arch-%s_loss-%s_activation-%s_epochs-%i" % (architecture, \
+    loss_function, "sigmoid" if use_sigmoid_final_layer else "relu", num_epochs)
+
+print("Experiment name = %s" % experiment_name)
 
 ### Fixed variables: DO NOT CHANGE THOSE
 input_dim = 64*64*3 - 32*32*3
@@ -62,18 +69,14 @@ path_mscoco="datasets/mscoco_inpainting/inpainting/"
 path_traindata="train2014"
 path_caption_dict="dict_key_imgID_value_caps_train_and_valid.pkl"
 
-
-# In[291]:
-
 ### State variables: DO NOT EDIT
 ### ONLY RUN THIS CELL IF YOU WANNA RESET EVERYTHING AND RELOAD THE DATA, RETRAIN THE MODEL, ETC.
 
+#%%
 is_dataset_loaded = False
 is_model_trained = False
 
-
-# In[292]:
-
+#%%
 #######################################
 # Info about the dataset
 #######################################
@@ -89,8 +92,7 @@ is_model_trained = False
 # .jpg extension) to a list of 5 strings (the 5 human-generated captions).
 # This dictionary is an OrderedDict with 123286 entries.
 
-# In[313]:
-
+#%%
 ### Utilities functions
 
 ## Your model will be saved in:                           models/<experiment_name>.h5
@@ -103,7 +105,6 @@ def save_model_info(exp_name, model):
         
     model.save(os.path.join(out_dir, exp_name + '.h5')) 
     
-    #TODO: INSTALL pydot
     #plot_model(model, to_file=os.path.join('model/', 'architecture_' + exp_name + '.png'), show_shapes=True)
     
     old_stdout = sys.stdout
@@ -118,15 +119,15 @@ def save_model_info(exp_name, model):
         scores = model.evaluate(X_test, Y_test, batch_size=batch_size)
         fd.write("Testing score %s: %.4f\n" % (model.metrics_names[1], scores[1]))
         
-## Your predictions will be saved in: predictions/<experiment_name>/Y_pred_<i>.jpg
-##                                    predictions/<experiment_name>/Y_<i>.jpg
-##                                    predictions/<experiment_name>/X_outer_<i>.jpg
-##                                    predictions/<experiment_name>/X_full_<i>.jpg
-##                                    predictions/<experiment_name>/X_full_pred_<i>.jpg
+## Your predictions will be saved in: predictions/assets/<experiment_name>/Y_pred_<i>.jpg
+##                                    predictions/assets/<experiment_name>/Y_<i>.jpg
+##                                    predictions/assets/<experiment_name>/X_outer_<i>.jpg
+##                                    predictions/assets/<experiment_name>/X_full_<i>.jpg
+##                                    predictions/assets/<experiment_name>/X_full_pred_<i>.jpg
 def save_predictions_info(exp_name, pred, pred_indices, dataset,
                           num_images = 10, show_images = False, use_flattened_datasets = True):
     if use_flattened_datasets:
-        out_dir = os.path.join('predictions/', exp_name, "assets/")
+        out_dir = os.path.join('predictions/', "assets/", exp_name)
         if not os.path.exists(out_dir):
             print("Creating new directory to save predictions results: " + out_dir)
             os.makedirs(out_dir)
@@ -138,7 +139,7 @@ def save_predictions_info(exp_name, pred, pred_indices, dataset,
             Image.fromarray(dataset.images_outer2d[idt]).save(os.path.join(out_dir, 'images_outer2d_' + str(row) + '.jpg'))
             #img.show()
 
-            Image.fromarray(pred[row]).save(os.path.join(out_dir, 'images_pred_' + str(row) + '.bmp'))
+            Image.fromarray(pred[row]).save(os.path.join(out_dir, 'images_pred_' + str(row) + '.jpg'))
             #img.show()
 
             Image.fromarray(dataset.images_inner2d[idt]).save(os.path.join(out_dir, 'images_inner2d_' + str(row) + '.jpg'))
@@ -154,33 +155,33 @@ def save_predictions_info(exp_name, pred, pred_indices, dataset,
             #img.show()
 
 def print_results_as_html(exp_name, pred, dataset, num_images=10):    
-    out_dir = os.path.join("predictions/", exp_name)
-    if not os.path.exists(out_dir):
-        os.makedirs(out_dir)
-    path_html = os.path.join(out_dir, "results.html")
+    html_dir = os.path.join("predictions/")
+    img_src = os.path.join("assets/", exp_name)
+    path_html = os.path.join(html_dir, "results_" + exp_name + ".html")
     print("Saving results as html to: " + path_html)
 
     with open(path_html, 'w') as fd:
         fd.write("""
-<table style="width:150px">
+<table>
   <tr>
-    <th>Input (outer frame)</th>
-    <th>Model prediction (inner frame)</th>
-    <th>Correct output (inner frame)</th> 
-    <th>Input + prediction</th>
-    <th>Input + correct output)</th>
+    <th style="width:132px">Input</th>
+    <th style="width:68px">Model prediction</th>
+    <th style="width:68px">Correct output</th> 
+    <th style="width:132px">Input + prediction</th>
+    <th style="width:132px">Input + correct output</th>
   </tr>
 """)
 
         for row in range(num_images):
             fd.write("  <tr>\n")
-            fd.write('    <td><img src="assets/images_outer2d_' + str(row) + '.jpg" width="128" height="128"></td>\n')
-            fd.write('    <td><img src="assets/images_pred_' + str(row) + '.jpg" width="64" height="64"></td>\n')
-            fd.write('    <td><img src="assets/images_inner2d_' + str(row) + '.jpg" width="64" height="64"></td>\n')
-            fd.write('    <td><img src="assets/fullimages_pred_' + str(row) + '.jpg" width="128" height="128"></td>\n')
-            fd.write('    <td><img src="assets/fullimages_' + str(row) + '.jpg" width="128" height="128"></td>\n')
+            fd.write("    <td><img src='%s/images_outer2d_%i.jpg' width='128' height='128'></td>\n" % (img_src, row))
+            fd.write("    <td><img src='%s/images_pred_%i.jpg' width='64' height='64'></td>\n" % (img_src, row))
+            fd.write("    <td><img src='%s/images_inner2d_%i.jpg' width='64' height='64'></td>\n" % (img_src, row))
+            fd.write("    <td><img src='%s/fullimages_pred_%i.jpg' width='128' height='128'></td>\n" % (img_src, row))
+            fd.write("    <td><img src='%s/fullimages_%i.jpg' width='128' height='128'></td>\n" % (img_src, row))
             fd.write('</tr>\n')
-                  
+        
+        fd.write('</table>')
 
 def normalize_data(data):
     data = data.astype('float32')
@@ -192,9 +193,7 @@ def denormalize_data(data):
     data = data.astype('uint8')
     return data
     
-
-# In[294]:
-
+#%%
 ### Define the main class for handling our dataset called InpaintingDataset
 
 class InpaintingDataset(object):
@@ -285,6 +284,9 @@ class InpaintingDataset(object):
                 images_inner_flat.append(inner_flat)
                 captions_ids.append(cap_id)
                 captions_dict.append(caption_dict[cap_id])
+                
+                if i % 10000 == 0:
+                    print("Loaded image #%i" % i)
 
             self.images = np.array(images)
             self.images_inner_flat = np.array(images_inner_flat)
@@ -300,24 +302,22 @@ class InpaintingDataset(object):
         else:
             print("Dataset is already loaded. Skipping this call. Please pass the argument force_reload=True to force reloading of dataset.")
 
-
-# In[295]:
-
+#%%
 ### Create and initialize an empty InpaintingDataset object
 Dataset = InpaintingDataset(input_dim, output_dim)
 
-
-# In[296]:
-
+#%%
 ### Load training images and captions
 
 # Get captions dictionary path
-caption_path = os.path.join(mscoco, dict_key_captions)
+caption_path = os.path.join(path_mscoco, path_caption_dict)
     
 # Get a list of all training images full filename paths
 data_path = os.path.join(path_mscoco, path_traindata)
-print("Loading images from: " + data_path + "/*.jpg")
+print("Loading images paths from: " + data_path + "/*.jpg")
 train_images_paths = glob.glob(data_path + "/*.jpg")
+print("Found %i image paths." % len(train_images_paths))
+print("Loading images data into memory and performing some pre-processing...")
 Dataset.load_jpgs_and_captions_and_flatten(train_images_paths, caption_path)
 
 print("Finished loading and pre-processing datasets...")
@@ -330,23 +330,19 @@ print("images_inner_flat.shape = " + str(Dataset.images_inner_flat.shape))
 print("captions_ids.shape      = " + str(Dataset.captions_ids.shape))
 print("captions_dict.shape     = " + str(Dataset.captions_dict.shape))
 
-
-# In[297]:
-
+#%%
 ### Sanity check:
-print("Performing sanity check using first 10 elements of first 3 rows:")
-sanity_check_values = np.array([[57,   69,  57,  65,  79,  56,  63,  81,  43,  53],
-                                [197, 202, 195, 167, 164, 147, 104,  87,  57, 102],
-                                [104, 100,  97,  77,  80,  53, 172, 181, 128, 242]])
-for i in range(3):
-    top10 = Dataset.images_inner_flat[i, range(10)]
-    print(top10)
-    np.testing.assert_array_equal(top10, sanity_check_values[i])
-    print("Row " + str(i) + " passed sanity check!")
+#print("Performing sanity check using first 10 elements of first 3 rows:")
+#sanity_check_values = np.array([[57,   69,  57,  65,  79,  56,  63,  81,  43,  53],
+#                                [197, 202, 195, 167, 164, 147, 104,  87,  57, 102],
+#                                [104, 100,  97,  77,  80,  53, 172, 181, 128, 242]])
+#for i in range(3):
+#    top10 = Dataset.images_inner_flat[i, range(10)]
+#    print(top10)
+#    np.testing.assert_array_equal(top10, sanity_check_values[i])
+#    print("Row " + str(i) + " passed sanity check!")
 
-
-# In[298]:
-
+#%%
 ### Normalize datasets
 Dataset.normalize()
 
@@ -360,7 +356,10 @@ id_train, id_test = train_test_split(indices,
 
 ### Generating the training and testing datasets (80%/20% train/test split)
 print("Splitting dataset into training and testing sets with shuffling...")
-X_train, X_test, Y_train, Y_test = Dataset.images_outer_flat[id_train],                                    Dataset.images_outer_flat[id_test],                                    Dataset.images_inner_flat[id_train],                                    Dataset.images_inner_flat[id_test]
+X_train, X_test, Y_train, Y_test = Dataset.images_outer_flat[id_train], \
+                                   Dataset.images_outer_flat[id_test], \
+                                   Dataset.images_inner_flat[id_train], \
+                                   Dataset.images_inner_flat[id_test]
 
 print("Splitting dataset into training and testing sets with shuffling...")
 print("X_train.shape = " + str(X_train.shape))
@@ -370,9 +369,7 @@ print("Y_test.shape  = " + str(Y_test.shape))
 print("id_train.shape = " + str(id_train.shape))
 print("id_test.shape  = " + str(id_test.shape))
 
-
-# In[300]:
-
+#%%
 ### Sanity check:
 print("id_train = " + str(id_train))
 print("id_test  = " + str(id_test))
@@ -383,14 +380,10 @@ idx = id_train[0]
 img = Image.fromarray(Dataset.images[0])
 img.show()
 
-
-# In[301]:
-
+#%%
 is_model_trained = False
 
-
-# In[302]:
-
+#%%
 if not is_model_trained:
     print("Creating MLP model...")
     # Create model
@@ -424,9 +417,9 @@ if not is_model_trained:
     # evaluate the model
     print("Evaluating model...")
     scores = model.evaluate(X_train, Y_train, batch_size=batch_size)
-    print("Training score %s: %.2f" % (model.metrics_names[1], scores[1]))
+    print("Training score %s: %.4f" % (model.metrics_names[1], scores[1]))
     scores = model.evaluate(X_test, Y_test, batch_size=batch_size)
-    print("Testing score %s: %.2f" % (model.metrics_names[1], scores[1]))
+    print("Testing score %s: %.4f" % (model.metrics_names[1], scores[1]))
     is_model_trained = True
 
     #%% Save model
@@ -435,15 +428,8 @@ else:
     model_path = os.path.join('models/', experiment_name + '.h5')
     print("Model was already trained, instead loading: " + model_path)
     model = load_model(model_path)
-
-
-# In[231]:
-
-save_model_info(experiment_name, model)
-
-
-# In[303]:
-
+    
+#%%
 ### Produce predictions
 Y_test_pred = model.predict(X_test, batch_size=batch_size)
 
@@ -454,14 +440,3 @@ Y_test_pred_2d = np.reshape(Y_test_pred, (num_rows, 32, 32, 3))
 
 # Denormalize all datasets
 Dataset.denormalize()
-
-
-# In[314]:
-
-### Save predictions to disk
-save_predictions_info(experiment_name, Y_test_pred_2d, id_test, Dataset)
-print_results_as_html(experiment_name, Y_test_pred_2d, Dataset)
-
-
-
-
