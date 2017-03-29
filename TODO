@@ -1,0 +1,14 @@
+1) Try using Fourier transforms on the images before passing them as input (and then do the inverse Fourier transform to get back images). Ideally, combine this with the MLP model and try to lower both objectives.
+
+1) Try the fully convolutional-strided deconvolutional model with L2 loss. It should learn better than if I have an MLP at the end.
+
+2) Try doing the same thing, but then define your loss function to be:
+
+VGG(x) at hidden layer k
+VGG(y) at hidden layer k
+
+Compute MSE between the two.
+
+3) Try using a model M that goes from image -> text. Then, for a generated image G(x) and a target image y, compute M(G(x)) and M(y) and compare how similar the texts are, then apply a penalty to this.
+
+4) Try using an LSTM for captions.
