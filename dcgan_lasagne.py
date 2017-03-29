@@ -1,11 +1,12 @@
-#!/usr/bin/env python
+from __future__ import print_function
+
 # -*- coding: utf-8 -*-
 
 """
 CREDIT: Code taken from "f0k/dcgan_mnist.py" on github (https://gist.github.com/f0k/738fa2eedd9666b78404ed1751336f56) and modified to handle the project's dataset.
-"""
 
-"""
+---
+
 Example employing Lasagne for digit generation using the MNIST dataset and
 Deep Convolutional Generative Adversarial Networks
 (DCGANs, see http://arxiv.org/abs/1511.06434).
@@ -19,17 +20,15 @@ discriminator at once, not alternatingly. It's easy to change, though.
 Jan Schlüter, 2015-12-16
 """
 
-from __future__ import print_function
-
 import sys
 import os
 import time
-
 import numpy as np
 import theano
 import theano.tensor as T
 
 import lasagne
+
 
 # ##################### Build the neural network model #######################
 # We create two models: The generator and the discriminator network. The
@@ -135,7 +134,7 @@ def iterate_minibatches(inputs, targets, batchsize, shuffle=False):
 # more functions to better separate the code, but it wouldn't make it any
 # easier to read.
 
-def train(num_epochs=200, initial_eta=2e-4, Dataset):
+def train(Dataset, num_epochs=200, initial_eta=2e-4):
     # Load the dataset
     print("Loading data...")
     X_train, y_train, X_test, y_test, ind_train, ind_test = Dataset.load_2d()

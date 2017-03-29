@@ -6,6 +6,7 @@ import PIL.Image as Image
 #from skimage.transform import resize
 
 import settings
+import models
 
 #################################################
 # Run experiments here
@@ -30,7 +31,7 @@ def run():
     loss_function = None
     
     # Define model's specific settings
-    if SETTINGS.model == "mlp":
+    if settings.MODEL == "mlp":
         input_dim = 64*64*3 - 32*32*3
         output_dim = 32*32*3
         loss_function = "mse"
@@ -75,10 +76,10 @@ def run():
     print("captions_dict.shape     = " + str(Dataset.captions_dict.shape))
 
      ###
-    if SETTINGS.model == "mlp":
+    if settings.MODEL == "mlp":
         model = train_mlp(model, Dataset)
-    elif SETTINGS.model == "dcgan":
-        model = train_dcgan(model, Dataset)
+    elif settings.MODEL == "dcgan":
+        model = train_dcgan(Dataset)
     
     ### Produce predictions
     Y_test_pred = model.predict(X_test, batch_size=batch_size)
@@ -109,7 +110,7 @@ if __name__ == "__main__":
     settings.BATCH_SIZE = args.batch_size
     settings.VERBOSE = args.verbose
 
-    if not args in ["mlp", "convnet", "convnet_lstm", "vae", "dcgan"]:
-        raise NotImplementedError()
+    if settings.MODEL in ["convnet", "convnet_lstm", "vae", "dcgan"]:
+        raise NotImplementedError("The model '{}' is not yet implemented yet, sorry!".format(settings.MODEL))
     
-    run_experiment.run()
+    run()

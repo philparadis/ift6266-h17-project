@@ -1,7 +1,10 @@
+# -*- coding: utf-8 -*-
+import keras
 from keras.models import load_model
 from keras import optimizers
 from keras import losses
 from keras.utils import plot_model
+import settings
 import dcgan_lasagne
 
 is_model_trained = False
@@ -55,5 +58,5 @@ def train_mlp(model, Dataset):
     
     return model
 
-def train_dcgan(model, num_epochs, Dataset):
-    dcgan_lasagne.train(num_epochs, 2e-4, Dataset)
+def train_dcgan(Dataset):
+    dcgan_lasagne.train(Dataset, settings,NUM_EPOCHS)
