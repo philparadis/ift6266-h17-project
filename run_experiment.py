@@ -5,6 +5,8 @@ import numpy as np
 import PIL.Image as Image
 #from skimage.transform import resize
 
+import settings
+
 #################################################
 # Run experiments here
 # Define your global options and experiment name
@@ -89,18 +91,16 @@ def run():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("model", type="string",
-                        help="Model choice (current options: mlp, convnet, convnet_lstm, vae, dcgan)")
-    parser.add_argument("experiment_name", type="string",
-                        help="Name of experiment. Your results will be stored in subfolders with this name.")
-    parser.add_argument("-v", "--verbose", action="store_true", type="int",
+    parser.add_argument("model", help="Model choice (current options: mlp, convnet, convnet_lstm, vae, dcgan)")
+    parser.add_argument("experiment_name", help="Name of experiment. Your results will be stored in subfolders with this name.")
+    parser.add_argument("-v", "--verbose", type=int,
                         default=settings.VERBOSE, help="0 means quiet, 1 means verbose and 2 means limited verbosity.")
-    parser.add_argument("-e", "--num_epochs", action="store", type="int",
+    parser.add_argument("-e", "--num_epochs", type=int,
                         default=settings.NUM_EPOCHS, help="Number of epochs to train")
-    parser.add_argument("-b", "--batch_size", action="store", type="int",
+    parser.add_argument("-b", "--batch_size", type=int,
                         default=settings.BATCH_SIZE, help="Size of minibatches")
-    parser.add_argument("-l", "--load_model", action="store", type="string",
-                        default=None, help="Load HF5 model from subdirectory 'models'. This will skip the training phase.")
+    parser.add_argument("-l", "--load_model_from_file", default=None,
+                        help="Load HF5 model from subdirectory 'models'. This will skip the training phase.")
 
     args = parser.parse_args()
     settings.MODEL = args.model
