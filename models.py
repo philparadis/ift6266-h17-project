@@ -31,40 +31,54 @@ def build_mlp(model_params, input_dim, output_dim):
     return model
 
 def train_mlp(model, model_params, Dataset, adam_lr=0.0005):
+    skip_ahead = False
+    
     ### Normalize datasets
     Dataset.normalize()
     
     X_train, X_test, Y_train, Y_test, id_train, id_test = Dataset.load_flattened()
 
-    if not model_params.is_trained:
-        # Print model summary
-        print("Model summary:")
-        print(model.summary())
-
-        # Compile model
-        print("Compiling model...")
-        adam_optimizer = optimizers.Adam(lr=adam_lr) # Default lr = 0.001
-        model.compile(loss=model_params.loss_function, optimizer=adam_optimizer, metrics=[model_params.loss_function])
-
-        # Fit the model
-        print("Fitting model...")
-        model.fit(X_train, Y_train, validation_data=(X_test, Y_test),
-                  epochs=settings.NUM_EPOCHS, batch_size=settings.BATCH_SIZE, verbose=settings.VERBOSE)
-
-        # evaluate the model
-        print("Evaluating model...")
-        scores = model.evaluate(X_train, Y_train, batch_size=settings.BATCH_SIZE)
-        print("Training score %s: %.4f" % (model.metrics_names[1], scores[1]))
-        scores = model.evaluate(X_test, Y_test, batch_size=settings.BATCH_SIZE)
-        print("Testing score %s: %.4f" % (model.metrics_names[1], scores[1]))
-        model_params.is_trained = True
-
-        #%% Save model
-        save_model_info(model)
-    else:
+    if settings.RELOAD_MODEL == True:
         model_path = os.path.join('models/', settings.EXP_NAME + '.h5')
-        print("Model was already trained, instead loading: " + model_path)
-        model = load_model(model_path)
+        if os.path.isfile(model_path):
+            print("The --load_model_from_file flag was passed and we found a matching model under '%s'." % model_path)
+            print("Loading model from disk...")
+            model = load_model(model_path)
+            model_params.is_trained = True
+            skip_ahead = True
+        else:
+            print("The --load_model_from_file flag was passed, but we cannot find any file matching '%s'." % model_path)
+
+    if skip_ahead == False:
+        if not model_params.is_trained:
+            # Print model summary
+            print("Model summary:")
+            print(model.summary())
+
+            # Compile model
+            print("Compiling model...")
+            adam_optimizer = optimizers.Adam(lr=adam_lr) # Default lr = 0.001
+            model.compile(loss=model_params.loss_function, optimizer=adam_optimizer, metrics=[model_params.loss_function])
+
+            # Fit the model
+            print("Fitting model...")
+            model.fit(X_train, Y_train, validation_data=(X_test, Y_test),
+                      epochs=settings.NUM_EPOCHS, batch_size=settings.BATCH_SIZE, verbose=settings.VERBOSE)
+
+            # evaluate the model
+            print("Evaluating model...")
+            scores = model.evaluate(X_train, Y_train, batch_size=settings.BATCH_SIZE)
+            print("Training score %s: %.4f" % (model.metrics_names[1], scores[1]))
+            scores = model.evaluate(X_test, Y_test, batch_size=settings.BATCH_SIZE)
+            print("Testing score %s: %.4f" % (model.metrics_names[1], scores[1]))
+            model_params.is_trained = True
+
+            #%% Save model
+            save_model_info(model)
+        else:
+            model_path = os.path.join('models/', settings.EXP_NAME + '.h5')
+            print("Model was already trained, instead loading: " + model_path)
+            model = load_model(model_path)
         
     ### Denormalize all datasets
     Dataset.denormalize()

@@ -10,10 +10,12 @@ for path in ["/Tmp", "/tmp"]:
         break
 
 MODEL = None
+EXP_NAME_PREFIX = None
 EXP_NAME = None
 NUM_EPOCHS = 20
 BATCH_SIZE = 128
 VERBOSE = 2
+RELOAD_MODEL = False
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 ROOT_SAVE_DIR = _root if _root != None else BASE_DIR
 MSCOCO_DIR = os.path.join(BASE_DIR, "mscoco/")

@@ -41,8 +41,8 @@ def run():
     else:
         raise NotImplementedError()
     
-    settings.EXP_NAME = "exp_model-%s_loss-%s_epochs-%i" \
-                        % (settings.MODEL, loss_function, settings.NUM_EPOCHS)
+    settings.EXP_NAME = "%s_model-%s_loss-%s_epochs-%i" \
+                        % (settings.EXP_NAME_PREFIX, settings.MODEL, loss_function, settings.NUM_EPOCHS)
 
     # Print info about our settings
     print("============================================================")
@@ -105,7 +105,7 @@ def run():
     Y_test_pred = model.predict(Dataset.test.X, batch_size=settings.BATCH_SIZE)
 
     # Reshape predictions to a 2d image and denormalize data
-    Y_test_pred = denormalize_data(Y_test_pred)
+    Y_test_pred = dataset.denormalize_data(Y_test_pred)
     num_rows = Y_test_pred.shape[0]
     Y_test_pred_2d = np.reshape(Y_test_pred, (num_rows, 32, 32, 3))
 
@@ -117,22 +117,23 @@ def run():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("model", help="Model choice (current options: mlp, convnet, convnet_lstm, vae, dcgan)")
-    parser.add_argument("experiment_name", help="Name of experiment. Your results will be stored in subfolders with this name.")
+    parser.add_argument("exp_name_prefix", help="Prefix used at the beginning of the name of the experiment. Your results will be stored in various subfolders and files which start with this prefix. The exact name of the experiment depends on the model used and various hyperparameters.")
     parser.add_argument("-v", "--verbose", type=int,
                         default=settings.VERBOSE, help="0 means quiet, 1 means verbose and 2 means limited verbosity.")
     parser.add_argument("-e", "--num_epochs", type=int,
                         default=settings.NUM_EPOCHS, help="Number of epochs to train")
     parser.add_argument("-b", "--batch_size", type=int,
                         default=settings.BATCH_SIZE, help="Size of minibatches")
-    parser.add_argument("-l", "--load_model_from_file", default=None,
-                        help="Load HF5 model from subdirectory 'models'. This will skip the training phase.")
+    parser.add_argument("-r", "--reload_model", action="store_true", default=settings.RELOAD_MODEL,
+                        help="Looks for an existing HF5 model saved to disk in the subdirectory 'models' and if such a model with the same parameters and experiment name prefix exist, the training phase will be entirely skipped and rather, the model and its weights will be loaded from disk.")
 
     args = parser.parse_args()
     settings.MODEL = args.model
-    settings.EXPERIMENT_NAME = args.experiment_name
+    settings.EXP_NAME_PREFIX = args.exp_name_prefix
     settings.NUM_EPOCHS = args.num_epochs
     settings.BATCH_SIZE = args.batch_size
     settings.VERBOSE = args.verbose
+    settings.RELOAD_MODEL = args.reload_model
 
     if settings.MODEL in ["convnet", "convnet_lstm", "vae", "dcgan"]:
         raise NotImplementedError("The model '{}' is not yet implemented yet, sorry!".format(settings.MODEL))
