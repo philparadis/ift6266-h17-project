@@ -61,7 +61,7 @@ class InpaintingDataset(object):
     
     def read_jpgs_and_captions_and_flatten(self, force_reload = False):
         # Get a list of all training images full filename paths
-        print("Loading images paths from: " + os.path.join(settings.TRAIN_DIR, "/*.jpg"))
+        print("Loading images paths from: " + settings.TRAIN_DIR + "*.jpg")
         train_images_paths = glob.glob(settings.TRAIN_DIR + "/*.jpg")
         print("Found %i image paths." % len(train_images_paths))
         print("Loading images and captions data into memory and performing some pre-processing...")

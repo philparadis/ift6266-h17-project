@@ -5,9 +5,10 @@ from keras.models import Sequential
 from keras.layers import Dense, Activation
 from keras import optimizers
 from keras import losses
-from keras.utils import plot_model
-import settings
+
 import dcgan_lasagne
+
+import settings
 from save_results import *
 
 class ModelParameters:
