@@ -12,17 +12,18 @@ import settings
 from save_results import *
 
 class ModelParameters:
-    def __init__(self, model_name, input_dim, output_dim, loss_function):
+    def __init__(self, model_name, input_dim, output_dim, loss_function, learning_rate):
         self.model_name = model_name
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.loss_function = loss_function
+        self.learning_rate = learning_rate
         self.is_trained = False
 
 
 def build_mlp(model_params, input_dim, output_dim):
     model = Sequential()
-    model.add(Dense(units=512, input_shape=(model_params.input_dim, )))
+    model.add(Dense(units=1024, input_shape=(model_params.input_dim, )))
     model.add(Activation('relu'))
     model.add(Dense(units=512))
     model.add(Activation('relu'))
@@ -30,7 +31,7 @@ def build_mlp(model_params, input_dim, output_dim):
     model_params.is_trained = False
     return model
 
-def train_mlp(model, model_params, Dataset, adam_lr=0.0005):
+def train_mlp(model, model_params, Dataset):
     skip_ahead = False
     
     ### Normalize datasets
@@ -57,7 +58,7 @@ def train_mlp(model, model_params, Dataset, adam_lr=0.0005):
 
             # Compile model
             print("Compiling model...")
-            adam_optimizer = optimizers.Adam(lr=adam_lr) # Default lr = 0.001
+            adam_optimizer = optimizers.Adam(lr=model_params.learning_rate) # Default lr = 0.001
             model.compile(loss=model_params.loss_function, optimizer=adam_optimizer, metrics=[model_params.loss_function])
 
             # Fit the model

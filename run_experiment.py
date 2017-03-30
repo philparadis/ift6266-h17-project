@@ -59,7 +59,7 @@ def run():
         input_dim = 64*64*3 - 32*32*3
         output_dim = 32*32*3
         loss_function = "mse"
-        model_params = models.ModelParameters(settings.MODEL, input_dim, output_dim, loss_function)
+        model_params = models.ModelParameters(settings.MODEL, input_dim, output_dim, loss_function, settings.LEARNING_RATE)
         model = models.build_mlp(model_params, input_dim, output_dim)
     else:
         raise NotImplementedError()
@@ -78,6 +78,7 @@ def run():
     print("   - input_dim     = " + str(input_dim))
     print("   - output_dim    = " + str(output_dim))
     print("   - loss_function = " + str(loss_function))
+    print("   - learning_rate = " + str(settings.LEARNING_RATE))
     print(" * Epochs          = " + str(settings.NUM_EPOCHS))
     print(" * Batch size      = " + str(settings.BATCH_SIZE))
     print("============================================================")
@@ -163,15 +164,18 @@ if __name__ == "__main__":
                         default=settings.NUM_EPOCHS, help="Number of epochs to train")
     parser.add_argument("-b", "--batch_size", type=int,
                         default=settings.BATCH_SIZE, help="Size of minibatches")
+    parser.add_argument("-l", "--learning_rate", type=float,
+                        default=settings.LEARNING_RATE, help="Learning rate of adam optimizer")
     parser.add_argument("-r", "--reload_model", action="store_true", default=settings.RELOAD_MODEL,
                         help="Looks for an existing HF5 model saved to disk in the subdirectory 'models' and if such a model with the same parameters and experiment name prefix exist, the training phase will be entirely skipped and rather, the model and its weights will be loaded from disk.")
 
     args = parser.parse_args()
     settings.MODEL = args.model
     settings.EXP_NAME_PREFIX = args.exp_name_prefix
+    settings.VERBOSE = args.verbose
     settings.NUM_EPOCHS = args.num_epochs
     settings.BATCH_SIZE = args.batch_size
-    settings.VERBOSE = args.verbose
+    settings.LEARNING_RATE = args.learning_rate
     settings.RELOAD_MODEL = args.reload_model
 
     if settings.MODEL in ["convnet", "convnet_lstm", "vae", "dcgan"]:
