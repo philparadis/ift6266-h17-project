@@ -1,6 +1,7 @@
 #!/usr/bin/env python2
 # coding: utf-8
 
+import os, sys
 import argparse
 import numpy as np
 
@@ -8,6 +9,28 @@ import dataset
 import settings
 import models
 from save_results import *
+
+#######################
+# Helper functions
+#######################
+
+def check_mscoco_dir():
+    try:
+        os.stat(settings.MSCOCO_DIR)
+    except OSError, e:
+        if e.errno == errno.ENOENT:
+            return False
+        else:
+            raise e
+    return True
+
+def download_dataset():
+    dataset_script="download-project-datasets.sh"
+    try:
+        return subprocess.call("./" + dataset_script)
+    except OSError, e:
+        pass
+    raise OSError("Could not find the script '%s'." % dataset_script)
 
 #################################################
 # Run experiments here
@@ -41,21 +64,26 @@ def run():
     else:
         raise NotImplementedError()
     
-    settings.EXP_NAME = "%s_model-%s_loss-%s_epochs-%i" \
-                        % (settings.EXP_NAME_PREFIX, settings.MODEL, loss_function, settings.NUM_EPOCHS)
+    settings.EXP_NAME = "%s_model.%s_loss.%s_e.%i_b.%i" \
+                        % (settings.EXP_NAME_PREFIX, settings.MODEL, loss_function, \
+                           settings.NUM_EPOCHS, settings.BATCH_SIZE)
 
     # Print info about our settings
     print("============================================================")
-    print("Experiment name = %s" % settings.EXP_NAME)
+    print("* Experiment name  = %s" % settings.EXP_NAME)
     print("============================================================")
     print("Hyperparameters:")
     print("------------------------------------------------------------")
-    print(" * Model         = " + settings.MODEL)
-    print(" * Epochs        = " + str(settings.NUM_EPOCHS))
-    print(" * Batch size    = " + str(settings.BATCH_SIZE))
+    print(" * Model           = " + settings.MODEL)
+    print("   - input_dim     = " + str(input_dim))
+    print("   - output_dim    = " + str(output_dim))
+    print("   - loss_function = " + str(loss_function))
+    print(" * Epochs          = " + str(settings.NUM_EPOCHS))
+    print(" * Batch size      = " + str(settings.BATCH_SIZE))
     print("============================================================")
     print("Other settings:")
     print("------------------------------------------------------------")
+    print(" * Verbosity                       = " + str(settings.VERBOSE))
     print(" * Using data augmentation         = " + str(settings.DATASET_AUGMENTATION))
     print(" * Loading black and white images  = " + str(settings.LOAD_BLACK_AND_WHITE_IMAGES))
     print("")
@@ -75,6 +103,15 @@ def run():
     # .jpg extension) to a list of 5 strings (the 5 human-generated captions).
     # This dictionary is an OrderedDict with 123286 entries.
 
+    ### Make sure the dataset has been downloaded and extracted correctly
+    if check_mscoco_dir() == False:
+        print("The project dataset based on MSCOCO and located at '%s' does not exist or is a broken symlink." % path)
+        print("Attempting to download the dataset...")
+        rc = download_dataset()
+        if rc != 0:
+            print("Failed to download the project dataset, exiting...")
+            sys.exit(rc)
+    
     ### Create and initialize an empty InpaintingDataset object
     Dataset = dataset.InpaintingDataset(input_dim, output_dim)
 
@@ -113,6 +150,8 @@ def run():
     save_performance_results(model, Dataset.train.X, Dataset.train.Y, Dataset.test.X, Dataset.test.Y)
     save_predictions_info(Y_test_pred_2d, Dataset.test.id, Dataset, num_images=50)
     print_results_as_html(Y_test_pred_2d, num_images=50)
+
+    sys.exit(0)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
