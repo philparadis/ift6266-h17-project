@@ -111,7 +111,7 @@ def run():
 
     ### Save predictions to disk
     save_performance_results(model, Dataset.train.X, Dataset.train.Y, Dataset.test.X, Dataset.test.Y)
-    save_predictions_info(Y_test_pred_2d, id_test, Dataset, num_images=50)
+    save_predictions_info(Y_test_pred_2d, Dataset.test.id, Dataset, num_images=50)
     print_results_as_html(Y_test_pred_2d, num_images=50)
 
 if __name__ == "__main__":
