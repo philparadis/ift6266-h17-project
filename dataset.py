@@ -20,6 +20,12 @@ def denormalize_data(data):
     data = data.astype('uint8')
     return data
 
+class Dataframe:
+    def __init__(self, X=None, Y=None, id=None):
+        self.X = X
+        self.Y = Y
+        self.id = id
+
 ### Define the main class for handling our dataset called InpaintingDataset
 
 class InpaintingDataset(object):
@@ -38,6 +44,10 @@ class InpaintingDataset(object):
         self._is_flattened = False
         self._is_normalized = False
         self._num_rows = None
+
+        self.train = Dataframe()
+        self.test = Dataframe()
+        self.validate = Dataframe()
     
     def normalize(self):
         if self._is_normalized:
@@ -154,6 +164,13 @@ class InpaintingDataset(object):
                                            self.images_inner_flat[id_train], \
                                            self.images_inner_flat[id_test]
 
+        self.train.X = X_train
+        self.test.X = X_test
+        self.train.Y = Y_train
+        self.test.Y = Y_test
+        self.train.id = id_train
+        self.test.id = id_test
+
         return X_train, X_test, Y_train, Y_test, id_train, id_test
 
     def load_2d(self, test_size = 0.2, rand_seed = 1):
@@ -170,5 +187,12 @@ class InpaintingDataset(object):
                                            self.images_outer2d[id_test], \
                                            self.images_inner2d[id_train], \
                                            self.images_inner2d[id_test]
+
+        self.train.X = X_train
+        self.test.X = X_test
+        self.train.Y = Y_train
+        self.test.Y = Y_test
+        self.train.id = id_train
+        self.test.id = id_test
 
         return X_train, X_test, Y_train, Y_test, id_train, id_test

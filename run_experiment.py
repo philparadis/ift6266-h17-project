@@ -91,14 +91,18 @@ def run():
     print("captions_ids.shape      = " + str(Dataset.captions_ids.shape))
     print("captions_dict.shape     = " + str(Dataset.captions_dict.shape))
 
-     ###
+    ### Train the model (computation intensive)
     if settings.MODEL == "mlp":
         model = models.train_mlp(model, model_params, Dataset)
+    elif settings.MODEL == "conv_mlp":
+        pass
+    elif settings.MODEL == "conv_deconv":
+        pass
     elif settings.MODEL == "dcgan":
         model = models.train_dcgan(Dataset)
     
     ### Produce predictions
-    Y_test_pred = model.predict(X_test, batch_size=settings.BATCH_SIZE)
+    Y_test_pred = model.predict(Dataset.test.X, batch_size=settings.BATCH_SIZE)
 
     # Reshape predictions to a 2d image and denormalize data
     Y_test_pred = denormalize_data(Y_test_pred)
@@ -106,7 +110,7 @@ def run():
     Y_test_pred_2d = np.reshape(Y_test_pred, (num_rows, 32, 32, 3))
 
     ### Save predictions to disk
-    save_performance_results(model, X_train, Y_train, X_test, Y_test)
+    save_performance_results(model, Dataset.train.X, Dataset.train.Y, Dataset.test.X, Dataset.test.Y)
     save_predictions_info(Y_test_pred_2d, id_test, Dataset, num_images=50)
     print_results_as_html(Y_test_pred_2d, num_images=50)
 
