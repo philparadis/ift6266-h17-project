@@ -2,9 +2,12 @@
 # coding: utf-8
 
 import os
+import glob
 import cPickle as pkl
 import numpy as np
 import PIL.Image as Image
+
+import settings
 
 ### Define utility functions
 def normalize_data(data):
@@ -56,16 +59,16 @@ class InpaintingDataset(object):
         self.images_inner2d = denormalize_data(self.images_inner2d)
         self._is_normalized = False
     
-    def read_jpgs_and_captions_and_flatten(self, paths_list, caption_path, force_reload = False):
+    def read_jpgs_and_captions_and_flatten(self, force_reload = False):
         # Get a list of all training images full filename paths
-        if 
-        print("Loading images paths from: " + settings.TRAIN_DIR + "/*.jpg")
+        print("Loading images paths from: " + os.path.join(settings.TRAIN_DIR, "/*.jpg"))
         train_images_paths = glob.glob(settings.TRAIN_DIR + "/*.jpg")
         print("Found %i image paths." % len(train_images_paths))
         print("Loading images and captions data into memory and performing some pre-processing...")
 
-        with open(caption_path) as fd:
+        with open(settings.CAPTIONS_PKL_PATH) as fd:
             caption_dict = pkl.load(fd)
+
         if not self._is_dataset_loaded and not force_reload:
             images = []
             images_outer2d = []
@@ -74,7 +77,7 @@ class InpaintingDataset(object):
             images_inner_flat = []
             captions_ids = []
             captions_dict = []
-            for i, img_path in enumerate(paths_list):
+            for i, img_path in enumerate(train_images_paths):
                 img = Image.open(img_path)
                 img_array = np.array(img)
 
@@ -136,38 +139,36 @@ class InpaintingDataset(object):
         else:
             print("Dataset is already loaded. Skipping this call. Please pass the argument force_reload=True to force reloading of dataset.")
 
-    def load_flattened(test_size = 0.2, rand_seed=1):
+    def load_flattened(self, test_size = 0.2, rand_seed=1):
         ### Split into training and testing data
         from sklearn.cross_validation import train_test_split
-        num_rows = Dataset.images.shape[0]
-        indices = np.arange(num_rows)
+        indices = np.arange(self._num_rows)
         id_train, id_test = train_test_split(indices,
                                              test_size=test_size,
                                              random_state=rand_seed)
 
         ### Generating the training and testing datasets (80%/20% train/test split)
         print("Splitting dataset into training and testing sets with shuffling...")
-        X_train, X_test, Y_train, Y_test = Dataset.images_outer_flat[id_train], \
-                                           Dataset.images_outer_flat[id_test], \
-                                           Dataset.images_inner_flat[id_train], \
-                                           Dataset.images_inner_flat[id_test]
+        X_train, X_test, Y_train, Y_test = self.images_outer_flat[id_train], \
+                                           self.images_outer_flat[id_test], \
+                                           self.images_inner_flat[id_train], \
+                                           self.images_inner_flat[id_test]
 
         return X_train, X_test, Y_train, Y_test, id_train, id_test
 
-    def load_2d(test_size = 0.2, rand_seed = 1):
+    def load_2d(self, test_size = 0.2, rand_seed = 1):
         ### Split into training and testing data
         from sklearn.cross_validation import train_test_split
-        num_rows = Dataset.images.shape[0]
-        indices = np.arange(num_rows)
+        indices = np.arange(self._num_rows)
         id_train, id_test = train_test_split(indices,
                                              test_size=test_size,
                                              random_state=rand_seed)
 
         ### Generating the training and testing datasets (80%/20% train/test split)
         print("Splitting dataset into training and testing sets with shuffling...")
-        X_train, X_test, Y_train, Y_test = Dataset.images_outer2d[id_train], \
-                                           Dataset.images_outer2d[id_test], \
-                                           Dataset.images_inner2d[id_train], \
-                                           Dataset.images_inner2d[id_test]
+        X_train, X_test, Y_train, Y_test = self.images_outer2d[id_train], \
+                                           self.images_outer2d[id_test], \
+                                           self.images_inner2d[id_train], \
+                                           self.images_inner2d[id_test]
 
         return X_train, X_test, Y_train, Y_test, id_train, id_test

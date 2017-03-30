@@ -10,49 +10,58 @@ import settings
 import dcgan_lasagne
 from save_results import *
 
-is_model_trained = False
+class ModelParameters:
+    def __init__(self, model_name, input_dim, output_dim, loss_function):
+        self.model_name = model_name
+        self.input_dim = input_dim
+        self.output_dim = output_dim
+        self.loss_function = loss_function
+        self.is_trained = False
 
-def build_mlp(input_dim, output_dim):
+
+def build_mlp(model_params, input_dim, output_dim):
     model = Sequential()
-    model.add(Dense(units=512, input_shape=(input_dim, )))
+    model.add(Dense(units=512, input_shape=(model_params.input_dim, )))
     model.add(Activation('relu'))
     model.add(Dense(units=512))
     model.add(Activation('relu'))
-    model.add(Dense(units=output_dim))
+    model.add(Dense(units=model_params.output_dim))
+    model_params.is_trained = False
     return model
 
-def train_mlp(model, Dataset):
+def train_mlp(model, model_params, Dataset, adam_lr=0.0005):
     ### Normalize datasets
     Dataset.normalize()
     
     X_train, X_test, Y_train, Y_test, id_train, id_test = Dataset.load_flattened()
 
-    if not is_model_trained:
+    if not model_params.is_trained:
         # Print model summary
         print("Model summary:")
         print(model.summary())
 
         # Compile model
         print("Compiling model...")
-        adam_optimizer = optimizers.Adam(lr=0.0005) # Default lr = 0.001
-        model.compile(loss=loss_function, optimizer=adam_optimizer, metrics=[loss_function])
+        adam_optimizer = optimizers.Adam(lr=adam_lr) # Default lr = 0.001
+        model.compile(loss=model_params.loss_function, optimizer=adam_optimizer, metrics=[model_params.loss_function])
 
         # Fit the model
         print("Fitting model...")
-        model.fit(X_train, Y_train, validation_data=(X_test, Y_test), epochs=num_epochs, batch_size=batch_size, verbose=settings.VERBOSE)
+        model.fit(X_train, Y_train, validation_data=(X_test, Y_test),
+                  epochs=settings.NUM_EPOCHS, batch_size=settings.BATCH_SIZE, verbose=settings.VERBOSE)
 
         # evaluate the model
         print("Evaluating model...")
-        scores = model.evaluate(X_train, Y_train, batch_size=batch_size)
+        scores = model.evaluate(X_train, Y_train, batch_size=settings.BATCH_SIZE)
         print("Training score %s: %.4f" % (model.metrics_names[1], scores[1]))
-        scores = model.evaluate(X_test, Y_test, batch_size=batch_size)
+        scores = model.evaluate(X_test, Y_test, batch_size=settings.BATCH_SIZE)
         print("Testing score %s: %.4f" % (model.metrics_names[1], scores[1]))
-        is_model_trained = True
+        model_params.is_trained = True
 
         #%% Save model
-        save_model_info(experiment_name, model)
+        save_model_info(model)
     else:
-        model_path = os.path.join('models/', experiment_name + '.h5')
+        model_path = os.path.join('models/', settings.EXP_NAME + '.h5')
         print("Model was already trained, instead loading: " + model_path)
         model = load_model(model_path)
         

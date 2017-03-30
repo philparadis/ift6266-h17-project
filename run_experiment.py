@@ -3,7 +3,6 @@
 
 import argparse
 import os, sys
-import glob
 import numpy as np
 import PIL.Image as Image
 #from skimage.transform import resize
@@ -40,14 +39,29 @@ def run():
         input_dim = 64*64*3 - 32*32*3
         output_dim = 32*32*3
         loss_function = "mse"
-        model = models.build_mlp(input_dim, output_dim)
+        model_params = models.ModelParameters(settings.MODEL, input_dim, output_dim, loss_function)
+        model = models.build_mlp(model_params, input_dim, output_dim)
     else:
         raise NotImplementedError()
     
-    experiment_name = "exp_model-%s_loss-%s_epochs-%i" \
-                      % (settings.MODEL, loss_function, settings.NUM_EPOCHS)
-    
-    print("Experiment name = %s" % experiment_name)
+    settings.EXP_NAME = "exp_model-%s_loss-%s_epochs-%i" \
+                        % (settings.MODEL, loss_function, settings.NUM_EPOCHS)
+
+    # Print info about our settings
+    print("============================================================")
+    print("Experiment name = %s" % settings.EXP_NAME)
+    print("============================================================")
+    print("Hyperparameters:")
+    print("------------------------------------------------------------")
+    print(" * Model         = " + settings.MODEL)
+    print(" * Epochs        = " + str(settings.NUM_EPOCHS))
+    print(" * Batch size    = " + str(settings.BATCH_SIZE))
+    print("============================================================")
+    print("Other settings:")
+    print("------------------------------------------------------------")
+    print(" * Using data augmentation         = " + str(settings.DATASET_AUGMENTATION))
+    print(" * Loading black and white images  = " + str(settings.LOAD_BLACK_AND_WHITE_IMAGES))
+    print("")
 
     #######################################
     # Info about the dataset
@@ -68,7 +82,7 @@ def run():
     Dataset = dataset.InpaintingDataset(input_dim, output_dim)
 
     ### Load dataset
-    Dataset.read_jpgs_and_captions_and_flatten(train_images_paths, settings.CAPTIONS_PKL_PATH)
+    Dataset.read_jpgs_and_captions_and_flatten()
 
     print("Finished loading and pre-processing datasets...")
     print("Summary of datasets:")
@@ -82,9 +96,9 @@ def run():
 
      ###
     if settings.MODEL == "mlp":
-        model = train_mlp(model, Dataset)
+        model = models.train_mlp(model, model_params, Dataset)
     elif settings.MODEL == "dcgan":
-        model = train_dcgan(Dataset)
+        model = models.train_dcgan(Dataset)
     
     ### Produce predictions
     Y_test_pred = model.predict(X_test, batch_size=settings.BATCH_SIZE)
@@ -95,10 +109,8 @@ def run():
     Y_test_pred_2d = np.reshape(Y_test_pred, (num_rows, 32, 32, 3))
 
     ### Save predictions to disk
-    save_predictions_info(experiment_name, Y_test_pred_2d, id_test, Dataset, num_images=50)
-    print_results_as_html(experiment_name, Y_test_pred_2d, Dataset, num_images=50)
-
-
+    save_predictions_info(Y_test_pred_2d, id_test, Dataset, num_images=50)
+    print_results_as_html(Y_test_pred_2d, num_images=50)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
