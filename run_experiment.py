@@ -2,10 +2,7 @@
 # coding: utf-8
 
 import argparse
-import os, sys
 import numpy as np
-import PIL.Image as Image
-#from skimage.transform import resize
 
 import dataset
 import settings
@@ -109,6 +106,7 @@ def run():
     Y_test_pred_2d = np.reshape(Y_test_pred, (num_rows, 32, 32, 3))
 
     ### Save predictions to disk
+    save_performance_results(model, X_train, Y_train, X_test, Y_test)
     save_predictions_info(Y_test_pred_2d, id_test, Dataset, num_images=50)
     print_results_as_html(Y_test_pred_2d, num_images=50)
 

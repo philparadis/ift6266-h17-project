@@ -1,6 +1,7 @@
 ### Utilities functions
 
 import os
+import sys
 import numpy as np
 import PIL.Image as Image
 from keras.utils import plot_model
@@ -15,16 +16,25 @@ def save_model_info(model):
     out_dir = "models/"
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
-        
+
+    ### Save model architecture and weights to .h5 file
     model.save(os.path.join(out_dir, settings.EXP_NAME + '.h5')) 
-    
+
+    ### Write an image that represents the model's architecture
     plot_model(model, to_file=os.path.join(out_dir, 'architecture_' + settings.EXP_NAME + '.png'), show_shapes=True)
-    
+
+    ### Output a summary of the model, including the various layers, activations and total number of weights
     old_stdout = sys.stdout
     sys.stdout = open(os.path.join(out_dir, 'summary_' + settings.EXP_NAME + '.txt'), 'w')
     model.summary()
     sys.stdout = old_stdout
 
+def save_performance_results(model, X_train, Y_train, X_test, Y_test):
+    out_dir = "models/"
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+
+    ### Output training and testing scores
     with open(os.path.join(out_dir, 'performance_' + settings.EXP_NAME + '.txt'), 'w') as fd:
         # evaluate the model
         scores = model.evaluate(X_train, Y_train, batch_size=settings.BATCH_SIZE)
