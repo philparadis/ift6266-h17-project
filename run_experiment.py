@@ -8,8 +8,10 @@ import numpy as np
 import PIL.Image as Image
 #from skimage.transform import resize
 
+import dataset
 import settings
 import models
+from save_results import *
 
 #################################################
 # Run experiments here
@@ -43,7 +45,7 @@ def run():
         raise NotImplementedError()
     
     experiment_name = "exp_model-%s_loss-%s_epochs-%i" \
-                      % (model_name, loss_function, num_epochs)
+                      % (settings.MODEL, loss_function, settings.NUM_EPOCHS)
     
     print("Experiment name = %s" % experiment_name)
 
@@ -63,7 +65,7 @@ def run():
     # This dictionary is an OrderedDict with 123286 entries.
 
     ### Create and initialize an empty InpaintingDataset object
-    Dataset = InpaintingDataset(input_dim, output_dim)
+    Dataset = dataset.InpaintingDataset(input_dim, output_dim)
 
     ### Load dataset
     Dataset.read_jpgs_and_captions_and_flatten(train_images_paths, settings.CAPTIONS_PKL_PATH)
@@ -85,12 +87,17 @@ def run():
         model = train_dcgan(Dataset)
     
     ### Produce predictions
-    Y_test_pred = model.predict(X_test, batch_size=batch_size)
+    Y_test_pred = model.predict(X_test, batch_size=settings.BATCH_SIZE)
 
     # Reshape predictions to a 2d image and denormalize data
     Y_test_pred = denormalize_data(Y_test_pred)
     num_rows = Y_test_pred.shape[0]
     Y_test_pred_2d = np.reshape(Y_test_pred, (num_rows, 32, 32, 3))
+
+    ### Save predictions to disk
+    save_predictions_info(experiment_name, Y_test_pred_2d, id_test, Dataset, num_images=50)
+    print_results_as_html(experiment_name, Y_test_pred_2d, Dataset, num_images=50)
+
 
 
 if __name__ == "__main__":

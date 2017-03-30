@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
 import keras
 from keras.models import load_model
+from keras.models import Sequential
+from keras.layers import Dense, Activation
 from keras import optimizers
 from keras import losses
 from keras.utils import plot_model
 import settings
 import dcgan_lasagne
+from save_results import *
 
 is_model_trained = False
 
@@ -19,7 +22,7 @@ def build_mlp(input_dim, output_dim):
     return model
 
 def train_mlp(model, Dataset):
-       ### Normalize datasets
+    ### Normalize datasets
     Dataset.normalize()
     
     X_train, X_test, Y_train, Y_test, id_train, id_test = Dataset.load_flattened()
@@ -53,10 +56,10 @@ def train_mlp(model, Dataset):
         print("Model was already trained, instead loading: " + model_path)
         model = load_model(model_path)
         
-    # Denormalize all datasets
+    ### Denormalize all datasets
     Dataset.denormalize()
     
     return model
 
 def train_dcgan(Dataset):
-    dcgan_lasagne.train(Dataset, settings,NUM_EPOCHS)
+    dcgan_lasagne.train(Dataset, settings.NUM_EPOCHS)

@@ -1,5 +1,5 @@
 from __future__ import print_function
-
+# coding: utf-8
 # -*- coding: utf-8 -*-
 
 """
@@ -17,7 +17,7 @@ http://lasagne.readthedocs.org/en/latest/user/tutorial.html
 Note: In contrast to the original paper, this trains the generator and
 discriminator at once, not alternatingly. It's easy to change, though.
 
-Jan Schlüter, 2015-12-16
+Jan Schluter, 2015-12-16
 """
 
 import sys
