@@ -25,16 +25,26 @@ LOAD_BLACK_AND_WHITE_IMAGES = False
 SAVE_MODEL_TO_DISK = True
 SAMPLES_TO_GENERATE_PER_EPOCH = -1 # Use -1 to disable this feature
 
-BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-ROOT_SAVE_DIR = _root if _root != None else BASE_DIR
-MSCOCO_DIR = os.path.join(BASE_DIR, "mscoco/")
+# Datasets directories
+THIS_DIR = os.path.abspath(os.path.dirname(__file__))
+MSCOCO_DIR = os.path.join(THIS_DIR, "mscoco/")
 TRAIN_DIR = os.path.join(MSCOCO_DIR, "train2014/")
 VALIDATE_DIR = os.path.join(MSCOCO_DIR, "validate2014/")
 CAPTIONS_PKL_PATH = os.path.join(MSCOCO_DIR, "dict_key_imgID_value_caps_train_and_valid.pkl")
-USER_NAME = os.environ["USER"]
-LOCAL_DIR = os.path.join(ROOT_SAVE_DIR, USER_NAME, "mscoco/")
-RESULTS_DIR = os.path.join(BASE_DIR, "predictions/")
-SAVE_MODELS_DIR = os.path.join(BASE_DIR, "models/")
+
+# Experiment results directories
+BASE_DIR = None # Will be defined at runtime as: os.path.join(MODEL, EXP_NAME)
+MODELS_DIR = None # Location to save trained models
+EPOCHS_DIR = None # Location to save epochs by epochs samples, results or other evolving data
+PERF_DIR = None # Location for performance results (training/testing loss, timing, etc.)
+SAMPLES_DIR = None # Location for random samples (for generative models)
+PRED_DIR = None # Location for model predictions
+ASSETS_DIR = None # Location to store the various images produced for HTML visualization
+HTML_DIR = None # Location to store the HTML page(s) for nicer visualization of results
+
+def touch_dir(directory):
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
 ### Settings specific to the MLP model
 PARAMS_MLP = { 'hidden1_neurons' : 512,
