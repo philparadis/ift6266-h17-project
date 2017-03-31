@@ -38,6 +38,9 @@ class InpaintingDataset(object):
         self.images_inner2d = []
         self.images_outer_flat = []
         self.images_inner_flat = []
+        self.images_T = None
+        self.images_outer2d_T = None
+        self.images_inner2d_T = None
         self.captions_ids = []
         self.captions_dict = []
         self._is_dataset_loaded = False
@@ -53,20 +56,28 @@ class InpaintingDataset(object):
         if self._is_normalized:
             print("WARNING: Attempting to normalize already normalized dataset... Ignoring this call...")
             return
+        self.images = normalize_data(self.images)
         self.images_outer_flat = normalize_data(self.images_outer_flat)
         self.images_inner_flat = normalize_data(self.images_inner_flat)
         self.images_outer2d = normalize_data(self.images_outer2d)
         self.images_inner2d = normalize_data(self.images_inner2d)
+        self.images_T = normalize_data(self.images_T)
+        self.images_outer2d_T = normalize_data(self.images_outer2d_T)
+        self.images_inner2d_T = normalize_data(self.images_inner2d_T)
         self._is_normalized = True
 
     def denormalize(self):
         if not self._is_normalized:
             print("WARNING: Attempting to denormalize already denormalized dataset... Ignoring this call...")
             return
+        self.images = denormalize_data(self.images)
         self.images_outer_flat = denormalize_data(self.images_outer_flat)
         self.images_inner_flat = denormalize_data(self.images_inner_flat)
         self.images_outer2d = denormalize_data(self.images_outer2d)
         self.images_inner2d = denormalize_data(self.images_inner2d)
+        self.images_T = denormalize_data(self.images_T)
+        self.images_outer2d_T = denormalize_data(self.images_outer2d_T)
+        self.images_inner2d_T = denormalize_data(self.images_inner2d_T)
         self._is_normalized = False
     
     def read_jpgs_and_captions_and_flatten(self, force_reload = False):
@@ -143,13 +154,17 @@ class InpaintingDataset(object):
             self.captions_ids = np.array(captions_ids)
             self.captions_dict = np.array(captions_dict)
 
+            self.images_T = self.images.transpose(0, 3, 1, 2).reshape(self.images.shape[0], 3, 64, 64)
+            self.images_outer2d_T = self.images_outer2d.transpose(0, 3, 1, 2).reshape(self.images_outer2d.shape[0], 3, 64, 64)
+            self.images_inner2d_T = self.images_inner2d.transpose(0, 3, 1, 2).reshape(self.images_inner2d.shape[0], 3, 32, 32)
+            
             self._is_flattened = True
             self._is_dataset_loaded = True
             self._num_rows = self.images.shape[0]
         else:
             print("Dataset is already loaded. Skipping this call. Please pass the argument force_reload=True to force reloading of dataset.")
 
-    def load_flattened(self, test_size = 0.2, rand_seed=1):
+    def preload_flattened(self, test_size = 0.2, rand_seed=1):
         ### Split into training and testing data
         from sklearn.cross_validation import train_test_split
         indices = np.arange(self._num_rows)
@@ -171,9 +186,8 @@ class InpaintingDataset(object):
         self.train.id = id_train
         self.test.id = id_test
 
-        return X_train, X_test, Y_train, Y_test, id_train, id_test
 
-    def load_2d(self, test_size = 0.2, rand_seed = 1):
+    def preload_original_inner_2d(self, test_size = 0.2, rand_seed = 1):
         ### Split into training and testing data
         from sklearn.cross_validation import train_test_split
         indices = np.arange(self._num_rows)
@@ -183,10 +197,10 @@ class InpaintingDataset(object):
 
         ### Generating the training and testing datasets (80%/20% train/test split)
         print("Splitting dataset into training and testing sets with shuffling...")
-        X_train, X_test, Y_train, Y_test = self.images_outer2d[id_train], \
-                                           self.images_outer2d[id_test], \
-                                           self.images_inner2d[id_train], \
-                                           self.images_inner2d[id_test]
+        X_train, X_test, Y_train, Y_test = self.images_T[id_train], \
+                                           self.images_T[id_test], \
+                                           self.images_inner2d_T[id_train], \
+                                           self.images_inner2d_T[id_test]
 
         self.train.X = X_train
         self.test.X = X_test
@@ -195,4 +209,29 @@ class InpaintingDataset(object):
         self.train.id = id_train
         self.test.id = id_test
 
-        return X_train, X_test, Y_train, Y_test, id_train, id_test
+
+    def preload_outer_inner_2d(self, test_size = 0.2, rand_seed = 1):
+        ### Split into training and testing data
+        from sklearn.cross_validation import train_test_split
+        indices = np.arange(self._num_rows)
+        id_train, id_test = train_test_split(indices,
+                                             test_size=test_size,
+                                             random_state=rand_seed)
+
+        ### Generating the training and testing datasets (80%/20% train/test split)
+        print("Splitting dataset into training and testing sets with shuffling...")
+        X_train, X_test, Y_train, Y_test = self.images_outer2d_T[id_train], \
+                                           self.images_outer2d_T[id_test], \
+                                           self.images_inner2d_T[id_train], \
+                                           self.images_inner2d_T[id_test]
+
+        self.train.X = X_train
+        self.test.X = X_test
+        self.train.Y = Y_train
+        self.test.Y = Y_test
+        self.train.id = id_train
+        self.test.id = id_test
+
+
+    def return_data(self):
+        return self.train.X, self.test.X, self.train.Y, self.test.Y, self.train.id, self.test.id
