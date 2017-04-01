@@ -4,11 +4,13 @@
 import os, sys
 import argparse
 import numpy as np
+import PIL.Image as Image
+import lasagne
 
 import dataset
-import settings
 import models
 from save_results import *
+import settings
 
 #######################
 # Helper functions
@@ -24,6 +26,7 @@ def check_mscoco_dir():
             raise e
     return True
 
+
 def download_dataset():
     dataset_script="download-project-datasets.sh"
     try:
@@ -31,6 +34,18 @@ def download_dataset():
     except OSError, e:
         pass
     raise OSError("Could not find the script '%s'." % dataset_script)
+
+
+def initialize_directories():
+    settings.BASE_DIR    = os.path.join(settings.MODEL, settings.EXP_NAME)
+    settings.MODELS_DIR  = os.path.join(settings.BASE_DIR, "models/")
+    settings.EPOCHS_DIR  = os.path.join(settings.BASE_DIR, "epochs/")
+    settings.PERF_DIR    = os.path.join(settings.BASE_DIR, "performance/")
+    settings.SAMPLES_DIR = os.path.join(settings.BASE_DIR, "samples/")
+    settings.PRED_DIR    = os.path.join(settings.BASE_DIR, "predictions/")
+    settings.ASSETS_DIR  = os.path.join(settings.PRED_DIR, "assets/")
+    settings.HTML_DIR    = settings.PRED_DIR
+
 
 #################################################
 # Run experiments here
@@ -60,13 +75,30 @@ def run():
         output_dim = 32*32*3
         loss_function = "mse"
         model_params = models.ModelParameters(settings.MODEL, input_dim, output_dim, loss_function, settings.LEARNING_RATE)
-        model = models.build_mlp(model_params, input_dim, output_dim)
+        model = models.build_mlp(model_params)
+    elif settings.MODEL == "dcgan":
+        input_dim = (None, 3, 64, 64)
+        output_dim = (None, 3, 32, 32)
+        loss_function = None
     else:
         raise NotImplementedError()
     
     settings.EXP_NAME = "%s_model.%s_loss.%s_e.%i_b.%i" \
                         % (settings.EXP_NAME_PREFIX, settings.MODEL, loss_function, \
                            settings.NUM_EPOCHS, settings.BATCH_SIZE)
+
+    ### Make sure the dataset has been downloaded and extracted correctly
+    if check_mscoco_dir() == False:
+        print("The project dataset based on MSCOCO and located at '%s' does not exist or is a broken symlink." % path)
+        print("Attempting to download the dataset...")
+        rc = download_dataset()
+        if rc != 0:
+            print("Failed to download the project dataset, exiting...")
+            sys.exit(rc)
+
+    ### Initialize global variables that store the various directories where
+    ### results will be saved for this experiment. Moreover, create them.
+    initialize_directories()
 
     # Print info about our settings
     print("============================================================")
@@ -104,15 +136,6 @@ def run():
     # .jpg extension) to a list of 5 strings (the 5 human-generated captions).
     # This dictionary is an OrderedDict with 123286 entries.
 
-    ### Make sure the dataset has been downloaded and extracted correctly
-    if check_mscoco_dir() == False:
-        print("The project dataset based on MSCOCO and located at '%s' does not exist or is a broken symlink." % path)
-        print("Attempting to download the dataset...")
-        rc = download_dataset()
-        if rc != 0:
-            print("Failed to download the project dataset, exiting...")
-            sys.exit(rc)
-    
     ### Create and initialize an empty InpaintingDataset object
     Dataset = dataset.InpaintingDataset(input_dim, output_dim)
 
@@ -128,35 +151,77 @@ def run():
     print("images_inner_flat.shape = " + str(Dataset.images_inner_flat.shape))
     print("captions_ids.shape      = " + str(Dataset.captions_ids.shape))
     print("captions_dict.shape     = " + str(Dataset.captions_dict.shape))
+    print("images_T.shape          = " + str(Dataset.images_T.shape))
+    print("images_outer2d_T.shape  = " + str(Dataset.images_outer2d_T.shape))
+    print("images_inner2d_T.shape  = " + str(Dataset.images_inner2d_T.shape))
 
     ### Train the model (computation intensive)
     if settings.MODEL == "mlp":
-        model = models.train_mlp(model, model_params, Dataset)
+        Dataset.normalize()
+        Dataset.preload_flattened()
+        model = models.train_keras(model, model_params, Dataset)
+        Dataset.denormalize()
+
+        ### Produce predictions
+        Y_test_pred = model.predict(Dataset.test.X, batch_size=settings.BATCH_SIZE)
+
+        # Reshape predictions to a 2d image and denormalize data
+        Y_test_pred = dataset.denormalize_data(Y_test_pred)
+        num_rows = Y_test_pred.shape[0]
+        Y_test_pred_2d = np.reshape(Y_test_pred, (num_rows, 32, 32, 3))
+
+        ### Save predictions to disk
+        save_keras_performance_results(model, model_params, Dataset.train.X, Dataset.train.Y, Dataset.test.X, Dataset.test.Y)
+        save_keras_predictions(Y_test_pred_2d, Dataset.test.id, Dataset, num_images=50)
+        print_results_as_html(Y_test_pred_2d, num_images=50)
     elif settings.MODEL == "conv_mlp":
-        pass
-    elif settings.MODEL == "conv_deconv":
+        Dataset.normalize()
+        Dataset.preload_outer_inner_2d()
+        model = models.train_keras(model, model_params, Dataset)
+        Dataset.denormalize()
+
+        ### Produce predictions
+        Y_test_pred = model.predict(Dataset.test.X, batch_size=settings.BATCH_SIZE)
+
+        # Reshape predictions
+        Y_test_pred = dataset.denormalize_data(Y_test_pred)
+        num_rows = Y_test_pred.shape[0]
+        Y_test_pred_2d = np.reshape(Y_test_pred, (num_rows, 32, 32, 3))
+
+        ### Save predictions to disk
+        save_keras_performance_results(model, model_params, Dataset.train.X, Dataset.train.Y, Dataset.test.X, Dataset.test.Y)
+        save_keras_predictions(Y_test_pred_2d, Dataset.test.id, Dataset, num_images=50)
+        print_results_as_html(Y_test_pred_2d, num_images=50)
+        
         pass
     elif settings.MODEL == "dcgan":
-        model = models.train_dcgan(Dataset)
+        Dataset.normalize()
+        Dataset.preload_original_inner_2d()
+        generator, discriminator, train_fn, gen_fn = models.train_dcgan(Dataset, settings.NUM_EPOCHS)
+        Dataset.denormalize()
+        
+        settings.touch_dir(settings.SAMPLES_DIR)
+        for i in range(100):
+            samples = gen_fn(lasagne.utils.floatX(np.random.rand(10*10, 100)))
+            path = os.path.join(settings.EPOCHS_DIR, 'samples_epoch%i.png' % epoch)
+            samples = dataset.denormalize_data(samples)
+            Image.fromarray(samples.reshape(10, 10, 3, 64, 64)
+                            .transpose(0, 3, 1, 4, 2)
+                            .reshape(10*64, 10*64, 3)).save(path)
+            sample = gen_fn(lasagne.utils.floatX(np.random.rand(1, 100)))
+            sample = dataset.denormalize_data(sample)
+            path = os.path.join(settings.SAMPLES_DIR, 'transpose_sample_%i.png' % i)
+            #plt.imsave(path, sample.reshape(3, 64, 64).transpose(1, 2, 0).reshape(64, 64, 3))
+            Image.fromarray(sample.reshape(3, 64, 64).transpose(1, 2, 0).reshape(64, 64, 3)).save(path)
+    elif settings.MODEL == "conv_deconv":
+        pass
     
-    ### Produce predictions
-    Y_test_pred = model.predict(Dataset.test.X, batch_size=settings.BATCH_SIZE)
-
-    # Reshape predictions to a 2d image and denormalize data
-    Y_test_pred = dataset.denormalize_data(Y_test_pred)
-    num_rows = Y_test_pred.shape[0]
-    Y_test_pred_2d = np.reshape(Y_test_pred, (num_rows, 32, 32, 3))
-
-    ### Save predictions to disk
-    save_performance_results(model, Dataset.train.X, Dataset.train.Y, Dataset.test.X, Dataset.test.Y)
-    save_predictions_info(Y_test_pred_2d, Dataset.test.id, Dataset, num_images=50)
-    print_results_as_html(Y_test_pred_2d, num_images=50)
 
     sys.exit(0)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("model", help="Model choice (current options: mlp, convnet, convnet_lstm, vae, dcgan)")
+    parser.add_argument("model", help="Model choice (current options: mlp, conv_mlp, conv_lstm, vae, conv_autoencoder, dcgan)")
     parser.add_argument("exp_name_prefix", help="Prefix used at the beginning of the name of the experiment. Your results will be stored in various subfolders and files which start with this prefix. The exact name of the experiment depends on the model used and various hyperparameters.")
     parser.add_argument("-v", "--verbose", type=int,
                         default=settings.VERBOSE, help="0 means quiet, 1 means verbose and 2 means limited verbosity.")
@@ -170,7 +235,7 @@ if __name__ == "__main__":
                         help="Looks for an existing HF5 model saved to disk in the subdirectory 'models' and if such a model with the same parameters and experiment name prefix exist, the training phase will be entirely skipped and rather, the model and its weights will be loaded from disk.")
 
     args = parser.parse_args()
-    settings.MODEL = args.model
+    settings.MODEL = args.model.lower()
     settings.EXP_NAME_PREFIX = args.exp_name_prefix
     settings.VERBOSE = args.verbose
     settings.NUM_EPOCHS = args.num_epochs
@@ -178,7 +243,7 @@ if __name__ == "__main__":
     settings.LEARNING_RATE = args.learning_rate
     settings.RELOAD_MODEL = args.reload_model
 
-    if settings.MODEL in ["convnet", "convnet_lstm", "vae", "dcgan"]:
+    if not settings.MODEL in ["mlp", "dcgan"]:
         raise NotImplementedError("The model '{}' is not yet implemented yet, sorry!".format(settings.MODEL))
     
     run()
