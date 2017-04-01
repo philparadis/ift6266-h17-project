@@ -20,15 +20,20 @@ discriminator at once, not alternatingly. It's easy to change, though.
 Jan Schluter, 2015-12-16
 """
 
+#input_dim=(3, 64, 64)
+#output_dim=(3, 32, 32)
+
 import sys
 import os
 import time
 import numpy as np
 import theano
 import theano.tensor as T
+import PIL.Image as Image
 
 import lasagne
-
+import settings
+import dataset
 
 # ##################### Build the neural network model #######################
 # We create two models: The generator and the discriminator network. The
@@ -71,6 +76,7 @@ class Deconv2DLayer(lasagne.layers.Layer):
             conved += self.b.dimshuffle('x', 0, 'x', 'x')
         return self.nonlinearity(conved)
 
+
 def build_generator(input_var=None):
     from lasagne.layers import InputLayer, ReshapeLayer, DenseLayer, batch_norm
     from lasagne.nonlinearities import sigmoid
@@ -79,14 +85,18 @@ def build_generator(input_var=None):
     # fully-connected layer
     layer = batch_norm(DenseLayer(layer, 1024))
     # project and reshape
-    layer = batch_norm(DenseLayer(layer, 128*7*7))
-    layer = ReshapeLayer(layer, ([0], 128, 7, 7))
-    # two fractional-stride convolutions
+    layer = batch_norm(DenseLayer(layer, 128*4*4))
+    layer = ReshapeLayer(layer, ([0], 128, 4, 4))
+    # four fractional-stride convolutions
     layer = batch_norm(Deconv2DLayer(layer, 64, 5, stride=2, pad=2))
-    layer = Deconv2DLayer(layer, 1, 5, stride=2, pad=2,
+    layer = batch_norm(Deconv2DLayer(layer, 32, 5, stride=2, pad=2))
+    layer = batch_norm(Deconv2DLayer(layer, 16, 5, stride=2, pad=2))
+    layer = Deconv2DLayer(layer, 3, 5, stride=2, pad=2,
                           nonlinearity=sigmoid)
+    #layer = ReshapeLayer(layer, (None, 3, 64, 64))
     print ("Generator output:", layer.output_shape)
     return layer
+
 
 def build_discriminator(input_var=None):
     from lasagne.layers import (InputLayer, Conv2DLayer, ReshapeLayer,
@@ -94,11 +104,13 @@ def build_discriminator(input_var=None):
     from lasagne.layers.dnn import Conv2DDNNLayer as Conv2DLayer  # override
     from lasagne.nonlinearities import LeakyRectify, sigmoid
     lrelu = LeakyRectify(0.2)
-    # input: (None, 1, 28, 28)
-    layer = InputLayer(shape=(None, 1, 28, 28), input_var=input_var)
-    # two convolutions
+    # input: (None, 3, 64, 64)
+    layer = InputLayer(shape=(None, 3, 64, 64), input_var=input_var)
+    # four convolutions
     layer = batch_norm(Conv2DLayer(layer, 64, 5, stride=2, pad=2, nonlinearity=lrelu))
     layer = batch_norm(Conv2DLayer(layer, 128, 5, stride=2, pad=2, nonlinearity=lrelu))
+    layer = batch_norm(Conv2DLayer(layer, 256, 5, stride=2, pad=2, nonlinearity=lrelu))
+    layer = batch_norm(Conv2DLayer(layer, 512, 5, stride=2, pad=2, nonlinearity=lrelu))
     # fully-connected layer
     layer = batch_norm(DenseLayer(layer, 1024, nonlinearity=lrelu))
     # output layer
@@ -137,7 +149,7 @@ def iterate_minibatches(inputs, targets, batchsize, shuffle=False):
 def train(Dataset, num_epochs=200, initial_eta=2e-4):
     # Load the dataset
     print("Loading data...")
-    X_train, y_train, X_test, y_test, ind_train, ind_test = Dataset.load_2d()
+    X_train, X_test, y_train, y_test, ind_train, ind_test = Dataset.return_data()
 
     # Prepare Theano variables for inputs and targets
     noise_var = T.matrix('noise')
@@ -153,13 +165,13 @@ def train(Dataset, num_epochs=200, initial_eta=2e-4):
     real_out = lasagne.layers.get_output(discriminator)
     # Create expression for passing fake data through the discriminator
     fake_out = lasagne.layers.get_output(discriminator,
-            lasagne.layers.get_output(generator))
-    
+                                         lasagne.layers.get_output(generator))
+
     # Create loss expressions
     generator_loss = lasagne.objectives.binary_crossentropy(fake_out, 1).mean()
     discriminator_loss = (lasagne.objectives.binary_crossentropy(real_out, 1)
             + lasagne.objectives.binary_crossentropy(fake_out, 0)).mean()
-    
+
     # Create update expressions for training
     generator_params = lasagne.layers.get_all_params(generator, trainable=True)
     discriminator_params = lasagne.layers.get_all_params(discriminator, trainable=True)
@@ -181,6 +193,10 @@ def train(Dataset, num_epochs=200, initial_eta=2e-4):
                              lasagne.layers.get_output(generator,
                                                        deterministic=True))
 
+    # Create experiment's results directories
+    settings.touch_dir(settings.MODELS_DIR)
+    settings.touch_dir(settings.EPOCHS_DIR)
+
     # Finally, launch the training loop.
     print("Starting training...")
     # We iterate over epochs:
@@ -201,17 +217,26 @@ def train(Dataset, num_epochs=200, initial_eta=2e-4):
         print("  training loss:\t\t{}".format(train_err / train_batches))
 
         # And finally, we plot some generated data
-        samples = gen_fn(lasagne.utils.floatX(np.random.rand(42, 100)))
+        samples = gen_fn(lasagne.utils.floatX(np.random.rand(10*10, 100)))
+        sample = gen_fn(lasagne.utils.floatX(np.random.rand(1, 100)))
         try:
             import matplotlib.pyplot as plt
         except ImportError:
             pass
         else:
-            plt.imsave('mnist_samples.png',
-                       (samples.reshape(6, 7, 28, 28)
-                               .transpose(0, 2, 1, 3)
-                               .reshape(6*28, 7*28)),
-                       cmap='gray')
+            path = os.path.join(settings.EPOCHS_DIR, 'samples_epoch%i.png' % (epoch + 1))
+            samples = dataset.denormalize_data(samples)
+            sample = dataset.denormalize_data(sample)
+            # plt.imsave(path,
+            #            (samples.reshape(5, 5, 3, 64, 64)
+            #                    .transpose(0, 3, 1, 4, 2)
+            #                    .reshape(5*64, 5*64, 3)))
+            Image.fromarray(samples.reshape(10, 10, 3, 64, 64)
+                            .transpose(0, 3, 1, 4, 2)
+                            .reshape(10*64, 10*64, 3)).save(path)
+            path = os.path.join(settings.EPOCHS_DIR, 'transpose_one_sample_epoch%i.png' % (epoch + 1))
+            #plt.imsave(path, sample.reshape(3, 64, 64).transpose(1, 2, 0).reshape(64, 64, 3))
+            Image.fromarray(sample.reshape(3, 64, 64).transpose(1, 2, 0).reshape(64, 64, 3)).save(path)
 
         # After half the epochs, we start decaying the learn rate towards zero
         if epoch >= num_epochs // 2:
@@ -219,15 +244,15 @@ def train(Dataset, num_epochs=200, initial_eta=2e-4):
             eta.set_value(lasagne.utils.floatX(initial_eta*2*(1 - progress)))
 
     # Optionally, you could now dump the network weights to a file like this:
-    np.savez('mnist_gen.npz', *lasagne.layers.get_all_param_values(generator))
-    np.savez('mnist_disc.npz', *lasagne.layers.get_all_param_values(discriminator))
-    #
+    np.savez(os.path.join(settings.MODELS_DIR, 'dcgan_gen.npz'), *lasagne.layers.get_all_param_values(generator))
+    np.savez(os.path.join(settings.MODELS_DIR, 'dcgan_disc.npz'), *lasagne.layers.get_all_param_values(discriminator))
+
     # And load them again later on like this:
     # with np.load('model.npz') as f:
     #     param_values = [f['arr_%d' % i] for i in range(len(f.files))]
     # lasagne.layers.set_all_param_values(network, param_values)
 
-    return 
+    return generator, discriminator, train_fn, gen_fn
 
 
 if __name__ == '__main__':
