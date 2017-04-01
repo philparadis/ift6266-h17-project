@@ -11,6 +11,8 @@ import dataset
 import models
 from save_results import *
 import settings
+import dcgan_lasagne
+import wgan_lasagne
 
 #######################
 # Helper functions
@@ -77,6 +79,10 @@ def run():
         model_params = models.ModelParameters(settings.MODEL, input_dim, output_dim, loss_function, settings.LEARNING_RATE)
         model = models.build_mlp(model_params)
     elif settings.MODEL == "dcgan":
+        input_dim = (None, 3, 64, 64)
+        output_dim = (None, 3, 32, 32)
+        loss_function = None
+    elif settings.MODEL == "wgan":
         input_dim = (None, 3, 64, 64)
         output_dim = (None, 3, 32, 32)
         loss_function = None
@@ -197,7 +203,7 @@ def run():
     elif settings.MODEL == "dcgan":
         Dataset.normalize()
         Dataset.preload_original_inner_2d()
-        generator, discriminator, train_fn, gen_fn = models.train_dcgan(Dataset, settings.NUM_EPOCHS)
+        generator, discriminator, train_fn, gen_fn = dcgan_lasagne.train(Dataset, num_epochs=settings.NUM_EPOCHS)
         Dataset.denormalize()
         
         settings.touch_dir(settings.SAMPLES_DIR)
@@ -210,8 +216,25 @@ def run():
                             .reshape(10*64, 10*64, 3)).save(path)
             sample = gen_fn(lasagne.utils.floatX(np.random.rand(1, 100)))
             sample = dataset.denormalize_data(sample)
-            path = os.path.join(settings.SAMPLES_DIR, 'transpose_sample_%i.png' % i)
-            #plt.imsave(path, sample.reshape(3, 64, 64).transpose(1, 2, 0).reshape(64, 64, 3))
+            path = os.path.join(settings.SAMPLES_DIR, 'one_sample_%i.png' % i)
+            Image.fromarray(sample.reshape(3, 64, 64).transpose(1, 2, 0).reshape(64, 64, 3)).save(path)
+    elif settings.MODEL == "wgan":
+        Dataset.normalize()
+        Dataset.preload_original_inner_2d()
+        generator, critic, generator_train_fn, critic_train_fn, gen_fn = wgan_lasagne.train(Dataset, num_epochs=settings.NUM_EPOCHS)
+        Dataset.denormalize()
+        
+        settings.touch_dir(settings.SAMPLES_DIR)
+        for i in range(100):
+            samples = gen_fn(lasagne.utils.floatX(np.random.rand(10*10, 100)))
+            path = os.path.join(settings.EPOCHS_DIR, 'samples_epoch%i.png' % epoch)
+            samples = dataset.denormalize_data(samples)
+            Image.fromarray(samples.reshape(10, 10, 3, 64, 64)
+                            .transpose(0, 3, 1, 4, 2)
+                            .reshape(10*64, 10*64, 3)).save(path)
+            sample = gen_fn(lasagne.utils.floatX(np.random.rand(1, 100)))
+            sample = dataset.denormalize_data(sample)
+            path = os.path.join(settings.SAMPLES_DIR, 'one_sample_%i.png' % i)
             Image.fromarray(sample.reshape(3, 64, 64).transpose(1, 2, 0).reshape(64, 64, 3)).save(path)
     elif settings.MODEL == "conv_deconv":
         pass
@@ -221,7 +244,7 @@ def run():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("model", help="Model choice (current options: mlp, conv_mlp, conv_lstm, vae, conv_autoencoder, dcgan)")
+    parser.add_argument("model", help="Model choice (current options: mlp, conv_mlp, conv_lstm, vae, conv_autoencoder, dcgan, wgan)")
     parser.add_argument("exp_name_prefix", help="Prefix used at the beginning of the name of the experiment. Your results will be stored in various subfolders and files which start with this prefix. The exact name of the experiment depends on the model used and various hyperparameters.")
     parser.add_argument("-v", "--verbose", type=int,
                         default=settings.VERBOSE, help="0 means quiet, 1 means verbose and 2 means limited verbosity.")
@@ -243,7 +266,7 @@ if __name__ == "__main__":
     settings.LEARNING_RATE = args.learning_rate
     settings.RELOAD_MODEL = args.reload_model
 
-    if not settings.MODEL in ["mlp", "dcgan"]:
+    if not settings.MODEL in ["mlp", "conv_mlp", "dcgan", "wgan"]:
         raise NotImplementedError("The model '{}' is not yet implemented yet, sorry!".format(settings.MODEL))
     
     run()
