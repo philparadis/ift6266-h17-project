@@ -106,6 +106,3 @@ def build_conv_mlp(model_params):
 
     model_params.is_trained = False
 
-
-def train_dcgan(Dataset, num_epochs):
-    return dcgan_lasagne.train(Dataset, num_epochs=num_epochs)

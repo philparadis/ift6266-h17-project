@@ -219,24 +219,16 @@ def train(Dataset, num_epochs=200, initial_eta=2e-4):
         # And finally, we plot some generated data
         samples = gen_fn(lasagne.utils.floatX(np.random.rand(10*10, 100)))
         sample = gen_fn(lasagne.utils.floatX(np.random.rand(1, 100)))
-        try:
-            import matplotlib.pyplot as plt
-        except ImportError:
-            pass
-        else:
-            path = os.path.join(settings.EPOCHS_DIR, 'samples_epoch%i.png' % (epoch + 1))
-            samples = dataset.denormalize_data(samples)
-            sample = dataset.denormalize_data(sample)
-            # plt.imsave(path,
-            #            (samples.reshape(5, 5, 3, 64, 64)
-            #                    .transpose(0, 3, 1, 4, 2)
-            #                    .reshape(5*64, 5*64, 3)))
-            Image.fromarray(samples.reshape(10, 10, 3, 64, 64)
-                            .transpose(0, 3, 1, 4, 2)
-                            .reshape(10*64, 10*64, 3)).save(path)
-            path = os.path.join(settings.EPOCHS_DIR, 'transpose_one_sample_epoch%i.png' % (epoch + 1))
-            #plt.imsave(path, sample.reshape(3, 64, 64).transpose(1, 2, 0).reshape(64, 64, 3))
-            Image.fromarray(sample.reshape(3, 64, 64).transpose(1, 2, 0).reshape(64, 64, 3)).save(path)
+
+        samples = dataset.denormalize_data(samples)
+        sample = dataset.denormalize_data(sample)
+
+        samples_path = os.path.join(settings.EPOCHS_DIR, 'samples_epoch%i.png' % (epoch + 1))
+        Image.fromarray(samples.reshape(10, 10, 3, 64, 64)
+                        .transpose(0, 3, 1, 4, 2)
+                        .reshape(10*64, 10*64, 3)).save(samples_path)
+        sample_path = os.path.join(settings.EPOCHS_DIR, 'one_sample_epoch%i.png' % (epoch + 1))
+        Image.fromarray(sample.reshape(3, 64, 64).transpose(1, 2, 0).reshape(64, 64, 3)).save(sample_path)
 
         # After half the epochs, we start decaying the learn rate towards zero
         if epoch >= num_epochs // 2:
