@@ -132,7 +132,7 @@ def train(Dataset, num_epochs=1000, epochsize=100, batchsize=64, initial_eta=5e-
          clip=0.01):
     # Load the dataset
     print("Loading data...")
-    X_train, y_train, X_val, y_val, X_test, y_test = Dataset.return_data()
+    X_train, X_test, y_train, y_test, ind_train, ind_test = Dataset.return_data()
 
     # Prepare Theano variables for inputs and targets
     noise_var = T.matrix('noise')
