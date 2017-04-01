@@ -16,6 +16,9 @@ https://gist.github.com/f0k/738fa2eedd9666b78404ed1751336f56
 Convolutional Autoencoder was tweaked from:
 https://github.com/mikesj-public/convolutional_autoencoder
 
+W-GAN code was tweaked from:
+https://gist.github.com/f0k/f3190ebba6c53887d598d03119ca2066
+
 # Usage:
 usage: run_experiment.py [-h] [-v VERBOSE] [-e NUM_EPOCHS] [-b BATCH_SIZE]
                          [-l LEARNING_RATE] [-r]
@@ -23,7 +26,7 @@ usage: run_experiment.py [-h] [-v VERBOSE] [-e NUM_EPOCHS] [-b BATCH_SIZE]
 
 positional arguments:
   model                 Model choice (current options: mlp, conv_mlp,
-                        conv_lstm, vae, conv_autoencoder, dcgan)
+                        conv_lstm, vae, conv_autoencoder, dcgan, wgan)
   exp_name_prefix       Prefix used at the beginning of the name of the
                         experiment. Your results will be stored in various
                         subfolders and files which start with this prefix. The

@@ -146,7 +146,7 @@ def iterate_minibatches(inputs, targets, batchsize, shuffle=False):
 # more functions to better separate the code, but it wouldn't make it any
 # easier to read.
 
-def train(Dataset, num_epochs=200, initial_eta=2e-4):
+def train(Dataset, num_epochs=200, batchsize=128, initial_eta=2e-4):
     # Load the dataset
     print("Loading data...")
     X_train, X_test, y_train, y_test, ind_train, ind_test = Dataset.return_data()
@@ -205,7 +205,7 @@ def train(Dataset, num_epochs=200, initial_eta=2e-4):
         train_err = 0
         train_batches = 0
         start_time = time.time()
-        for batch in iterate_minibatches(X_train, y_train, 128, shuffle=True):
+        for batch in iterate_minibatches(X_train, y_train, batchsize, shuffle=True):
             inputs, targets = batch
             noise = lasagne.utils.floatX(np.random.rand(len(inputs), 100))
             train_err += np.array(train_fn(noise, inputs))
