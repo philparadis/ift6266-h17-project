@@ -203,13 +203,13 @@ def run():
     elif settings.MODEL == "dcgan":
         Dataset.normalize()
         Dataset.preload_original_inner_2d()
-        generator, discriminator, train_fn, gen_fn = dcgan_lasagne.train(Dataset, num_epochs=settings.NUM_EPOCHS)
+        generator, discriminator, train_fn, gen_fn = dcgan_lasagne.train(Dataset, num_epochs=settings.NUM_EPOCHS, init_eta=2e-5)
         Dataset.denormalize()
         
         settings.touch_dir(settings.SAMPLES_DIR)
         for i in range(100):
             samples = gen_fn(lasagne.utils.floatX(np.random.rand(10*10, 100)))
-            path = os.path.join(settings.EPOCHS_DIR, 'samples_epoch%i.png' % epoch)
+            path = os.path.join(settings.EPOCHS_DIR, 'samples_%i.png' % i)
             samples = dataset.denormalize_data(samples)
             Image.fromarray(samples.reshape(10, 10, 3, 64, 64)
                             .transpose(0, 3, 1, 4, 2)
@@ -227,7 +227,7 @@ def run():
         settings.touch_dir(settings.SAMPLES_DIR)
         for i in range(100):
             samples = gen_fn(lasagne.utils.floatX(np.random.rand(10*10, 100)))
-            path = os.path.join(settings.EPOCHS_DIR, 'samples_epoch%i.png' % epoch)
+            path = os.path.join(settings.EPOCHS_DIR, 'samples_%i.png' % i)
             samples = dataset.denormalize_data(samples)
             Image.fromarray(samples.reshape(10, 10, 3, 64, 64)
                             .transpose(0, 3, 1, 4, 2)

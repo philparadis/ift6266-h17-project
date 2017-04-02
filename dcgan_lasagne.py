@@ -48,10 +48,13 @@ class Deconv2DLayer(lasagne.layers.Layer):
         self.filter_size = lasagne.utils.as_tuple(filter_size, 2, int)
         self.stride = lasagne.utils.as_tuple(stride, 2, int)
         self.pad = lasagne.utils.as_tuple(pad, 2, int)
-        self.W = self.add_param(lasagne.init.Orthogonal(),
-                (self.input_shape[1], num_filters) + self.filter_size,
-                name='W')
-        self.b = self.add_param(lasagne.init.Constant(0),
+        #self.W = self.add_param(lasagne.init.Orthogonal(),
+        #        (self.input_shape[1], num_filters) + self.filter_size,
+        #        name='W')
+        self.W = self.add_param(lasagne.init.Normal(std=0.02, mean=0.0),
+                                (self.input_shape[1], num_filters) + self.filter_size,
+                                name='W')
+                self.b = self.add_param(lasagne.init.Constant(0),
                 (num_filters,),
                 name='b')
         if nonlinearity is None:
@@ -85,12 +88,13 @@ def build_generator(input_var=None):
     # fully-connected layer
     layer = batch_norm(DenseLayer(layer, 1024))
     # project and reshape
-    layer = batch_norm(DenseLayer(layer, 128*4*4))
-    layer = ReshapeLayer(layer, ([0], 128, 4, 4))
+    layer = batch_norm(DenseLayer(layer, 128*2*2))
+    layer = ReshapeLayer(layer, ([0], 128, 2, 2))
     # four fractional-stride convolutions
     layer = batch_norm(Deconv2DLayer(layer, 64, 5, stride=2, pad=2))
     layer = batch_norm(Deconv2DLayer(layer, 32, 5, stride=2, pad=2))
     layer = batch_norm(Deconv2DLayer(layer, 16, 5, stride=2, pad=2))
+    layer = batch_norm(Deconv2DLayer(layer, 8, 3, stride=2, pad=1))
     layer = Deconv2DLayer(layer, 3, 5, stride=2, pad=2,
                           nonlinearity=sigmoid)
     #layer = ReshapeLayer(layer, (None, 3, 64, 64))
@@ -112,7 +116,9 @@ def build_discriminator(input_var=None):
     layer = batch_norm(Conv2DLayer(layer, 256, 5, stride=2, pad=2, nonlinearity=lrelu))
     layer = batch_norm(Conv2DLayer(layer, 512, 5, stride=2, pad=2, nonlinearity=lrelu))
     # fully-connected layer
-    layer = batch_norm(DenseLayer(layer, 1024, nonlinearity=lrelu))
+    #layer = batch_norm(DenseLayer(layer, 1024, nonlinearity=lrelu)) 
+    # Replaced FC layer with Global Average Pooling layer
+    layer = lasagne.layers.GlobalPoolLayer(layer)
     # output layer
     layer = DenseLayer(layer, 1, nonlinearity=sigmoid)
     print ("Discriminator output:", layer.output_shape)
