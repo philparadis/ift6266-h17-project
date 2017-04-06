@@ -203,7 +203,7 @@ def run():
     elif settings.MODEL == "dcgan":
         Dataset.normalize()
         Dataset.preload_original_inner_2d()
-        generator, discriminator, train_fn, gen_fn = dcgan_lasagne.train(Dataset, num_epochs=settings.NUM_EPOCHS, init_eta=2e-5)
+        generator, discriminator, train_fn, gen_fn = dcgan_lasagne.train(Dataset, num_epochs=settings.NUM_EPOCHS, initial_eta=5e-4)
         Dataset.denormalize()
         
         settings.touch_dir(settings.SAMPLES_DIR)
