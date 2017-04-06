@@ -1,0 +1,24 @@
+In order of priority:
+
+1) [EASY] Write the code such that modules which do not load instantaneously
+are only loaded once needed. The idea is to be able to type python mymprogram.py --help
+without having to wait ~20s for Theano and the various GPU libraries to load.
+
+2) [EASY]] Rewrite the dataset code to use less memory. It is highly inefficient
+right now. We should only load the images and captions and that's it. Then,
+we create only the new datasets we need with a transformation based on the model
+that was chosen.
+
+3) [MEDIUM/HARD]] Write automatic checkpointing, with the ability to automatically resume a job.
+
+
+4) [EASY] Write a convolutional model from scratch to finish.
+
+5) [EASY] Write a convolutional-transpose convolution model from scratch to finish.
+
+6) [MEDIUM] Download VGG-16 or VGG-19 and define the loss function as the difference of
+the activations at some intermediate layer. Hopefully, this loss function will
+be much better and reduce the L2 loss blurriness effect.
+
+
+
