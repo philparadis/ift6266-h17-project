@@ -2,6 +2,8 @@
 # coding: utf-8
 
 import os, sys
+import errno
+import subprocess
 import argparse
 import numpy as np
 import PIL.Image as Image
@@ -95,7 +97,7 @@ def run():
 
     ### Make sure the dataset has been downloaded and extracted correctly
     if check_mscoco_dir() == False:
-        print("The project dataset based on MSCOCO and located at '%s' does not exist or is a broken symlink." % path)
+        print("The project dataset based on MSCOCO and located at '%s' does not exist or is a broken symlink." % settings.MSCOCO_DIR)
         print("Attempting to download the dataset...")
         rc = download_dataset()
         if rc != 0:
