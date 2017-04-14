@@ -2,6 +2,8 @@
 # coding: utf-8
 
 import os, sys
+import errno
+import subprocess
 import argparse
 import numpy as np
 import PIL.Image as Image
@@ -95,7 +97,7 @@ def run():
 
     ### Make sure the dataset has been downloaded and extracted correctly
     if check_mscoco_dir() == False:
-        print("The project dataset based on MSCOCO and located at '%s' does not exist or is a broken symlink." % path)
+        print("The project dataset based on MSCOCO and located at '%s' does not exist or is a broken symlink." % settings.MSCOCO_DIR)
         print("Attempting to download the dataset...")
         rc = download_dataset()
         if rc != 0:
@@ -203,13 +205,13 @@ def run():
     elif settings.MODEL == "dcgan":
         Dataset.normalize()
         Dataset.preload_original_inner_2d()
-        generator, discriminator, train_fn, gen_fn = dcgan_lasagne.train(Dataset, num_epochs=settings.NUM_EPOCHS)
+        generator, discriminator, train_fn, gen_fn = dcgan_lasagne.train(Dataset, num_epochs=settings.NUM_EPOCHS, initial_eta=5e-4)
         Dataset.denormalize()
         
         settings.touch_dir(settings.SAMPLES_DIR)
         for i in range(100):
             samples = gen_fn(lasagne.utils.floatX(np.random.rand(10*10, 100)))
-            path = os.path.join(settings.EPOCHS_DIR, 'samples_epoch%i.png' % epoch)
+            path = os.path.join(settings.EPOCHS_DIR, 'samples_%i.png' % i)
             samples = dataset.denormalize_data(samples)
             Image.fromarray(samples.reshape(10, 10, 3, 64, 64)
                             .transpose(0, 3, 1, 4, 2)
@@ -227,7 +229,7 @@ def run():
         settings.touch_dir(settings.SAMPLES_DIR)
         for i in range(100):
             samples = gen_fn(lasagne.utils.floatX(np.random.rand(10*10, 100)))
-            path = os.path.join(settings.EPOCHS_DIR, 'samples_epoch%i.png' % epoch)
+            path = os.path.join(settings.EPOCHS_DIR, 'samples_%i.png' % i)
             samples = dataset.denormalize_data(samples)
             Image.fromarray(samples.reshape(10, 10, 3, 64, 64)
                             .transpose(0, 3, 1, 4, 2)

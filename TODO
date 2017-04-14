@@ -18,3 +18,5 @@ Compute MSE between the two.
 Once I get those 2 models fully working, I will need to find a way to make them perform image inpainting. I will need to generate images that match the outer frame as closely as possible and then crop the inside part and use this as my prediction.
 
 Doing this may be complicated and may require generating a large amount of images, I'm not sure yet.  I will have to see if there is a way to do this efficiently.
+
+6) Repeat my idea about Gram matrices for a loss function from my previous paper with Yue. See this also: http://web.stanford.edu/class/cs20si/lectures/slides_06.pdf
