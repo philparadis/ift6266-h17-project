@@ -1,22 +1,23 @@
 1) Try using Fourier transforms on the images before passing them as input (and then do the inverse Fourier transform to get back images). Ideally, combine this with the MLP model and try to lower both objectives.
 
-1) Try the fully convolutional-strided deconvolutional model with L2 loss. It should learn better than if I have an MLP at the end.
+2) Try the fully convolutional-strided deconvolutional model with L2 loss. It should learn better than if I have an MLP at the end.
+!!!See: starting from p.29 in https://ift6266h17.files.wordpress.com/2017/01/lecture_4_convnets.pdf
 
-2) Try doing the same thing, but then define your loss function to be:
+3) Try doing the same thing, but then define your loss function to be:
 
 VGG(x) at hidden layer k
 VGG(y) at hidden layer k
 
 Compute MSE between the two.
 
-3) Try using a model M that goes from image -> text. Then, for a generated image G(x) and a target image y, compute M(G(x)) and M(y) and compare how similar the texts are, then apply a penalty to this.
+4) Try using a model M that goes from image -> text. Then, for a generated image G(x) and a target image y, compute M(G(x)) and M(y) and compare how similar the texts are, then apply a penalty to this.
 
-4) Try using an LSTM for captions.
+5) Try using an LSTM for captions.
 
-5) DC-GAN, W-GAN: both models use convolutional and transpose convolutional layers, so are suitable for images generation. I copied code used on the MNIST dataset written for lasagne and tweaked it to support color. I also change the image dimension to 64x64. Finally, I increased the number of convolutional layers from 2 to 4. This last step appears to have made the DC-GAN training process actually produce gradually improving results.
+6) DC-GAN, W-GAN: both models use convolutional and transpose convolutional layers, so are suitable for images generation. I copied code used on the MNIST dataset written for lasagne and tweaked it to support color. I also change the image dimension to 64x64. Finally, I increased the number of convolutional layers from 2 to 4. This last step appears to have made the DC-GAN training process actually produce gradually improving results.
 
 Once I get those 2 models fully working, I will need to find a way to make them perform image inpainting. I will need to generate images that match the outer frame as closely as possible and then crop the inside part and use this as my prediction.
 
 Doing this may be complicated and may require generating a large amount of images, I'm not sure yet.  I will have to see if there is a way to do this efficiently.
 
-6) Repeat my idea about Gram matrices for a loss function from my previous paper with Yue. See this also: http://web.stanford.edu/class/cs20si/lectures/slides_06.pdf
+7) Repeat my idea about Gram matrices for a loss function from my previous paper with Yue. See this also: http://web.stanford.edu/class/cs20si/lectures/slides_06.pdf
