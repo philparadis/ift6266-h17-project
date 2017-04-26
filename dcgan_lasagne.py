@@ -34,6 +34,7 @@ import PIL.Image as Image
 import lasagne
 import settings
 import dataset
+from utils import normalize_data, denormalize_data
 
 # ##################### Build the neural network model #######################
 # We create two models: The generator and the discriminator network. The
