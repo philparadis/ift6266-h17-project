@@ -147,65 +147,96 @@ def run_experiment():
     Dataset = dataset.InpaintingDataset(settings.IMAGE_WIDTH, settings.IMAGE_HEIGHT)
 
     ### Load dataset
-    Dataset.read_jpgs_and_captions_and_flatten()
+    Dataset.load_dataset()
+    print("Finished loading dataset...")
+    print("")
+    
+    print("Summary of data within dataset:")
+    print(" * images.shape            = " + str(Dataset.images.shape))
+    print(" * captions_ids.shape      = " + str(Dataset.captions_ids.shape))
+    print(" * captions_dict.shape     = " + str(Dataset.captions_dict.shape))
+    # print("images_outer2d.shape    = " + str(Dataset.images_outer2d.shape))
+    # print("images_inner2d.shape    = " + str(Dataset.images_inner2d.shape))
+    # print("images_outer_flat.shape = " + str(Dataset.images_outer_flat.shape))
+    # print("images_inner_flat.shape = " + str(Dataset.images_inner_flat.shape))
+    # print("images_T.shape          = " + str(Dataset.images_T.shape))
+    # print("images_outer2d_T.shape  = " + str(Dataset.images_outer2d_T.shape))
+    # print("images_inner2d_T.shape  = " + str(Dataset.images_inner2d_T.shape))
+    print("")
 
-    print("Finished loading and pre-processing datasets...")
-    print("Summary of datasets:")
-    print("images.shape            = " + str(Dataset.images.shape))
-    print("images_outer2d.shape    = " + str(Dataset.images_outer2d.shape))
-    print("images_inner2d.shape    = " + str(Dataset.images_inner2d.shape))
-    print("images_outer_flat.shape = " + str(Dataset.images_outer_flat.shape))
-    print("images_inner_flat.shape = " + str(Dataset.images_inner_flat.shape))
-    print("captions_ids.shape      = " + str(Dataset.captions_ids.shape))
-    print("captions_dict.shape     = " + str(Dataset.captions_dict.shape))
-    print("images_T.shape          = " + str(Dataset.images_T.shape))
-    print("images_outer2d_T.shape  = " + str(Dataset.images_outer2d_T.shape))
-    print("images_inner2d_T.shape  = " + str(Dataset.images_inner2d_T.shape))
+    ### Load checkpoint (if any). This will also load the hyper parameters file.
+    ### This will also load the model's architecture, weights, optimizer states,
+    ### that is, everything necessary to resume training.
+    checkpoint = model.load_checkpoint()
+    if checkpoint != None:
+        print("(!) RESUMING FROM CHECKPOINT: Found a valid checkpoint for this experiment, resuming from last valid state!")
+        print("")
+        print("State of last checkpoint:")
+        print("")
+    else:
+        ### Build model's architecture
+        print("(!) No valid checkpoint found for this experiment. Building and training model from scratch.")
+        if settings.MODEL == "mlp" or settings.MODEL == "test":
+            model.build()
+        elif settings.MODEL == "dcgan":
+            pass
+        elif settings.MODEL == "wgan":
+            pass
+        elif settings.MODEL == "lsgan":
+            pass
+        else:
+            raise NotImplementedError()
+        ### Save hyperparameters to a file
+        model.save_hyperparams()
+
+    ### Print hyperparameters, as loaded from existing file or as initialized for new experiment
+    print("Hyperparameters:")
+    for key in model.hyper:
+        print(" * {0: <20} = {1}".format(str(key), str(model.hyper[key])))
+    print("")        
 
     ### Train the model (computation intensive)
-    if settings.MODEL == "mlp":
-        Dataset.normalize()
-        Dataset.preload_flattened()
-        model = models.train_keras(model, model_params, Dataset)
-        Dataset.denormalize()
+    if settings.MODEL == "mlp" or settings.MODEL == "test":
+        Dataset.preprocess()
+        Dataset.preload()
+        model.train(Dataset)
+        Dataset.postprocess()
 
         ### Produce predictions
-        Y_test_pred = model.predict(Dataset.test.X, batch_size=settings.BATCH_SIZE)
+        Y_test_pred = model.predict(Dataset.get_data(X=True, Test=True), batch_size = model.hyper['batch_size'])
 
-        # Reshape predictions to a 2d image and denormalize data
+        ### Reshape predictions to a 2d image and denormalize data
         Y_test_pred = dataset.denormalize_data(Y_test_pred)
         num_rows = Y_test_pred.shape[0]
         Y_test_pred_2d = np.reshape(Y_test_pred, (num_rows, 32, 32, 3))
 
         ### Save predictions to disk
-        save_keras_performance_results(model, model_params, Dataset.train.X, Dataset.train.Y, Dataset.test.X, Dataset.test.Y)
-        save_keras_predictions(Y_test_pred_2d, Dataset.test.id, Dataset, num_images=50)
-        print_results_as_html(Y_test_pred_2d, num_images=50)
+        utils.save_keras_predictions(Y_test_pred_2d, Dataset.id_test, Dataset, num_images=50)
+        utils.print_results_as_html(Y_test_pred_2d, num_images=50)
     elif settings.MODEL == "conv_mlp":
-        Dataset.normalize()
-        Dataset.preload_outer_inner_2d()
-        model = models.train_keras(model, model_params, Dataset)
-        Dataset.denormalize()
+        Dataset.preprocess()
+        Dataset.preload()
+        model.train(Dataset)
+        Dataset.postprocess()
 
         ### Produce predictions
-        Y_test_pred = model.predict(Dataset.test.X, batch_size=settings.BATCH_SIZE)
+        Y_test_pred = model.predict(Dataset.get_data(X=True, Test=True), batch_size = model.hyper['batch_size'])
 
-        # Reshape predictions
+        ### Reshape predictions
         Y_test_pred = dataset.denormalize_data(Y_test_pred)
         num_rows = Y_test_pred.shape[0]
         Y_test_pred_2d = np.reshape(Y_test_pred, (num_rows, 32, 32, 3))
 
         ### Save predictions to disk
-        save_keras_performance_results(model, model_params, Dataset.train.X, Dataset.train.Y, Dataset.test.X, Dataset.test.Y)
-        save_keras_predictions(Y_test_pred_2d, Dataset.test.id, Dataset, num_images=50)
-        print_results_as_html(Y_test_pred_2d, num_images=50)
-        
-        pass
+        utils.save_keras_predictions(Y_test_pred_2d, Dataset.test.id, Dataset, num_images=50)
+        utils.print_results_as_html(Y_test_pred_2d, num_images=50)
     elif settings.MODEL == "dcgan":
-        Dataset.normalize()
-        Dataset.preload_original_inner_2d()
+        import dcgan_lasagne
+            
+        Dataset.preprocess()
+        Dataset.preload()
         generator, discriminator, train_fn, gen_fn = dcgan_lasagne.train(Dataset, num_epochs=settings.NUM_EPOCHS, initial_eta=5e-4)
-        Dataset.denormalize()
+        Dataset.postprocess()
         
         settings.touch_dir(settings.SAMPLES_DIR)
         for i in range(100):
@@ -219,11 +250,37 @@ def run_experiment():
             sample = dataset.denormalize_data(sample)
             path = os.path.join(settings.SAMPLES_DIR, 'one_sample_%i.png' % i)
             Image.fromarray(sample.reshape(3, 64, 64).transpose(1, 2, 0).reshape(64, 64, 3)).save(path)
-    elif settings.MODEL == "wgan":
-        Dataset.normalize()
-        Dataset.preload_original_inner_2d()
+    elif settings.MODEL == "wgan": 
+        import wgan_lasagne
+
+        Dataset.preprocess()
+        Dataset.preload()
         generator, critic, generator_train_fn, critic_train_fn, gen_fn = wgan_lasagne.train(Dataset, num_epochs=settings.NUM_EPOCHS)
-        Dataset.denormalize()
+        Dataset.postprocess()
+        
+        settings.touch_dir(settings.SAMPLES_DIR)
+        for i in range(100):
+            samples = gen_fn(lasagne.utils.floatX(np.random.rand(10*10, 100)))
+            path = os.path.join(settings.EPOCHS_DIR, 'samples_%i.png' % i)
+            samples = dataset.denormalize_data(samples)
+            Image.fromarray(samples.reshape(10, 10, 3, 64, 64)
+                            .transpose(0, 3, 1, 4, 2)
+                            .reshape(10*64, 10*64, 3)).save(path)
+            sample = gen_fn(lasagne.utils.floatX(np.random.rand(1, 100)))
+            sample = dataset.denormalize_data(sample)
+            path = os.path.join(settings.SAMPLES_DIR, 'one_sample_%i.png' % i)
+            Image.fromarray(sample.reshape(3, 64, 64).transpose(1, 2, 0).reshape(64, 64, 3)).save(path) 
+    elif settings.MODEL == "lsgan": 
+        import lsgan_lasagne
+
+        Dataset.preprocess()
+        Dataset.preload()
+        try:
+            geneqrator, critic, generator_train_fn, critic_train_fn, gen_fn = lsgan_lasagne.train(Dataset, num_epochs=settings.NUM_EPOCHS)
+        except Exception, e:
+            print("Error while training LS-GAN model. Adding STOP file.")
+            raise e
+        Dataset.postprocess()
         
         settings.touch_dir(settings.SAMPLES_DIR)
         for i in range(100):
