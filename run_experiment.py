@@ -104,27 +104,28 @@ def run_experiment():
     ### results will be saved for this experiment. Moreover, create them.
     initialize_directories()
 
+    verbosity_level = "Low"
+    if settings.VERBOSE == 0:
+        verbosity_level = "High"
+    elif settings.VERBOSE == 2:
+        verbosity_level = "medium"
+
     # Print info about our settings
+    print("IFT6266-H2017 (Prof. Aaron Courville)")
+    print("Final Project")
+    print(u"© Copyright 2017 Philippe Paradis. All Rights Reserved.")
+    print("")
     print("============================================================")
     print("* Experiment name  = %s" % settings.EXP_NAME)
     print("============================================================")
-    print("Hyperparameters:")
-    print("------------------------------------------------------------")
-    print(" * Model           = " + settings.MODEL)
-    print("   - input_dim     = " + str(input_dim))
-    print("   - output_dim    = " + str(output_dim))
-    print("   - loss_function = " + str(loss_function))
-    print("   - learning_rate = " + str(settings.LEARNING_RATE))
-    print(" * Epochs          = " + str(settings.NUM_EPOCHS))
-    print(" * Batch size      = " + str(settings.BATCH_SIZE))
-    print("============================================================")
-    print("Other settings:")
-    print("------------------------------------------------------------")
-    print(" * Verbosity                       = " + str(settings.VERBOSE))
-    print(" * Using data augmentation         = " + str(settings.DATASET_AUGMENTATION))
-    print(" * Loading black and white images  = " + str(settings.LOAD_BLACK_AND_WHITE_IMAGES))
     print("")
-
+    print("Settings:")
+    print(" * Training epochs       = " + str(settings.NUM_EPOCHS))
+    print(" * Verbosity             = " + verbosity_level)
+    print(" * Dta augmentation      = " + str(settings.DATASET_AUGMENTATION))
+    print(" * Load greyscale images = " + str(not settings.LOAD_BLACK_AND_WHITE_IMAGES))
+    print("")
+    
     #######################################
     # Info about the dataset
     #######################################
@@ -140,8 +141,10 @@ def run_experiment():
     # .jpg extension) to a list of 5 strings (the 5 human-generated captions).
     # This dictionary is an OrderedDict with 123286 entries.
 
+    import dataset
+
     ### Create and initialize an empty InpaintingDataset object
-    Dataset = dataset.InpaintingDataset(input_dim, output_dim)
+    Dataset = dataset.InpaintingDataset(settings.IMAGE_WIDTH, settings.IMAGE_HEIGHT)
 
     ### Load dataset
     Dataset.read_jpgs_and_captions_and_flatten()
@@ -238,33 +241,7 @@ def run_experiment():
         pass
     
 
+    ### Success...? Well, at least we didn't crash :P
+    print("Exiting normally. That's typically a good sign :-)")
     sys.exit(0)
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("model", help="Model choice (current options: mlp, conv_mlp, conv_lstm, vae, conv_autoencoder, dcgan, wgan)")
-    parser.add_argument("exp_name_prefix", help="Prefix used at the beginning of the name of the experiment. Your results will be stored in various subfolders and files which start with this prefix. The exact name of the experiment depends on the model used and various hyperparameters.")
-    parser.add_argument("-v", "--verbose", type=int,
-                        default=settings.VERBOSE, help="0 means quiet, 1 means verbose and 2 means limited verbosity.")
-    parser.add_argument("-e", "--num_epochs", type=int,
-                        default=settings.NUM_EPOCHS, help="Number of epochs to train")
-    parser.add_argument("-b", "--batch_size", type=int,
-                        default=settings.BATCH_SIZE, help="Size of minibatches")
-    parser.add_argument("-l", "--learning_rate", type=float,
-                        default=settings.LEARNING_RATE, help="Learning rate of adam optimizer")
-    parser.add_argument("-r", "--reload_model", action="store_true", default=settings.RELOAD_MODEL,
-                        help="Looks for an existing HF5 model saved to disk in the subdirectory 'models' and if such a model with the same parameters and experiment name prefix exist, the training phase will be entirely skipped and rather, the model and its weights will be loaded from disk.")
-
-    args = parser.parse_args()
-    settings.MODEL = args.model.lower()
-    settings.EXP_NAME_PREFIX = args.exp_name_prefix
-    settings.VERBOSE = args.verbose
-    settings.NUM_EPOCHS = args.num_epochs
-    settings.BATCH_SIZE = args.batch_size
-    settings.LEARNING_RATE = args.learning_rate
-    settings.RELOAD_MODEL = args.reload_model
-
-    if not settings.MODEL in ["mlp", "conv_mlp", "dcgan", "wgan"]:
-        raise NotImplementedError("The model '{}' is not yet implemented yet, sorry!".format(settings.MODEL))
-    
-    run()
