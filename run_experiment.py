@@ -1,20 +1,14 @@
 #!/usr/bin/env python2
 # coding: utf-8
 
-import os, sys
-import errno
-import subprocess
-import argparse
+import os, sys, errno, subprocess
 import numpy as np
 import PIL.Image as Image
-import lasagne
 
-import dataset
+# My modules
 import models
-from save_results import *
 import settings
-import dcgan_lasagne
-import wgan_lasagne
+import utils
 
 #######################
 # Helper functions
@@ -49,6 +43,7 @@ def initialize_directories():
     settings.PRED_DIR    = os.path.join(settings.BASE_DIR, "predictions/")
     settings.ASSETS_DIR  = os.path.join(settings.PRED_DIR, "assets/")
     settings.HTML_DIR    = settings.PRED_DIR
+    settings.CHECKPOINTS_DIR = os.path.join(settings.BASE_DIR, "checkpoints/")
 
 
 #################################################
@@ -69,39 +64,40 @@ def initialize_directories():
 ##                                    predictions/assets/<experiment_name>/X_full_<i>.jpg
 ##                                    predictions/assets/<experiment_name>/X_full_pred_<i>.jpg
 
-def run():
+def run_experiment():
     model = None
     loss_function = None
     
     # Define model's specific settings
-    if settings.MODEL == "mlp":
-        input_dim = 64*64*3 - 32*32*3
-        output_dim = 32*32*3
-        loss_function = "mse"
-        model_params = models.ModelParameters(settings.MODEL, input_dim, output_dim, loss_function, settings.LEARNING_RATE)
-        model = models.build_mlp(model_params)
+    if settings.MODEL == "test":
+        model = models.Test_Model(settings.MODEL)
+    elif settings.MODEL == "mlp":
+        model = models.MLP_Model(settings.MODEL)
     elif settings.MODEL == "dcgan":
-        input_dim = (None, 3, 64, 64)
-        output_dim = (None, 3, 32, 32)
-        loss_function = None
+        model = models.DCGAN_Model(settings.MODEL)
     elif settings.MODEL == "wgan":
-        input_dim = (None, 3, 64, 64)
-        output_dim = (None, 3, 32, 32)
-        loss_function = None
+        model = models.WGAN_Model(settings.MODEL)
+    elif settings.MODEL == "lsgan":
+        model = models.LSGAN_Model(settings.MODEL)
     else:
         raise NotImplementedError()
     
     settings.EXP_NAME = "%s_model.%s_loss.%s_e.%i_b.%i" \
-                        % (settings.EXP_NAME_PREFIX, settings.MODEL, loss_function, \
+                        % (settings.EXP_NAME_PREFIX, settings.MODEL, loss_function,
                            settings.NUM_EPOCHS, settings.BATCH_SIZE)
 
-    ### Make sure the dataset has been downloaded and extracted correctly
+    ## HACK: Set a few hyperparameters as global variables
+    settings.LEARNING_RATE = model.hyper['learning_rate']
+    settings.BATCH_SIZE = model.hyper['batch_size']
+
+    ### Make sure the dataset has been downloaded and extracted correctly on disk
     if check_mscoco_dir() == False:
-        print("The project dataset based on MSCOCO and located at '%s' does not exist or is a broken symlink." % settings.MSCOCO_DIR)
+        print("(!) The project dataset based on MSCOCO was not found in its expected location '{}' or the symlink is broken."
+              .format(settings.MSCOCO_DIR))
         print("Attempting to download the dataset...")
         rc = download_dataset()
         if rc != 0:
-            print("Failed to download the project dataset, exiting...")
+            print("(!) Failed to download the project dataset, exiting...")
             sys.exit(rc)
 
     ### Initialize global variables that store the various directories where
