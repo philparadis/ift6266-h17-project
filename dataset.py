@@ -24,11 +24,14 @@ def denormalize_data(data):
     data = data.astype('uint8')
     return data
 
-class Dataframe:
-    def __init__(self, X=None, Y=None, id=None):
-        self.X = X
-        self.Y = Y
-        self.id = id
+def transpose_colors_channel(data):
+    if len(data.shape) != 4:
+        raise ValueError("Dataset is not a 4-tensor as expected.")
+    if data.shape[3] != 3:
+        raise ValueError("Colors channel is not 3-dimensional as expected.")
+    width = data.shape[1]
+    height = data.shape[2]
+    return data.transpose(0, 3, 1, 2).reshape(data.shape[0], 3, width, width)
 
 ### Define the main class for handling our dataset called InpaintingDataset
 
