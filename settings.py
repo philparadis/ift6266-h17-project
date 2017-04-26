@@ -1,7 +1,5 @@
 # CREDIT: This file's code was inspired by Philip Pacquette's
 import os
-import sys
-import theano
 
 _root = None
 for path in ["/Tmp", "/tmp"]:
@@ -9,21 +7,29 @@ for path in ["/Tmp", "/tmp"]:
         _root = path
         break
 
+# Command line arguments
 MODEL = None
 EXP_NAME_PREFIX = None
 EXP_NAME = None
 NUM_EPOCHS = 20
+MAX_EPOCHS = 2000
 BATCH_SIZE = 128
-LEARNING_RATE = 0.0001
-
+LEARNING_RATE = None #1e-4
+EPOCHS_PER_CHECKPOINT = 5
 VERBOSE = 2
 RELOAD_MODEL = False
+USE_CPU = False
 
-theano.config.floatX = 'float32'
+THEANO_CONFIG_FLOATX = 'float32'
 DATASET_AUGMENTATION = True
 LOAD_BLACK_AND_WHITE_IMAGES = False
 SAVE_MODEL_TO_DISK = True
 SAMPLES_TO_GENERATE_PER_EPOCH = -1 # Use -1 to disable this feature
+
+# Dataset settings
+IMAGE_WIDTH  = 64
+IMAGE_HEIGHT = 64
+
 
 # Datasets directories
 THIS_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -41,6 +47,7 @@ SAMPLES_DIR = None # Location for random samples (for generative models)
 PRED_DIR = None # Location for model predictions
 ASSETS_DIR = None # Location to store the various images produced for HTML visualization
 HTML_DIR = None # Location to store the HTML page(s) for nicer visualization of results
+CHECKPOINTS_DIR = None # Location to store the various checkpoints files
 
 def touch_dir(directory):
     if not os.path.exists(directory):
