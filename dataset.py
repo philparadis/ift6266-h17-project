@@ -11,11 +11,15 @@ import settings
 
 ### Define utility functions
 def normalize_data(data):
+    if data.dtype == 'float32':
+        return
     data = data.astype('float32')
     data /= 255
     return data
 
 def denormalize_data(data):
+    if data.dtype == 'uint8':
+        return
     data *= 255
     data = data.astype('uint8')
     return data
