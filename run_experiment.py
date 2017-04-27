@@ -145,7 +145,7 @@ def run_experiment():
     import dataset
 
     ### Create and initialize an empty InpaintingDataset object
-    Dataset = dataset.InpaintingDataset(settings.IMAGE_WIDTH, settings.IMAGE_HEIGHT)
+    Dataset = dataset.ColorsFirstDataset(settings.IMAGE_WIDTH, settings.IMAGE_HEIGHT)
 
     ### Load dataset
     Dataset.load_dataset()
@@ -170,14 +170,18 @@ def run_experiment():
     ### that is, everything necessary to resume training.
     checkpoint = model.load_checkpoint()
     if checkpoint != None:
-        print("(!) RESUMING FROM CHECKPOINT: Found a valid checkpoint for this experiment, resuming from last valid state!")
+        print_positive("Ready to resume from a valid checkpoint!")
         print("")
-        print("State of last checkpoint:")
+        print_info("State of last checkpoint:")
+        for key in checkpoint:
+            print(" * {0: <20} = {1}".format(str(key), str(checkpoint[key])))
         print("")
     else:
         ### Build model's architecture
         print("(!) No valid checkpoint found for this experiment. Building and training model from scratch.")
         if settings.MODEL == "mlp" or settings.MODEL == "test":
+            model.build()
+        elif settings.MODEL == "conv_mlp":
             model.build()
         elif settings.MODEL == "dcgan":
             pass
@@ -187,11 +191,12 @@ def run_experiment():
             pass
         else:
             raise NotImplementedError()
+        
         ### Save hyperparameters to a file
         model.save_hyperparams()
 
     ### Print hyperparameters, as loaded from existing file or as initialized for new experiment
-    print("Hyperparameters:")
+    print_info("Hyperparameters:")
     for key in model.hyper:
         print(" * {0: <20} = {1}".format(str(key), str(model.hyper[key])))
     print("")        
@@ -199,9 +204,10 @@ def run_experiment():
     ### Train the model (computation intensive)
     if settings.MODEL == "mlp" or settings.MODEL == "test":
         Dataset.preprocess()
+        Dataset.normalize()
         Dataset.preload()
         model.train(Dataset)
-        Dataset.postprocess()
+        Dataset.denormalize()
 
         ### Produce predictions
         Y_test_pred = model.predict(Dataset.get_data(X=True, Test=True), batch_size = model.hyper['batch_size'])
@@ -209,16 +215,24 @@ def run_experiment():
         ### Reshape predictions to a 2d image and denormalize data
         Y_test_pred = dataset.denormalize_data(Y_test_pred)
         num_rows = Y_test_pred.shape[0]
-        Y_test_pred_2d = np.reshape(Y_test_pred, (num_rows, 32, 32, 3))
+        Y_test_pred_2d = unflatten_to_4tensor(Y_test_pred, num_rows, 32, 32, is_colors_channel_first = True)
+        Y_test_pred_2d = transpose_colors_channel(Y_test_pred_2d, from_first_to_last = True)
+
+        ### Create dataset with colors channel last
+        NewDataset = dataset.ColorsLastDataset(settings.IMAGE_WIDTH, settings.IMAGE_HEIGHT)
+        NewDataset.load_dataset()
+        NewDataset.preprocess(model = "conv_mlp")
+        NewDataset.preload(model = "conv_mlp")
 
         ### Save predictions to disk
-        utils.save_keras_predictions(Y_test_pred_2d, Dataset.id_test, Dataset, num_images=50)
-        utils.print_results_as_html(Y_test_pred_2d, num_images=50)
+        save_keras_predictions(Y_test_pred_2d, Dataset.id_test, NewDataset, num_images=50)
+        print_results_as_html(Y_test_pred_2d, num_images=50)
     elif settings.MODEL == "conv_mlp":
         Dataset.preprocess()
+        Dataset.normalize()
         Dataset.preload()
         model.train(Dataset)
-        Dataset.postprocess()
+        Dataset.denormalize()
 
         ### Produce predictions
         Y_test_pred = model.predict(Dataset.get_data(X=True, Test=True), batch_size = model.hyper['batch_size'])
@@ -226,18 +240,33 @@ def run_experiment():
         ### Reshape predictions
         Y_test_pred = dataset.denormalize_data(Y_test_pred)
         num_rows = Y_test_pred.shape[0]
-        Y_test_pred_2d = np.reshape(Y_test_pred, (num_rows, 32, 32, 3))
+        Y_test_pred_2d = unflatten_to_4tensor(Y_test_pred, num_rows, 32, 32, is_colors_channel_first = True)
+        Y_test_pred_2d = transpose_colors_channel(Y_test_pred_2d, from_first_to_last = True)
 
         ### Save predictions to disk
-        utils.save_keras_predictions(Y_test_pred_2d, Dataset.test.id, Dataset, num_images=50)
-        utils.print_results_as_html(Y_test_pred_2d, num_images=50)
+
+        ### Create a new dataset based on original images
+        ### We need 'outer2d' and 'inner2d' images even if we did not use them in the model, in order to produce our results.
+        print_positive("We finished training the model and obtained predictions for the image inpainting tasks.")
+        print_positive("However, we need to go back to the original images with the colors channel last.")
+        print_positive("To do so, we create a new class ColorsLastDataset that will take care of loading the data in the right format.")
+        NewDataset = dataset.ColorsLastDataset(settings.IMAGE_WIDTH, settings.IMAGE_HEIGHT)
+        NewDataset.load_dataset()
+        print("Summary of data within ColorsLastDataset:")
+        print(" * images.shape            = " + str(NewDataset.images.shape))
+        print(" * captions_ids.shape      = " + str(NewDataset.captions_ids.shape))
+        print(" * captions_dict.shape     = " + str(NewDataset.captions_dict.shape))
+        NewDataset.preprocess()
+        NewDataset.preload(model = "conv_mlp")
+
+        save_keras_predictions(Y_test_pred_2d, Dataset.test.id, NewDataset, num_images=50)
+        print_results_as_html(Y_test_pred_2d, num_images=50)
     elif settings.MODEL == "dcgan":
-        import dcgan_lasagne
-            
         Dataset.preprocess()
+        Dataset.normalize()
         Dataset.preload()
-        generator, discriminator, train_fn, gen_fn = dcgan_lasagne.train(Dataset, num_epochs=settings.NUM_EPOCHS, initial_eta=5e-4)
-        Dataset.postprocess()
+        model.train(Dataset)
+        Dataset.denormalize()
         
         settings.touch_dir(settings.SAMPLES_DIR)
         for i in range(100):
@@ -255,9 +284,10 @@ def run_experiment():
         import wgan_lasagne
 
         Dataset.preprocess()
+        Dataset.normalize()
         Dataset.preload()
         generator, critic, generator_train_fn, critic_train_fn, gen_fn = wgan_lasagne.train(Dataset, num_epochs=settings.NUM_EPOCHS)
-        Dataset.postprocess()
+        Dataset.denormalize()
         
         settings.touch_dir(settings.SAMPLES_DIR)
         for i in range(100):
@@ -275,13 +305,14 @@ def run_experiment():
         import lsgan_lasagne
 
         Dataset.preprocess()
+        Dataset.normalize()
         Dataset.preload()
         try:
             geneqrator, critic, generator_train_fn, critic_train_fn, gen_fn = lsgan_lasagne.train(Dataset, num_epochs=settings.NUM_EPOCHS)
         except Exception, e:
             print("Error while training LS-GAN model. Adding STOP file.")
             raise e
-        Dataset.postprocess()
+        Dataset.denormalize()
         
         settings.touch_dir(settings.SAMPLES_DIR)
         for i in range(100):

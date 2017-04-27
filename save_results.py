@@ -21,31 +21,6 @@ from settings import HTML_DIR
 ## A summary of your model architecture will saved be in: models/summary_<experiment_name>.txt
 ## Your model's performance will be saved in:             models/performance_<experiment_name>.txt
 
-def save_keras_model_info(model):
-    settings.touch_dir(MODELS_DIR)
-    ### Save model architecture and weights to .h5 file
-    model.save(join(MODELS_DIR, 'trained_model.h5')) 
-    ### Write an image that represents the model's architecture
-    plot_model(model, to_file=join(MODELS_DIR, 'plot_model.png'), show_shapes=True)
-    ### Output a summary of the model, including the various layers, activations and total number of weights
-    old_stdout = sys.stdout
-    sys.stdout = open(join(MODELS_DIR, 'summary.txt'), 'w')
-    model.summary()
-    sys.stdout = old_stdout
-
-
-def save_keras_performance_results(model, model_params, X_train, Y_train, X_test, Y_test):
-    ### Output training and testing scores
-    settings.touch_dir(PERF_DIR)
-    with open(join(PERF_DIR, 'losses.txt'), 'w') as fd:
-        # evaluate the model
-        fd.write("Loss function = %s\n" % model_params.loss_function)
-        scores = model.evaluate(X_train, Y_train, batch_size=settings.BATCH_SIZE)
-        fd.write("Training loss = %s: %.4f\n" % (model.metrics_names[1], scores[1]))
-        scores = model.evaluate(X_test, Y_test, batch_size=settings.BATCH_SIZE)
-        fd.write("Testing loss  = %s: %.4f\n" % (model.metrics_names[1], scores[1]))
-
-
 ## Your predictions will be saved in: predictions/assets/<experiment_name>/Y_pred_<i>.jpg
 ##                                    predictions/assets/<experiment_name>/Y_<i>.jpg
 ##                                    predictions/assets/<experiment_name>/X_outer_<i>.jpg
