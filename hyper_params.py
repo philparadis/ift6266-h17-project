@@ -17,7 +17,7 @@ default_mlp_hyper_params = {
     "batch_size" : 64
     }
 
-default_convmlp_hyper_params = {
+default_conv_mlp_hyper_params = {
     "input_dim" : (None, 3, 64, 64),
     "output_dim" : 32*32*3,
     "loss_function" : "mse",

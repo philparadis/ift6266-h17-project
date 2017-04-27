@@ -8,7 +8,10 @@ import PIL.Image as Image
 # My modules
 import models
 import settings
-import utils
+from utils import normalize_data, denormalize_data
+from utils import save_keras_predictions, print_results_as_html
+from utils import unflatten_to_4tensor, unflatten_to_3tensor, transpose_colors_channel
+from utils import print_critical, print_error, print_warning, print_info, print_positive
 
 #######################
 # Helper functions
@@ -54,7 +57,7 @@ def initialize_directories():
 
 ### The experiment name is very important.
 
-## Your model will be saved in:                           models/<experiment_name>.h5
+## Your model will be saved in:                           models/<experiment_name>.hdf5
 ## A summary of your model architecture will saved be in: models/summary_<experiment_name>.txt
 ## Your model's performance will be saved in:             models/performance_<experiment_name>.txt
 
@@ -82,13 +85,11 @@ def run_experiment():
     else:
         raise NotImplementedError()
     
-    settings.EXP_NAME = "%s_model.%s_loss.%s_e.%i_b.%i" \
-                        % (settings.EXP_NAME_PREFIX, settings.MODEL, loss_function,
-                           settings.NUM_EPOCHS, settings.BATCH_SIZE)
+    settings.EXP_NAME = "{}_model_{}".format(settings.EXP_NAME_PREFIX, settings.MODEL)
 
-    ## HACK: Set a few hyperparameters as global variables
-    settings.LEARNING_RATE = model.hyper['learning_rate']
-    settings.BATCH_SIZE = model.hyper['batch_size']
+    ## Update the hyperparameter to match the argument supplied on the command line
+    model.hyper['learning_rate'] = settings.LEARNING_RATE
+    model.hyper['batch_size'] = settings.BATCH_SIZE
 
     ### Make sure the dataset has been downloaded and extracted correctly on disk
     if check_mscoco_dir() == False:
@@ -113,7 +114,7 @@ def run_experiment():
     # Print info about our settings
     print("IFT6266-H2017 (Prof. Aaron Courville)")
     print("Final Project")
-    print(u"© Copyright 2017 Philippe Paradis. All Rights Reserved.")
+    print("Copyright 2017 Philippe Paradis. All Rights Reserved.")
     print("")
     print("============================================================")
     print("* Experiment name  = %s" % settings.EXP_NAME)

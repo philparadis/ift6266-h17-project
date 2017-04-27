@@ -29,6 +29,10 @@ if __name__ == "__main__":
                         default=settings.BATCH_SIZE, help="Size of minibatches.")
     parser.add_argument("-l", "--learning_rate", type=float, default=settings.LEARNING_RATE,
                         help="Learning rate of the optimizer (may be better to leave empty is you're not sure what you're doing, the default value of None will select a learning rate appropriate for the model type).")
+#    parser.add_argument("-f", "--loss_function", type=string,
+#                        default=settings.LOSS_FUNCTION, help="Loss function (available: mse, mae, categorical_crossentropy, binary_crossentropy, kullback_leibler_divergence, hinge)")
+#    parser.add_argument("-o", "--optimizer", type=string,
+#                        default=settings.OPTIMIZER, help="Optimizer (available: adam, sgd, rmsprop, adamax, nadam)")
     parser.add_argument("-c", "--epochs_per_checkpoint", type=int, default=settings.EPOCHS_PER_CHECKPOINT,
                         help="Amount of epochs to perform during training between every checkpoint.")
     parser.add_argument("--cpu", action="store_true", default=settings.USE_CPU,
