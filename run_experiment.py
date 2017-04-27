@@ -87,10 +87,6 @@ def run_experiment():
     
     settings.EXP_NAME = "{}_model_{}".format(settings.EXP_NAME_PREFIX, settings.MODEL)
 
-    ## Update the hyperparameter to match the argument supplied on the command line
-    model.hyper['learning_rate'] = settings.LEARNING_RATE
-    model.hyper['batch_size'] = settings.BATCH_SIZE
-
     ### Make sure the dataset has been downloaded and extracted correctly on disk
     if check_mscoco_dir() == False:
         print("(!) The project dataset based on MSCOCO was not found in its expected location '{}' or the symlink is broken."

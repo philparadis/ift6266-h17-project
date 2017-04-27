@@ -21,14 +21,15 @@ if __name__ == "__main__":
                         default=settings.VERBOSE, help="0 means quiet, 1 means verbose and 2 means limited verbosity.")
     parser.add_argument("-e", "--epochs", type=int,
                         default=settings.NUM_EPOCHS,
-                        help="Number of epochs to train (either for a new model or extra epochs when resuming an existing model.")
-    parser.add_argument("-m", "--max_epochs", type=int,
-                        default=settings.MAX_EPOCHS,
-                        help="Maximum number of epochs to train (useful in case training gets interrupted, to avoid overtraining a model.")
+                        help="Number of epochs to train (either for a new model or *extra* epochs when resuming an experiment.")
+    parser.add_argument("-i", "--init", action=store_true, help="Only initialize the experiment directory with the hyperparams.json file, without actually running any computations (helpful to tweak manually the hyperparameters)")
+#    parser.add_argument("-m", "--max_epochs", type=int,
+#                        default=settings.MAX_EPOCHS,
+#                        help="Maximum number of epochs to train (useful in case training gets interrupted, to avoid overtraining a model.")
     parser.add_argument("-b", "--batch_size", type=int,
-                        default=settings.BATCH_SIZE, help="Size of minibatches.")
+                        default=settings.BATCH_SIZE, help="Only use this if you want to override the default hyper parameter value for your model. It may be better to create an experiment directory with an 'hyperparameters.json' file and tweak the parameters there.")
     parser.add_argument("-l", "--learning_rate", type=float, default=settings.LEARNING_RATE,
-                        help="Learning rate of the optimizer (may be better to leave empty is you're not sure what you're doing, the default value of None will select a learning rate appropriate for the model type).")
+                        help="Only set this if you want to override the default hyper parameter value for your model. It may be better to create an experiment directory with an 'hyperparameters.json' file and tweak the parameters there.")
 #    parser.add_argument("-f", "--loss_function", type=string,
 #                        default=settings.LOSS_FUNCTION, help="Loss function (available: mse, mae, categorical_crossentropy, binary_crossentropy, kullback_leibler_divergence, hinge)")
 #    parser.add_argument("-o", "--optimizer", type=string,
@@ -42,8 +43,9 @@ if __name__ == "__main__":
     settings.MODEL = args.model.lower()
     settings.EXP_NAME_PREFIX = args.exp_name_prefix
     settings.VERBOSE = args.verbose
+    settings.PERFORM_INIT_ONLY = args.init
     settings.NUM_EPOCHS = args.epochs
-    settings.MAX_EPOCHS = args.max_epochs
+    #settings.MAX_EPOCHS = args.max_epochs
     settings.BATCH_SIZE = args.batch_size
     settings.LEARNING_RATE = args.learning_rate
     settings.EPOCHS_PER_CHECKPOINT = args.epochs_per_checkpoint
