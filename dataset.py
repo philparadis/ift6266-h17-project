@@ -116,8 +116,8 @@ class BaseDataset(object):
             print(" * images.shape            = " + str(self.images.shape))
             print(" * captions_ids.shape      = " + str(self.captions_ids.shape))
             print(" * captions_dict.shape     = " + str(self.captions_dict.shape))
-            print(" * Number of color images loaded        = {}".format(images.shape[0]))
-            print(" * Number of greyscale images discarded = {}".format(len(train_images_paths) - images.shape[0]))
+            print(" * Number of color images loaded        = {}".format(self.images.shape[0]))
+            print(" * Number of greyscale images discarded = {}".format(num_rain_images_paths - self.images.shape[0]))
 
             # Save dataset as npy file so that loading can be sped up in the future
             self._save_jpgs_and_captions_npy()
