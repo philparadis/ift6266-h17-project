@@ -22,7 +22,7 @@ if __name__ == "__main__":
     parser.add_argument("-e", "--epochs", type=int,
                         default=settings.NUM_EPOCHS,
                         help="Number of epochs to train (either for a new model or *extra* epochs when resuming an experiment.")
-    parser.add_argument("-i", "--init", action=store_true, help="Only initialize the experiment directory with the hyperparams.json file, without actually running any computations (helpful to tweak manually the hyperparameters)")
+    parser.add_argument("-i", "--init", action="store_true", help="Only initialize the experiment directory with the hyperparams.json file, without actually running any computations (helpful to tweak manually the hyperparameters)")
 #    parser.add_argument("-m", "--max_epochs", type=int,
 #                        default=settings.MAX_EPOCHS,
 #                        help="Maximum number of epochs to train (useful in case training gets interrupted, to avoid overtraining a model.")
