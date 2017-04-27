@@ -87,7 +87,47 @@ def run_experiment():
     
     settings.EXP_NAME = "{}_model_{}".format(settings.EXP_NAME_PREFIX, settings.MODEL)
 
+    ### Initialize global variables that store the various directories where
+    ### results will be saved for this experiment. Moreover, create them.
+    initialize_directories()
+
+    ### Load checkpoint (if any). This will also load the hyper parameters file.
+    ### This will also load the model's architecture, weights, optimizer states,
+    ### that is, everything necessary to resume training.
+    checkpoint = model.load_checkpoint()
+    if checkpoint != None:
+        print_positive("Ready to resume from a valid checkpoint!")
+        print("")
+        print_info("State of last checkpoint:")
+        for key in checkpoint:
+            print(" * {0: <20} = {1}".format(str(key), str(checkpoint[key])))
+        print("")
+    else:
+        ### Build model's architecture
+        print("(!) No valid checkpoint found for this experiment. Building and training model from scratch.")
+        if settings.MODEL == "mlp" or settings.MODEL == "test":
+            model.build()
+        elif settings.MODEL == "conv_mlp":
+            model.build()
+        elif settings.MODEL == "dcgan":
+            pass
+        elif settings.MODEL == "wgan":
+            pass
+        elif settings.MODEL == "lsgan":
+            pass
+        else:
+            raise NotImplementedError()
+        
+        ### Save hyperparameters to a file
+        model.save_hyperparams()
+
+    if settings.NUM_EPOCHS == 0 and not settings.PERFORM_PREDICT_ONLY:
+        print("Okay, we specified 0 epochs, so we only created the experiment directory:\m{}\mand the hyper parameters file within that directory 'hyperparameters.json'.".format(settings.BASE_DIR))
+        sys.exit(0)
+
+    ###
     ### Make sure the dataset has been downloaded and extracted correctly on disk
+    ###
     if check_mscoco_dir() == False:
         print("(!) The project dataset based on MSCOCO was not found in its expected location '{}' or the symlink is broken."
               .format(settings.MSCOCO_DIR))
@@ -96,10 +136,6 @@ def run_experiment():
         if rc != 0:
             print("(!) Failed to download the project dataset, exiting...")
             sys.exit(rc)
-
-    ### Initialize global variables that store the various directories where
-    ### results will be saved for this experiment. Moreover, create them.
-    initialize_directories()
 
     verbosity_level = "Low"
     if settings.VERBOSE == 0:
@@ -122,7 +158,8 @@ def run_experiment():
     print(" * Dta augmentation      = " + str(settings.DATASET_AUGMENTATION))
     print(" * Load greyscale images = " + str(not settings.LOAD_BLACK_AND_WHITE_IMAGES))
     print("")
-    
+
+
     #######################################
     # Info about the dataset
     #######################################
@@ -160,36 +197,6 @@ def run_experiment():
     # print("images_outer2d_T.shape  = " + str(Dataset.images_outer2d_T.shape))
     # print("images_inner2d_T.shape  = " + str(Dataset.images_inner2d_T.shape))
     print("")
-
-    ### Load checkpoint (if any). This will also load the hyper parameters file.
-    ### This will also load the model's architecture, weights, optimizer states,
-    ### that is, everything necessary to resume training.
-    checkpoint = model.load_checkpoint()
-    if checkpoint != None:
-        print_positive("Ready to resume from a valid checkpoint!")
-        print("")
-        print_info("State of last checkpoint:")
-        for key in checkpoint:
-            print(" * {0: <20} = {1}".format(str(key), str(checkpoint[key])))
-        print("")
-    else:
-        ### Build model's architecture
-        print("(!) No valid checkpoint found for this experiment. Building and training model from scratch.")
-        if settings.MODEL == "mlp" or settings.MODEL == "test":
-            model.build()
-        elif settings.MODEL == "conv_mlp":
-            model.build()
-        elif settings.MODEL == "dcgan":
-            pass
-        elif settings.MODEL == "wgan":
-            pass
-        elif settings.MODEL == "lsgan":
-            pass
-        else:
-            raise NotImplementedError()
-        
-        ### Save hyperparameters to a file
-        model.save_hyperparams()
 
     ### Print hyperparameters, as loaded from existing file or as initialized for new experiment
     print_info("Hyperparameters:")

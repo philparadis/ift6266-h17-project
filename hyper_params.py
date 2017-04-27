@@ -30,7 +30,7 @@ default_conv_mlp_hyper_params = {
 default_dcgan_hyper_params = {
     "input_dim" : (None, 3, 64, 64),
     "output_dim" : (None, 3, 64, 64),
-    "loss_function" : "minmax",
+    "loss_function" : "non_saturating_heuristic",
     "optimizer" : "adam",
     "initial_learning_rate" : 2e-4,
     "batch_size" : 128
@@ -39,7 +39,7 @@ default_dcgan_hyper_params = {
 default_wgan_hyper_params = {
     "input_dim" : (None, 3, 64, 64),
     "output_dim" : (None, 3, 64, 64),
-    "loss_function" : "minmax",
+    "loss_function" : "non_saturating_heuristic",
     "optimizer" : "adam",
     "learning_rate" : 5e-5,
     "batch_size" : 64
@@ -48,7 +48,7 @@ default_wgan_hyper_params = {
 default_lsgan_hyper_params = {
     "input_dim" : (None, 3, 64, 64),
     "output_dim" : (None, 3, 64, 64),
-    "loss_function" : "minmax",
+    "loss_function" : "non_saturating_heuristic",
     "optimizer" : "adam",
     "learning_rate" : 1e-4,
     "batch_size" : 64
