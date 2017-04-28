@@ -462,8 +462,10 @@ class LSGAN_Model(GAN_BaseModel):
         ###########################################################################
 
         # Create experiment's results directories
-        settings.touch_dir(settings.CHECKPOINTS_DIR)
+        settings.touch_dir(settings.BASE_DIR)
         settings.touch_dir(settings.EPOCHS_DIR)
+        settings.touch_dir(settings.CHECKPOINTS_DIR)
+        settings.touch_dir(settings.MODELS_DIR)
 
         # Finally, launch the training loop.
         print("Starting training...")
@@ -498,15 +500,6 @@ class LSGAN_Model(GAN_BaseModel):
             samples = np.array(gen_fn(lasagne.utils.floatX(np.random.rand(10*10, 100))))
             samples = denormalize_data(samples)
             samples_path = os.path.join(settings.EPOCHS_DIR, 'samples_epoch_{0:0>5}.png'.format(epoch + 1))
-            # Generate a single image
-            listx = 2*gen_fn(lasagne.utils.floatX(np.random.rand(1, 100))) # Samples lie uniformly within [-2, 2]
-            listy = 2*gen_fn(lasagne.utils.floatX(np.random.rand(1, 100))) # Samples lie uniformly within [-2, 2]
-            sample = np.array([a*b for a, b in zip(listx, listy)]) # Latent variables lie non-uniformly within [-4, 4]
-            sample = denormalize_data(sample)
-            sample_path = os.path.join(settings.EPOCHS_DIR, 'one_sample_epoch_{0:0>5}.png'.format(epoch + 1))
-            unif_sample = np.array(gen_fn(lasagne.utils.floatX(np.random.rand(1, 100))))
-            unif_sample = denormalize_data(unif_sample)
-            unif_sample_path = os.path.join(settings.EPOCHS_DIR, 'unif_sample_epoch_{0:0>5}.png'.format(epoch + 1))
             try:
                 import PIL.Image as Image
             except ImportError as e:
@@ -515,8 +508,24 @@ class LSGAN_Model(GAN_BaseModel):
                 Image.fromarray(samples.reshape(10, 10, 3, 64, 64)
                                 .transpose(0, 3, 1, 4, 2)
                                 .reshape(10*64, 10*64, 3)).save(samples_path)
-                Image.fromarray(sample.reshape(3, 64, 64).transpose(1, 2, 0).reshape(64, 64, 3)).save(sample_path)
-                Image.fromarray(unif_sample.reshape(3, 64, 64).transpose(1, 2, 0).reshape(64, 64, 3)).save(unif_sample_path)
+                for ind in range(10):
+                    # Generate a single image
+                    sample = np.array(gen_fn(lasagne.utils.floatX(np.random.rand(1, 100))))
+                    sample = denormalize_data(sample)
+                    sample_path = os.path.join(settings.EPOCHS_DIR,
+                                               'one_sample_epoch_{0:0>5}_num{1}.png'.format(epoch + 1, ind))
+                    Image.fromarray(sample.reshape(3, 64, 64)
+                                    .transpose(1, 2, 0)
+                                    .reshape(64, 64, 3)).save(sample_path)
+
+            if epoch >= next_epoch_checkpoint:
+                # Checkpoint time (save hyper parameters, model and checkpoint file)
+                print_positive("CHECKPOINT AT EPOCH {}. Updating 'checkpoint.json' file...".format(epoch + 1))
+                ## Save model to disk
+                self.save_model()
+                # Create checkpoint
+                self.create_checkpoint()
+                next_epoch_checkpoint = epoch + settings.EPOCHS_PER_CHECKPOINT
 
             
             # After half the epochs, we start decaying the learn rate towards zero
