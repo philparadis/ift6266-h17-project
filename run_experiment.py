@@ -69,7 +69,13 @@ def initialize_directories():
 
 def run_experiment():
     model = None
-    loss_function = None
+
+    ### Set the experiment name according to a boring structure (but simple is good :D)
+    settings.EXP_NAME = "{}_model_{}".format(settings.EXP_NAME_PREFIX, settings.MODEL)
+
+    ### Initialize global variables that store the various directories where
+    ### results will be saved for this experiment. Moreover, create them.
+    initialize_directories()
     
     # Define model's specific settings
     if settings.MODEL == "test":
@@ -84,12 +90,12 @@ def run_experiment():
         model = models.LSGAN_Model(settings.MODEL)
     else:
         raise NotImplementedError()
-    
-    settings.EXP_NAME = "{}_model_{}".format(settings.EXP_NAME_PREFIX, settings.MODEL)
 
-    ### Initialize global variables that store the various directories where
-    ### results will be saved for this experiment. Moreover, create them.
-    initialize_directories()
+    ### Check for STOP file in BASE_DIR. Who knows, this experiment could
+    ### be a baddy which we certainly don't want to waste precious GPU time on! Oh no!
+    if model.check_stop_file():
+        print_error("Oh dear, it looks like a STOP file is present in this experiment's base directory, located here:\n{}\nIf you think the STOP file was added by error and you would like to pursue this experiment further, simply delete this file (which is empty, anyway).")
+        sys.exit(-2)
 
     ### Load checkpoint (if any). This will also load the hyper parameters file.
     ### This will also load the model's architecture, weights, optimizer states,
@@ -312,9 +318,10 @@ def run_experiment():
         Dataset.normalize()
         Dataset.preload()
         try:
-            geneqrator, critic, generator_train_fn, critic_train_fn, gen_fn = lsgan_lasagne.train(Dataset, num_epochs=settings.NUM_EPOCHS)
-        except Exception, e:
-            print("Error while training LS-GAN model. Adding STOP file.")
+            model.train(Dataset, num_epochs = settings.NUM_EPOCHS, epochsize = 10, batchsize = 32, initial_eta = 8e-5))
+        except Exception as e:
+            print_error("Failure during training of LS-GAN model, experiment name = {}.\nAdding STOP file to the base directory.")
+            model.create_stop_file()
             raise e
         Dataset.denormalize()
         

@@ -256,11 +256,11 @@ def train(Dataset, num_epochs=200, batchsize=128, initial_eta=2e-4):
         samples = dataset.denormalize_data(samples)
         sample = dataset.denormalize_data(sample)
 
-        samples_path = os.path.join(settings.EPOCHS_DIR, 'samples_epoch%i.png' % (epoch + 1))
+        samples_path = os.path.join(settings.EPOCHS_DIR, 'samples_epoch{0:<5}.png'.format(epoch + 1))
         Image.fromarray(samples.reshape(10, 10, 3, 64, 64)
                         .transpose(0, 3, 1, 4, 2)
                         .reshape(10*64, 10*64, 3)).save(samples_path)
-        sample_path = os.path.join(settings.EPOCHS_DIR, 'one_sample_epoch%i.png' % (epoch + 1))
+        sample_path = os.path.join(settings.EPOCHS_DIR, 'one_sample_epoch{0:<5}.png'.format(epoch + 1))
         Image.fromarray(sample.reshape(3, 64, 64).transpose(1, 2, 0).reshape(64, 64, 3)).save(sample_path)
 
         # After half the epochs, we start decaying the learn rate towards zero
@@ -279,15 +279,3 @@ def train(Dataset, num_epochs=200, batchsize=128, initial_eta=2e-4):
 
     return generator, discriminator, train_fn, gen_fn
 
-
-if __name__ == '__main__':
-    if ('--help' in sys.argv) or ('-h' in sys.argv):
-        print("Trains a DCGAN on MNIST using Lasagne.")
-        print("Usage: %s [EPOCHS]" % sys.argv[0])
-        print()
-        print("EPOCHS: number of training epochs to perform (default: 100)")
-    else:
-        kwargs = {}
-        if len(sys.argv) > 1:
-            kwargs['num_epochs'] = int(sys.argv[1])
-        main(**kwargs)

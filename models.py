@@ -103,13 +103,15 @@ class BaseModel(object):
                 handle_error("Unable to open checkpoint file '{}' for reading.".format(chkpoint_path), e)
                 checkpoint = None
 
-        # Failed to find or open checkpoint file
+        ### Failed to find or open checkpoint file. Set some values to 0 and exit
         if checkpoint == None:
             self.epochs_completed = 0
             self.total_wall_time = 0
             self.total_process_time = 0
             return None
 
+        ### Succesfully loaded check point file, gather the data!
+        print_positive("Successfully loaded checkpoint!! Reading its data...")
         self.epochs_completed = checkpoint['epochs_completed']
         if checkpoint['model'] != settings.MODEL:
             print_warning("The checkpoint model '{0}' does not match command line argument of '{1}'."
@@ -122,16 +124,14 @@ class BaseModel(object):
             print_info("Discarding checkpoint and starting from scratch.")
             return None
 
-        # Successfully loaded checkpoint file, try to load model
-        print_positive("Successfully loaded checkpoint!")
-        print_positive("Resuming from the following last valid state:")
+        #### Successfully loaded checkpoint file, try to load model
+        print_positive("Found a a saved model in HDF5 format, located at:\n{}")
         self.model_path = checkpoint['model_path']
         self.current_model_path = checkpoint['current_model_path']
         self.wall_time = checkpoint['wall_time']
         self.process_time = checkpoint['process_time']
         self.resume_from_checkpoint = True
 
-        print_info("Loading latest HDF5 model...")
         if not self.load_model():
             self.build()
             self._compile()
@@ -183,6 +183,7 @@ class KerasModel(BaseModel):
 
     def load_model(self):
         """Return True if a valid model was found and correctly loaded. Return False if no model was loaded."""
+        from shutil import copyfile
         from keras.models import load_model
 
         settings.touch_dir(settings.CHECKPOINTS_DIR)
@@ -191,21 +192,27 @@ class KerasModel(BaseModel):
         if not os.path.isfile(latest_model_path):
             if not os.path.isfile(self.current_model_path):
                 latest_model_path = self.current_model_path
-                print_warning("Cannot find model's HDF5 file at path '{}'".format(self.current_model_path))
+                print_warning("Unexpected problem: cannot find the model's HDF5 file anymore at path:\n'{}'".format(self.current_model_path))
                 return False
             
-        print_positive("Found latest HDF5 model saved to disk at: {}".format(latest_model_path))
-        print_info("Attempting to load model...")
+        print_positive("Loading last known valid model (this includes the complete architecture, all weights, optimizer's state and so on)!")
+        # Check if file is readable first
         try:
             open(latest_model_path, "r").close()
         except Exception as e:
-            handle_error("Do not have permission to open for reading HDF5 model located at'{}'.".format(latest_model_path), e)
+            handle_error("Lacking permission to *open for reading* the HDF5 model located at\n{}."
+                         .format(latest_model_path), e)
             return False
-        
+        # Load the actual HDF5 model file
         try:
             self.keras_model = load_model(latest_model_path)
         except Exception as e:
-            handle_error("Model '{0}' is not a valid HDF5 Keras model and cannot be loaded.".format(latest_model_path), e)
+            handle_error("Unfortunately, the model did not parse as a valid HDF5 Keras model and cannot be loaded for an unkown reason. A backup of the model will be created, after which training will restart from scratch.".format(latest_model_path), e)
+            try:
+                copyfile(latest_model_file, "{}.backup".format(latest_model_path)))
+            except Exception as e:
+                handle_error("Looks like you're having a bad day. The copy operation failed for an unknown reason. We will exit before causing some serious damage ;). Better luck next time. Please verify your directory permissions and your default umask!.", e)
+                sys.exit(-3)
             return False
         return True
 
