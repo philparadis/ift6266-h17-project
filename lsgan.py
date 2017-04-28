@@ -42,7 +42,7 @@ class LSGAN_Model(GAN_BaseModel):
     # We create two models: The generator and the critic network.
     # The models are the same as in the Lasagne DCGAN example, except that the
     # discriminator is now a critic with linear output instead of sigmoid output.
-    def build_generator(self, input_var=None):
+    def build_generator_architecture1(self, input_var=None):
         from lasagne.layers import InputLayer, ReshapeLayer, DenseLayer, DropoutLayer
         try:
             from lasagne.layers import TransposedConv2DLayer as Deconv2DLayer
@@ -139,7 +139,7 @@ class LSGAN_Model(GAN_BaseModel):
         gen_dat = lasagne.layers.get_output(layer)
         return layer
 
-    def build_critic(self, input_var=None):
+    def build_critic_architecture1(self, input_var=None):
         from lasagne.layers import (InputLayer, Conv2DLayer, ReshapeLayer,
                                     DenseLayer, GaussianNoiseLayer)
         try:
@@ -317,8 +317,8 @@ class LSGAN_Model(GAN_BaseModel):
 
         # Create neural network model
         print("Building model and compiling functions...")
-        generator = self.build_generator(noise_var)
-        critic = self.build_critic(input_var)
+        generator = self.build_generator_architecture2(noise_var)
+        critic = self.build_critic_architecture2(input_var)
 
         # Create expression for passing real data through the critic
         real_out = lasagne.layers.get_output(critic)
@@ -407,16 +407,16 @@ class LSGAN_Model(GAN_BaseModel):
             # Generate 100 images, which we will output in a 10x10 grid
             samples = np.array(gen_fn(lasagne.utils.floatX(np.random.rand(10*10, 100))))
             samples = denormalize_data(samples)
-            samples_path = os.path.join(settings.EPOCHS_DIR, 'samples_epoch{0:<5}.png'.format(epoch + 1))
+            samples_path = os.path.join(settings.EPOCHS_DIR, 'samples_epoch{0:0<5}.png'.format(epoch + 1))
             # Generate a single image
             listx = 2*gen_fn(lasagne.utils.floatX(np.random.rand(1, 100))) # Samples lie uniformly within [-2, 2]
             listy = 2*gen_fn(lasagne.utils.floatX(np.random.rand(1, 100))) # Samples lie uniformly within [-2, 2]
             sample = np.array([a*b for a, b in zip(listx, listy)]) # Latent variables lie non-uniformly within [-4, 4]
             sample = denormalize_data(sample)
-            sample_path = os.path.join(settings.EPOCHS_DIR, 'one_sample_epoch{0:<5}.png'.format(epoch + 1))
+            sample_path = os.path.join(settings.EPOCHS_DIR, 'one_sample_epoch{0:0<5}.png'.format(epoch + 1))
             unif_sample = np.array(gen_fn(lasagne.utils.floatX(np.random.rand(1, 100))))
             unif_sample = denormalize_data(unif_sample)
-            unif_sample_path = os.path.join(settings.EPOCHS_DIR, 'unif_sample_epoch{0:<5}.png'.format(epoch + 1))
+            unif_sample_path = os.path.join(settings.EPOCHS_DIR, 'unif_sample_epoch{0:0<5}.png'.format(epoch + 1))
             try:
                 import PIL.Image as Image
             except ImportError as e:
