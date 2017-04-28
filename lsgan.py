@@ -63,7 +63,7 @@ class LSGAN_Model(GAN_BaseModel):
             from lasagne.layers import batch_norm
         from lasagne.nonlinearities import sigmoid
         from lasagne.nonlinearities import LeakyRectify
-        lrelu = LeakyRectify(0.2)
+        activation = LeakyRectify(0.2)
         # input: 100dim
         layer = InputLayer(shape=(None, 100), input_var=input_var)
         # fully-connected layer
@@ -82,13 +82,13 @@ class LSGAN_Model(GAN_BaseModel):
         layer = batch_norm(Deconv2DLayer(layer, 96, 5, stride=2, crop='same',
                                          output_size=32, nonlinearity=activation))
         layer = DropoutLayer(layer, p=0.5)
-        layer =            Deconv2DLayer(layer, 3, 5, stride=2, crop='same',
-                                         output_size=64, nonlinearity=sigmoid)
+        layer = Deconv2DLayer(layer, 3, 5, stride=2, crop='same',
+                              output_size=64, nonlinearity=sigmoid)
         print ("Generator output:", layer.output_shape)
         return layer
 
     def build_generator_architecture2(self, input_var=None):
-        from lasagne.layers import InputLayer, ReshapeLayer, DenseLayer, DropoutLayer
+        from lasagne.layers import InputLayer, ReshapeLayer, DenseLayer, DropoutLayer, GaussianNoiseLayer
         try:
             from lasagne.layers import TransposedConv2DLayer as Deconv2DLayer
         except ImportError:
@@ -141,7 +141,7 @@ class LSGAN_Model(GAN_BaseModel):
         # TODO: Do we need this layer???
         #layer = batch_norm(DenseLayer(layer, 1024))
         # project and reshape
-        layer = batch_norm(DenseLayer(layer, num_units = 512*4*4, W=W_init, nonlinear=lrelu, g=None))
+        layer = batch_norm(DenseLayer(layer, num_units = 512*4*4, W=W_init, nonlinear=activation, g=None))
         layer = ReshapeLayer(layer, ([0], 512, 4, 4))
         
         # 3x Deconvs and batch norms
