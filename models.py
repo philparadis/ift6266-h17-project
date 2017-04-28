@@ -209,7 +209,7 @@ class KerasModel(BaseModel):
         except Exception as e:
             handle_error("Unfortunately, the model did not parse as a valid HDF5 Keras model and cannot be loaded for an unkown reason. A backup of the model will be created, after which training will restart from scratch.".format(latest_model_path), e)
             try:
-                copyfile(latest_model_file, "{}.backup".format(latest_model_path)))
+                copyfile(latest_model_file, "{}.backup".format(latest_model_path))
             except Exception as e:
                 handle_error("Looks like you're having a bad day. The copy operation failed for an unknown reason. We will exit before causing some serious damage ;). Better luck next time. Please verify your directory permissions and your default umask!.", e)
                 sys.exit(-3)
@@ -455,7 +455,7 @@ class GAN_BaseModel(BaseModel):
         settings.touch_dir(settings.CHECKPOINTS_DIR)
         settings.touch_dir(settings.MODELS_DIR)
         epoch_gen_path = "model_generator_epoch{}.npy".format(self.epochs_completed)
-        epoch_disc_path = "model_discriminator_epoch{}.npy".format(self.epochs_completed))
+        epoch_disc_path = "model_discriminator_epoch{}.npy".format(self.epochs_completed)
         full_gen_path = os.path.join(settings.CHECKPOINTS_DIR, epoch_gen_path)
         full_disc_path = os.path.join(settings.CHECKPOINTS_DIR, epoch_disc_path)
         symlink_gen_path = os.path.join(settings.MODELS_DIR, "model_generator.npy")
