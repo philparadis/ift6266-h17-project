@@ -214,7 +214,7 @@ class KerasModel(BaseModel):
         settings.touch_dir(settings.MODELS_DIR)
 
         self.model_path = os.path.join(settings.CHECKPOINTS_DIR, "model_epoch{0}.hdf5".format(self.epochs_completed))
-        print_positive("Saving model after epoch #{} to disk: {}.".format(self.epochs_completed, self.model_path))
+        print_positive("Saving model after epoch #{} to disk:\n{}.".format(self.epochs_completed, self.model_path))
         self.keras_model.save(self.model_path)
 
         model_symlink_path = os.path.join(settings.MODELS_DIR, "model.hdf5")
@@ -260,7 +260,7 @@ class KerasModel(BaseModel):
 
         ### Print the major params again, for convenience
         print_info("Starting training from epoch {0} to epoch {1} {2}, creating checkpoints every {3} epochs."
-                   .format(self.epochs_completed,
+                   .format(self.epochs_completed + 1,
                            self.epochs_completed + settings.NUM_EPOCHS,
                            "(i.e. training an extra {0} epochs)".format(settings.NUM_EPOCHS) if self.epochs_completed == 0 else "",
                            settings.EPOCHS_PER_CHECKPOINT))
@@ -268,8 +268,8 @@ class KerasModel(BaseModel):
         print_info("Ready to start training! For convenience, here are the most important parameters we shall be using again.")
         print_positive("TRAINING PARAMETERS:")
         print(" * num_epochs            = {}".format(settings.NUM_EPOCHS))
-        print(" * initial_epoch         = {}".format(self.epochs_completed))
-        print(" * final_epoch           = {}".format(self.epochs_completed + settings.NUM_EPOCHS - 1))
+        print(" * initial_epoch         = {}".format(self.epochs_completed + 1))
+        print(" * final_epoch           = {}".format(self.epochs_completed + settings.NUM_EPOCHS))
         print(" * epochs_per_checkpoint = {}".format(settings.EPOCHS_PER_CHECKPOINT))
         print(" * batch_size            = {}".format(self.hyper['batch_size']))
         print(" * optimizer             = {}".format(self.hyper['optimizer']))
@@ -400,8 +400,63 @@ class Conv_MLP(KerasModel):
     
         self.keras_model.add(Dense(units=model_params.output_dim))
 
+class LasagneModel(BaseModel):
+        # And load them again later on like this:
+        # with np.load('model.npz') as f:
+        #     param_values = [f['arr_%d' % i] for i in range(len(f.files))]
+        # lasagne.layers.set_all_param_values(network, param_values)
 
-class BaseGAN(BaseModel):
+    def load_model(self):
+        """Return True if a valid model was found and correctly loaded. Return False if no model was loaded."""
+        settings.touch_dir(settings.CHECKPOINTS_DIR)
+        settings.touch_dir(settings.BASE_DIR)
+        latest_model_path = self.model_path
+        if not os.path.isfile(latest_model_path):
+            if not os.path.isfile(self.current_model_path):
+                latest_model_path = self.current_model_path
+                print_warning("Cannot find model's HDF5 file at path '{}'".format(self.current_model_path))
+                return False
+            
+        print_positive("Found latest HDF5 model saved to disk at: {}".format(latest_model_path))
+        print_info("Attempting to load model...")
+        try:
+            open(latest_model_path, "r").close()
+        except Exception as e:
+            handle_error("Do not have permission to open for reading HDF5 model located at'{}'.".format(latest_model_path), e)
+            return False
+        
+        try:
+            self.keras_model = load_model(latest_model_path)
+        except Exception as e:
+            handle_error("Model '{0}' is not a valid HDF5 Keras model and cannot be loaded.".format(latest_model_path), e)
+            return False
+        return True
+
+        
+    def save_model(self):
+        # Optionally, you could now dump the network weights to a file like this:
+        np.savez('lsgan_mnist_gen.npz', *lasagne.layers.get_all_param_values(generator))
+        np.savez('lsgan_mnist_crit.npz', *lasagne.layers.get_all_param_values(critic))
+        #
+        # And load them again later on like this:
+        # with np.load('model.npz') as f:
+        #     param_values = [f['arr_%d' % i] for i in range(len(f.files))]
+        # lasagne.layers.set_all_param_values(network, param_values)
+
+        from keras import models
+
+        settings.touch_dir(settings.CHECKPOINTS_DIR)
+        settings.touch_dir(settings.MODELS_DIR)
+
+        self.model_path = os.path.join(settings.CHECKPOINTS_DIR, "model_epoch{0}.hdf5".format(self.epochs_completed))
+        print_positive("Saving model after epoch #{} to disk:\n{}.".format(self.epochs_completed, self.model_path))
+        self.keras_model.save(self.model_path)
+
+        model_symlink_path = os.path.join(settings.MODELS_DIR, "model.hdf5")
+        force_symlink("../checkpoints/model_epoch{0}.hdf5".format(self.epochs_completed), model_symlink_path)
+    
+
+class GAN_BaseModel(BaseModel):
     def __init__(self, model_name, hyperparams = hyper_params.default_dcgan_hyper_params):
         super(BaseGAN, self).__init__(model_name = model_name, hyperparams = hyperparams)
         self.generator = None
@@ -409,21 +464,18 @@ class BaseGAN(BaseModel):
         self.train_fn = None
         self.gen_fn = None
 
+
+            
+class DCGAN_Model(BaseModel):
+    def __init__(self, model_name, hyperparams = hyper_params.default_dcgan_hyper_params):
+        super(DCGAN_Model, self).__init__(model_name = model_name, hyperparams = hyperparams)
+
+    def train(self, dataset):
+        pass
+
 class WGAN_Model(BaseModel):
     def __init__(self, model_name, hyperparams = hyper_params.default_dcgan_hyper_params):
-        super(DCGAN_Model, self).__init__(model_name = model_name, hyperparams = hyperparams)
+        super(WGAN_Model, self).__init__(model_name = model_name, hyperparams = hyperparams)
 
     def train(self, dataset):
-        import dcgan_lasagne
-        generator, discriminator, train_fn, gen_fn = dcgan_lasagne.train(dataset, num_epochs=settings.NUM_EPOCHS, initial_eta=5e-4)
-        return generator, discriminator, train_fn, gen_fn
-
-class DCGAN_Model(BaseModel):
-class LSGAN_Model(BaseModel):
-    def __init__(self, model_name, hyperparams = hyper_params.default_dcgan_hyper_params):
-        super(DCGAN_Model, self).__init__(model_name = model_name, hyperparams = hyperparams)
-
-    def train(self, dataset):
-        import dcgan_lasagne
-        generator, discriminator, train_fn, gen_fn = dcgan_lasagne.train(dataset, num_epochs=settings.NUM_EPOCHS, initial_eta=5e-4)
-        return generator, discriminator, train_fn, gen_fn
+        pass
