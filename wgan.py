@@ -226,8 +226,8 @@ def train(Dataset, num_epochs=1000, epochsize=100, batchsize=64, initial_eta=5e-
         print("  Wasserstein distance:\t\t{}".format(np.mean(critic_scores)))
 
         # And finally, we plot some generated data
-        samples = gen_fn(lasagne.utils.floatX(np.random.rand(10*10, 100)))
-        sample = gen_fn(lasagne.utils.floatX(np.random.rand(1, 100)))
+        samples = np.array(gen_fn(lasagne.utils.floatX(np.random.rand(10*10, 100))))
+        sample = np.array(gen_fn(lasagne.utils.floatX(np.random.rand(1, 100))))
 
         samples = dataset.denormalize_data(samples)
         sample = dataset.denormalize_data(sample)

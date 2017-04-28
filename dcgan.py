@@ -250,8 +250,8 @@ def train(Dataset, num_epochs=200, batchsize=128, initial_eta=2e-4):
         print("  training loss:\t\t{}".format(train_err / train_batches))
 
         # And finally, we plot some generated data
-        samples = gen_fn(lasagne.utils.floatX(np.random.rand(10*10, 100)))
-        sample = gen_fn(lasagne.utils.floatX(np.random.rand(1, 100)))
+        samples = np.array(gen_fn(lasagne.utils.floatX(np.random.rand(10*10, 100))))
+        sample = np.array(gen_fn(lasagne.utils.floatX(np.random.rand(1, 100))))
 
         samples = dataset.denormalize_data(samples)
         sample = dataset.denormalize_data(sample)
