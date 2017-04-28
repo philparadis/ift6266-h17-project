@@ -11,6 +11,7 @@ import settings
 from utils import normalize_data, denormalize_data
 from utils import save_keras_predictions, print_results_as_html
 from utils import unflatten_to_4tensor, unflatten_to_3tensor, transpose_colors_channel
+from utils import handle_critical, handle_error, handle_warning
 from utils import print_critical, print_error, print_warning, print_info, print_positive
 
 #######################
@@ -87,14 +88,21 @@ def run_experiment():
     elif settings.MODEL == "wgan":
         model = models.WGAN_Model(settings.MODEL)
     elif settings.MODEL == "lsgan":
-        model = models.LSGAN_Model(settings.MODEL)
+        from lsgan import LSGAN_Model
+        model = LSGAN_Model(settings.MODEL)
     else:
         raise NotImplementedError()
+
+    ### Check if --force flag was passed
+    if settings.FORCE_RUN:
+        stopfile = os.path.join(settings.BASE_DIR, "STOP")
+        if os.path.isfile(stopfile):
+            os.remove(stopfile)
 
     ### Check for STOP file in BASE_DIR. Who knows, this experiment could
     ### be a baddy which we certainly don't want to waste precious GPU time on! Oh no!
     if model.check_stop_file():
-        print_error("Oh dear, it looks like a STOP file is present in this experiment's base directory, located here:\n{}\nIf you think the STOP file was added by error and you would like to pursue this experiment further, simply delete this file (which is empty, anyway).")
+        print_error("Oh dear, it looks like a STOP file is present in this experiment's base directory, located here:\n{}\nIf you think the STOP file was added by error and you would like to pursue this experiment further, simply feel absolute free to delete this file (which is empty, anyway).".format(os.path.join(settings.BASE_DIR, "STOP")))
         sys.exit(-2)
 
     ### Load checkpoint (if any). This will also load the hyper parameters file.
@@ -118,12 +126,11 @@ def run_experiment():
             model.initialize()
             model.build()
         elif settings.MODEL == "dcgan":
-            pass
+            model.initialize()
         elif settings.MODEL == "wgan":
-            pass
+            model.initialize()
         elif settings.MODEL == "lsgan":
             model.initialize()
-            pass
         else:
             raise NotImplementedError()
         
@@ -277,7 +284,7 @@ def run_experiment():
         Dataset.preprocess()
         Dataset.normalize()
         Dataset.preload()
-        model.train(Dataset)
+        generator, discriminator, train_fn, gen_fn = model.train(Dataset, num_epochs = settings.NUM_EPOCHS, epochsize = 10, batchsize = 64, initial_eta = 8e-5)
         Dataset.denormalize()
         
         settings.touch_dir(settings.SAMPLES_DIR)
@@ -293,7 +300,7 @@ def run_experiment():
             path = os.path.join(settings.SAMPLES_DIR, 'one_sample_%i.png' % i)
             Image.fromarray(sample.reshape(3, 64, 64).transpose(1, 2, 0).reshape(64, 64, 3)).save(path)
     elif settings.MODEL == "wgan": 
-        import wgan_lasagne
+        import wgan
 
         Dataset.preprocess()
         Dataset.normalize()
@@ -317,12 +324,11 @@ def run_experiment():
         Dataset.preprocess()
         Dataset.normalize()
         Dataset.preload()
-        try:
-            model.train(Dataset, num_epochs = settings.NUM_EPOCHS, epochsize = 10, batchsize = 32, initial_eta = 8e-5))
-        except Exception as e:
-            print_error("Failure during training of LS-GAN model, experiment name = {}.\nAdding STOP file to the base directory.")
-            model.create_stop_file()
-            raise e
+#        try:
+        generator, critic, train_fn, gen_fn = model.train(Dataset, num_epochs = settings.NUM_EPOCHS, epochsize = 10, batchsize = 64, initial_eta = 8e-5)
+#        except Exception as e:
+#            model.create_stop_file()
+#            handle_error("Failure during training of LS-GAN model, experiment name = '{}'.\nAdding STOP file to the base directory.".format(settings.EXP_NAME), e)
         Dataset.denormalize()
         
         settings.touch_dir(settings.SAMPLES_DIR)
