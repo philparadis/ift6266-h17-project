@@ -106,14 +106,17 @@ def run_experiment():
         ### Build model's architecture
         print("(!) No valid checkpoint found for this experiment. Building and training model from scratch.")
         if settings.MODEL == "mlp" or settings.MODEL == "test":
+            model.initialize()
             model.build()
         elif settings.MODEL == "conv_mlp":
+            model.initialize()
             model.build()
         elif settings.MODEL == "dcgan":
             pass
         elif settings.MODEL == "wgan":
             pass
         elif settings.MODEL == "lsgan":
+            model.initialize()
             pass
         else:
             raise NotImplementedError()
@@ -305,8 +308,6 @@ def run_experiment():
             path = os.path.join(settings.SAMPLES_DIR, 'one_sample_%i.png' % i)
             Image.fromarray(sample.reshape(3, 64, 64).transpose(1, 2, 0).reshape(64, 64, 3)).save(path) 
     elif settings.MODEL == "lsgan": 
-        import lsgan_lasagne
-
         Dataset.preprocess()
         Dataset.normalize()
         Dataset.preload()
