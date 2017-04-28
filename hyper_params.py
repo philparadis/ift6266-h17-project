@@ -1,3 +1,5 @@
+### Simple MLPs and Conv-MLPs ###
+
 default_test_hyper_params = {
     "input_dim" : 64*64*3 - 32*32*3,
     "output_dim" : 32*32*3,
@@ -27,6 +29,18 @@ default_conv_mlp_hyper_params = {
     "convolution" : { "receptive_field_size" : 5, "stride" : 1, "padding" : "same" }
     }
 
+### GANs ###
+
+default_gan_basemodel_hyper_params  = {
+    "input_dim" : (None, 3, 64, 64),
+    "output_dim" : (None, 3, 64, 64),
+    "loss_function" : "non_saturating_heuristic",
+    "optimizer" : "adam",
+    "learning_rate" : 1e-4,
+    "batch_size" : 64
+    }
+
+
 default_dcgan_hyper_params = {
     "input_dim" : (None, 3, 64, 64),
     "output_dim" : (None, 3, 64, 64),
@@ -50,6 +64,7 @@ default_lsgan_hyper_params = {
     "output_dim" : (None, 3, 64, 64),
     "loss_function" : "non_saturating_heuristic",
     "optimizer" : "adam",
-    "learning_rate" : 1e-4,
+    "learning_rate" : 0.0008,
+    "beta_1" : 0.5,
     "batch_size" : 64
     }
