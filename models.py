@@ -400,7 +400,16 @@ class Conv_MLP(KerasModel):
     
         self.keras_model.add(Dense(units=model_params.output_dim))
 
-class DCGAN_Model(BaseModel):
+
+class BaseGAN(BaseModel):
+    def __init__(self, model_name, hyperparams = hyper_params.default_dcgan_hyper_params):
+        super(BaseGAN, self).__init__(model_name = model_name, hyperparams = hyperparams)
+        self.generator = None
+        self.discriminator = None
+        self.train_fn = None
+        self.gen_fn = None
+
+class WGAN_Model(BaseModel):
     def __init__(self, model_name, hyperparams = hyper_params.default_dcgan_hyper_params):
         super(DCGAN_Model, self).__init__(model_name = model_name, hyperparams = hyperparams)
 
@@ -409,13 +418,12 @@ class DCGAN_Model(BaseModel):
         generator, discriminator, train_fn, gen_fn = dcgan_lasagne.train(dataset, num_epochs=settings.NUM_EPOCHS, initial_eta=5e-4)
         return generator, discriminator, train_fn, gen_fn
 
-class WGAN_Model(BaseModel):
-    def __init__(self, model_name, hyperparams = hyper_params.default_wgan_hyper_params):
-        super(WGAN_Model, self).__init__(model_name = model_name, hyperparams = hyperparams)
-
-
+class DCGAN_Model(BaseModel):
 class LSGAN_Model(BaseModel):
-    def __init__(self, model_name, hyperparams = hyper_params.default_lsgan_hyper_params):
-        super(LSGAN_Model, self).__init__(model_name = model_name, hyperparams = hyperparams)
+    def __init__(self, model_name, hyperparams = hyper_params.default_dcgan_hyper_params):
+        super(DCGAN_Model, self).__init__(model_name = model_name, hyperparams = hyperparams)
 
-
+    def train(self, dataset):
+        import dcgan_lasagne
+        generator, discriminator, train_fn, gen_fn = dcgan_lasagne.train(dataset, num_epochs=settings.NUM_EPOCHS, initial_eta=5e-4)
+        return generator, discriminator, train_fn, gen_fn
