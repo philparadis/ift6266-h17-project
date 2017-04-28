@@ -101,7 +101,7 @@ class LSGAN_Model(GAN_BaseModel):
             from lasagne.layers import batch_norm
         from lasagne.nonlinearities import sigmoid
         from lasagne.nonlinearities import LeakyRectify
-        from lasagne.init import Normal, GlorotNormal
+        from lasagne.init import Normal, GlorotUniform
         import theano.tensor as T
 
         ### Variable definitions
@@ -255,7 +255,7 @@ class LSGAN_Model(GAN_BaseModel):
         except ImportError:
             from lasagne.layers import batch_norm
         from lasagne.nonlinearities import LeakyRectify
-        from lasagne.init import Normal, GlorotNormal
+        from lasagne.init import Normal, GlorotUniform
 
         ### Variable definitions
         ## MOCKING: Right now we are "mocking" the hyper parameters, but layer one we will use the user-provided values
