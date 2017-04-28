@@ -21,25 +21,17 @@ Jan Schlüter, 2017-03-07
 
 from __future__ import print_function
 
-import sys
-import os
-import time
-
+import sys, os, time
 import numpy as np
-import theano
-import theano.tensor as T
 
-import lasagne
-
-import models
-from gan_lasagne import GAN_BaseModel
-from utils import normalize_data, denormalize_data
+import hyper_params
+from models import GAN_BaseModel
 
 class LSGAN_Model(GAN_BaseModel):
     def __init__(self, model_name, hyperparams = hyper_params.default_lsgan_hyper_params):
         super(LSGAN_Model, self).__init__(model_name = model_name, hyperparams = hyperparams)
 
-    def initialize()
+    def initialize(self):
         self.gen_path = "generator.npy"
         self.disc_path = "critic.npy"
 
@@ -308,6 +300,9 @@ class LSGAN_Model(GAN_BaseModel):
         pass
 
     def train(self, dataset, num_epochs = 1000, epochsize = 100, batchsize = 64, initial_eta = 1e-4):
+        import lasagne
+        import theano.tensor as T
+        from theano import shared, function
         # Load the dataset
         print("Loading data...")
 
@@ -319,8 +314,8 @@ class LSGAN_Model(GAN_BaseModel):
 
         # Create neural network model
         print("Building model and compiling functions...")
-        generator = build_generator(noise_var)
-        critic = build_critic(input_var)
+        generator = self.build_generator(noise_var)
+        critic = self.build_critic(input_var)
 
         # Create expression for passing real data through the critic
         real_out = lasagne.layers.get_output(critic)
@@ -336,9 +331,10 @@ class LSGAN_Model(GAN_BaseModel):
                        lasagne.objectives.squared_error(fake_out, a).mean())
 
         # Create update expressions for training
+        from theano import shared
         generator_params = lasagne.layers.get_all_params(generator, trainable=True)
         critic_params = lasagne.layers.get_all_params(critic, trainable=True)
-        eta = theano.shared(lasagne.utils.floatX(initial_eta))
+        eta = shared(lasagne.utils.floatX(initial_eta))
         generator_updates = lasagne.updates.rmsprop(
             generator_loss, generator_params, learning_rate=eta)
         critic_updates = lasagne.updates.rmsprop(
@@ -351,17 +347,16 @@ class LSGAN_Model(GAN_BaseModel):
 
         # Compile functions performing a training step on a mini-batch (according
         # to the updates dictionary) and returning the corresponding score:
-        generator_train_fn = theano.function([], generator_loss,
-                                             givens={noise_var: noise},
-                                             updates=generator_updates)
-        critic_train_fn = theano.function([input_var], critic_loss,
-                                          givens={noise_var: noise},
-                                          updates=critic_updates)
+        from theano import function
+        generator_train_fn = function([], generator_loss,
+                                      givens={noise_var: noise},
+                                      updates=generator_updates)
+        critic_train_fn = function([input_var], critic_loss,
+                                   givens={noise_var: noise},
+                                   updates=critic_updates)
 
         # Compile another function generating some data
-        gen_fn = theano.function([noise_var],
-                                 lasagne.layers.get_output(generator,
-                                                           deterministic=True))
+        gen_fn = function([noise_var], lasagne.layers.get_output(generator, deterministic=True))
         ###########################################################################
         ###########################################################################
         ###########################################################################
@@ -372,10 +367,15 @@ class LSGAN_Model(GAN_BaseModel):
         ###########################################################################
         ###########################################################################
         ###########################################################################
+
+        # Create experiment's results directories
+        settings.touch_dir(settings.CHECKPOINTS_DIR)
+        settings.touch_dir(settings.EPOCHS_DIR)
+
         # Finally, launch the training loop.
         print("Starting training...")
         # We create an infinite supply of batches (as an iterable generator):
-        batches = iterate_minibatches(X_train, y_train, batchsize, shuffle=True,
+        batches = self.iterate_minibatches(X_train, y_train, batchsize, shuffle=True,
                                       forever=True)
         # We iterate over epochs:
         generator_updates = 0
@@ -395,34 +395,50 @@ class LSGAN_Model(GAN_BaseModel):
                 epoch + 1, num_epochs, time.time() - start_time))
             print("  generator loss: {}".format(np.mean(generator_losses)))
             print("  critic loss:    {}".format(np.mean(critic_losses)))
+            # TODO: Append performance to a file
 
             # And finally, we plot some generated data
-            samples = gen_fn(lasagne.utils.floatX(np.random.rand(42, 100)))
+            from utils import normalize_data, denormalize_data
+            from utils import print_warning
+            # And finally, we plot some generated data
+            # Generate 100 images, which we will output in a 10x10 grid
+            samples = gen_fn(lasagne.utils.floatX(np.random.rand(10*10, 100)))
+            samples = dataset.denormalize_data(samples)
+            samples_path = os.path.join(settings.EPOCHS_DIR, 'samples_epoch{0:<5}.png'.format(epoch + 1))
+            # Generate a single image
+            listx = 2*gen_fn(lasagne.utils.floatX(np.random.rand(1, 100))) # Samples lie uniformly within [-2, 2]
+            listy = 2*gen_fn(lasagne.utils.floatX(np.random.rand(1, 100))) # Samples lie uniformly within [-2, 2]
+            sample = [a*b for a, b in zip(listx, listy)] # Latent variables lie non-uniformly within [-4, 4]
+            sample = dataset.denormalize_data(sample)
+            sample_path = os.path.join(settings.EPOCHS_DIR, 'one_sample_epoch{0:<5}.png'.format(epoch + 1))
+            unif_sample = gen_fn(lasagne.utils.floatX(np.random.rand(1, 100)))
+            unif_sample = dataset.denormalize_data(unif_sample)
+            unif_sample_path = os.path.join(settings.EPOCHS_DIR, 'unif_sample_epoch{0:<5}.png'.format(epoch + 1))
             try:
-                import matplotlib.pyplot as plt
-            except ImportError:
-                pass
+                import PIL.Image as Image
+            except ImportError as e:
+                print_warning("Cannot import module 'PIL.Image', which is necessary for the LSGAN to output its sample images. You should really install it!")
             else:
-                plt.imsave('lsgan_mnist_samples.png',
-                           (samples.reshape(6, 7, 28, 28)
-                                   .transpose(0, 2, 1, 3)
-                                   .reshape(6*28, 7*28)),
-                           cmap='gray')
+                Image.fromarray(samples.reshape(10, 10, 3, 64, 64)
+                                .transpose(0, 3, 1, 4, 2)
+                                .reshape(10*64, 10*64, 3)).save(samples_path)
+                Image.fromarray(sample.reshape(3, 64, 64).transpose(1, 2, 0).reshape(64, 64, 3)).save(sample_path)
+                Image.fromarray(unif_sample.reshape(3, 64, 64).transpose(1, 2, 0).reshape(64, 64, 3)).save(unif_sample_path)
 
+            
             # After half the epochs, we start decaying the learn rate towards zero
             if epoch >= num_epochs // 2:
                 progress = float(epoch) / num_epochs
                 eta.set_value(lasagne.utils.floatX(initial_eta*2*(1 - progress)))
 
-        # Optionally, you could now dump the network weights to a file like this:
+        ### Save model to class variables
         self.generator = generator
         self.discriminator = critic
         self.train_fd = train_fn
-        self.generator_fn 
+        self.gen_fn = gen_fn
+
+        ### Save model to disk
         self.save_model()
-        #
-        # And load them again later on like this:
-        # with np.load('model.npz') as f:
-        #     param_values = [f['arr_%d' % i] for i in range(len(f.files))]
-        # lasagne.layers.set_all_param_values(network, param_values)
+
+        return generator, critic, train_fn, gen_fn
 
