@@ -101,6 +101,7 @@ class LSGAN_Model(GAN_BaseModel):
             from lasagne.layers import batch_norm
         from lasagne.nonlinearities import sigmoid
         from lasagne.nonlinearities import LeakyRectify
+        from lasagne.init import Normal, GlorotNormal
         import theano.tensor as T
 
         ### Variable definitions
