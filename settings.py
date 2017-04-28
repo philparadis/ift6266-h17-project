@@ -1,4 +1,3 @@
-# CREDIT: This file's code was inspired by Philip Pacquette's
 import os
 
 _root = None
@@ -15,6 +14,7 @@ NUM_EPOCHS = 20
 MAX_EPOCHS = 2000
 BATCH_SIZE = 128
 LEARNING_RATE = 1e-4
+FORCE_RUN = False
 EPOCHS_PER_CHECKPOINT = 5
 VERBOSE = 2
 RELOAD_MODEL = False
@@ -29,6 +29,9 @@ DATASET_AUGMENTATION = True
 LOAD_BLACK_AND_WHITE_IMAGES = False
 SAVE_MODEL_TO_DISK = True
 SAMPLES_TO_GENERATE_PER_EPOCH = -1 # Use -1 to disable this feature
+
+# Modules available
+MODULE_HAVE_XTRACEBACK = False
 
 # Dataset settings
 IMAGE_WIDTH  = 64
