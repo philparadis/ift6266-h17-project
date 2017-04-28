@@ -141,7 +141,7 @@ class LSGAN_Model(GAN_BaseModel):
         # TODO: Do we need this layer???
         #layer = batch_norm(DenseLayer(layer, 1024))
         # project and reshape
-        layer = batch_norm(DenseLayer(layer, num_units = 512*4*4, W=W_init, nonlinear=activation, g=None))
+        layer = batch_norm(DenseLayer(layer, num_units = 512*4*4, W=W_init, nonlinearity=activation, g=None))
         layer = ReshapeLayer(layer, ([0], 512, 4, 4))
         
         # 3x Deconvs and batch norms
