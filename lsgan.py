@@ -141,36 +141,36 @@ class LSGAN_Model(GAN_BaseModel):
         # TODO: Do we need this layer???
         #layer = batch_norm(DenseLayer(layer, 1024))
         # project and reshape
-        layer = batch_norm(DenseLayer(layer, num_units = 512*4*4, W=W_init, nonlinearity=activation, g=None))
+        layer = batch_norm(DenseLayer(layer, num_units = 512*4*4, W=W_init, nonlinearity=activation))
         layer = ReshapeLayer(layer, ([0], 512, 4, 4))
         
         # 3x Deconvs and batch norms
         layer = batch_norm(Deconv2DLayer(layer, (None, 256, 8, 8), (5, 5), W=W_init,
-                                         nonlinearity=activation, g=None))
+                                         nonlinearity=activation))
         layer = DropoutLayer(layer, p=0.5) if dropout else layer
         layer = batch_norm(Deconv2DLayer(layer, (None, 256, 8, 8), (5, 5), W=W_init,
-                                         stride=2, nonlinearity=activation, g=None))
+                                         stride=2, nonlinearity=activation))
         layer = DropoutLayer(layer, p=0.5) if dropout else layer
 
         # 3x Deconvs and batch norms
         layer = batch_norm(Deconv2DLayer(layer, (None, 128, 16, 16), (5, 5), W=W_init,
-                                         nonlinearity=activation, g=None))
+                                         nonlinearity=activation))
         layer = DropoutLayer(layer, p=0.5) if dropout else layer
         layer = batch_norm(Deconv2DLayer(layer, (None, 128, 16, 16), (5, 5), W=W_init,
-                                         nonlinearity=activation, g=None))
+                                         nonlinearity=activation))
         layer = DropoutLayer(layer, p=0.5) if dropout else layer
         layer = batch_norm(Deconv2DLayer(layer, (None, 128, 16, 16), (5, 5), W=W_init,
-                                         stride=2, nonlinearity=activation, g=None))
+                                         stride=2, nonlinearity=activation))
 
         # 3x Deconvs and batch norms
         layer = batch_norm(Deconv2DLayer(layer, (None, 64, 32, 32), (5, 5), W=W_init,
-                                         nonlinearity=activation, g=None))
+                                         nonlinearity=activation))
         layer = DropoutLayer(layer, p=0.5) if dropout else layer
         layer = batch_norm(Deconv2DLayer(layer, (None, 64, 32, 32), (5, 5), W=W_init,
-                                         nonlinearity=activation, g=None))
+                                         nonlinearity=activation))
         layer = DropoutLayer(layer, p=0.5) if dropout else layer
         layer = batch_norm(Deconv2DLayer(layer, (None, 64, 32, 32), (5, 5), W=W_init,
-                                         stride=2, nonlinearity=activation, g=None))
+                                         stride=2, nonlinearity=activation))
         layer = DropoutLayer(layer, p=0.5) if dropout else layer
 
         # 1x Deconvs and batch norms
