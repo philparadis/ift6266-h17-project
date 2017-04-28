@@ -25,6 +25,7 @@ import sys, os, time
 import numpy as np
 
 import hyper_params
+import settings
 from models import GAN_BaseModel
 
 class LSGAN_Model(GAN_BaseModel):
@@ -403,16 +404,16 @@ class LSGAN_Model(GAN_BaseModel):
             # And finally, we plot some generated data
             # Generate 100 images, which we will output in a 10x10 grid
             samples = gen_fn(lasagne.utils.floatX(np.random.rand(10*10, 100)))
-            samples = dataset.denormalize_data(samples)
+            samples = denormalize_data(samples)
             samples_path = os.path.join(settings.EPOCHS_DIR, 'samples_epoch{0:<5}.png'.format(epoch + 1))
             # Generate a single image
             listx = 2*gen_fn(lasagne.utils.floatX(np.random.rand(1, 100))) # Samples lie uniformly within [-2, 2]
             listy = 2*gen_fn(lasagne.utils.floatX(np.random.rand(1, 100))) # Samples lie uniformly within [-2, 2]
             sample = [a*b for a, b in zip(listx, listy)] # Latent variables lie non-uniformly within [-4, 4]
-            sample = dataset.denormalize_data(sample)
+            sample = denormalize_data(sample)
             sample_path = os.path.join(settings.EPOCHS_DIR, 'one_sample_epoch{0:<5}.png'.format(epoch + 1))
             unif_sample = gen_fn(lasagne.utils.floatX(np.random.rand(1, 100)))
-            unif_sample = dataset.denormalize_data(unif_sample)
+            unif_sample = denormalize_data(unif_sample)
             unif_sample_path = os.path.join(settings.EPOCHS_DIR, 'unif_sample_epoch{0:<5}.png'.format(epoch + 1))
             try:
                 import PIL.Image as Image
