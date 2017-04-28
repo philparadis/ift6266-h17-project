@@ -1,7 +1,5 @@
 import os, sys, errno
 import json
-import traceback
-import xtraceback
 import numpy as np
 from termcolor import cprint
 
@@ -79,7 +77,7 @@ def transpose_colors_channel(data, from_first_to_last = True):
 ### Pretty exceptions handling and pretty logging messages
 
 def handle_exceptions(msg, e, type, fg = None, bg = None, attrs = []):
-    from settings import VERBOSE
+    from settings import VERBOSE, MODULE_HAVE_XTRACEBACK
 
     cprint("(!) {0}: {1}".format(type, msg), fg, bg, attrs=attrs)
     # Write the exception reason/message in Magenta
@@ -87,11 +85,16 @@ def handle_exceptions(msg, e, type, fg = None, bg = None, attrs = []):
     print(e)
     # Return to normal color
     sys.stdout.write("\033[30m")
-    # If verbose is not 0, print the trace
-    if VERBOSE >= 1:
+
+    if not MODULE_HAVE_XTRACEBACK:
+        raise e
+    elif VERBOSE >= 1:
+        # If verbose is not 0, print the trace
         # Print in Magenta
+        from traceback import print_exc
+
         print("\033[35m(!) Traceback of exception:\033[30m")
-        traceback.print_exc()
+        print_exc()
 
 def handle_critical(msg, e):
     handle_exceptions(msg, e, type = "CRITICAL", fg = "white", bg = "on_red", attrs=["bold", "underline"])
