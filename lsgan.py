@@ -35,6 +35,8 @@ class LSGAN_Model(GAN_BaseModel):
     def initialize(self):
         self.gen_path = "generator.npy"
         self.disc_path = "critic.npy"
+        self.train_fn = None
+        self.gen_fn = None
 
     # ##################### Build the neural network model #######################
     # We create two models: The generator and the critic network.
@@ -435,7 +437,8 @@ class LSGAN_Model(GAN_BaseModel):
         ### Save model to class variables
         self.generator = generator
         self.discriminator = critic
-        self.train_fd = train_fn
+        self.critic_train_fn = critic_train_fn
+        self.generator_train_fn = critic_generator_fn
         self.gen_fn = gen_fn
 
         ### Save model to disk

@@ -325,7 +325,7 @@ def run_experiment():
         Dataset.normalize()
         Dataset.preload()
 #        try:
-        generator, critic, train_fn, gen_fn = model.train(Dataset, num_epochs = settings.NUM_EPOCHS, epochsize = 10, batchsize = 64, initial_eta = 8e-5)
+        generator, critic, generator_train_fn, critic_train_fn, gen_fn = model.train(Dataset, num_epochs = settings.NUM_EPOCHS, epochsize = 10, batchsize = 64, initial_eta = 8e-5)
 #        except Exception as e:
 #            model.create_stop_file()
 #            handle_error("Failure during training of LS-GAN model, experiment name = '{}'.\nAdding STOP file to the base directory.".format(settings.EXP_NAME), e)
