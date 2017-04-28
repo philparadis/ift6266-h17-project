@@ -25,6 +25,9 @@ class BaseModel(object):
         self.resume_from_checkpoint = False
         self.model_compiled = False
 
+    def initialize(self):
+        pass
+
     def load_model(self):
         pass
     
@@ -212,11 +215,9 @@ class KerasModel(BaseModel):
 
         settings.touch_dir(settings.CHECKPOINTS_DIR)
         settings.touch_dir(settings.MODELS_DIR)
-
         self.model_path = os.path.join(settings.CHECKPOINTS_DIR, "model_epoch{0}.hdf5".format(self.epochs_completed))
         print_positive("Saving model after epoch #{} to disk:\n{}.".format(self.epochs_completed, self.model_path))
         self.keras_model.save(self.model_path)
-
         model_symlink_path = os.path.join(settings.MODELS_DIR, "model.hdf5")
         force_symlink("../checkpoints/model_epoch{0}.hdf5".format(self.epochs_completed), model_symlink_path)
 
@@ -400,72 +401,63 @@ class Conv_MLP(KerasModel):
     
         self.keras_model.add(Dense(units=model_params.output_dim))
 
-class LasagneModel(BaseModel):
-        # And load them again later on like this:
-        # with np.load('model.npz') as f:
-        #     param_values = [f['arr_%d' % i] for i in range(len(f.files))]
-        # lasagne.layers.set_all_param_values(network, param_values)
-
-    def load_model(self):
-        """Return True if a valid model was found and correctly loaded. Return False if no model was loaded."""
-        settings.touch_dir(settings.CHECKPOINTS_DIR)
-        settings.touch_dir(settings.BASE_DIR)
-        latest_model_path = self.model_path
-        if not os.path.isfile(latest_model_path):
-            if not os.path.isfile(self.current_model_path):
-                latest_model_path = self.current_model_path
-                print_warning("Cannot find model's HDF5 file at path '{}'".format(self.current_model_path))
-                return False
-            
-        print_positive("Found latest HDF5 model saved to disk at: {}".format(latest_model_path))
-        print_info("Attempting to load model...")
-        try:
-            open(latest_model_path, "r").close()
-        except Exception as e:
-            handle_error("Do not have permission to open for reading HDF5 model located at'{}'.".format(latest_model_path), e)
-            return False
-        
-        try:
-            self.keras_model = load_model(latest_model_path)
-        except Exception as e:
-            handle_error("Model '{0}' is not a valid HDF5 Keras model and cannot be loaded.".format(latest_model_path), e)
-            return False
-        return True
-
-        
-    def save_model(self):
-        # Optionally, you could now dump the network weights to a file like this:
-        np.savez('lsgan_mnist_gen.npz', *lasagne.layers.get_all_param_values(generator))
-        np.savez('lsgan_mnist_crit.npz', *lasagne.layers.get_all_param_values(critic))
-        #
-        # And load them again later on like this:
-        # with np.load('model.npz') as f:
-        #     param_values = [f['arr_%d' % i] for i in range(len(f.files))]
-        # lasagne.layers.set_all_param_values(network, param_values)
-
-        from keras import models
-
-        settings.touch_dir(settings.CHECKPOINTS_DIR)
-        settings.touch_dir(settings.MODELS_DIR)
-
-        self.model_path = os.path.join(settings.CHECKPOINTS_DIR, "model_epoch{0}.hdf5".format(self.epochs_completed))
-        print_positive("Saving model after epoch #{} to disk:\n{}.".format(self.epochs_completed, self.model_path))
-        self.keras_model.save(self.model_path)
-
-        model_symlink_path = os.path.join(settings.MODELS_DIR, "model.hdf5")
-        force_symlink("../checkpoints/model_epoch{0}.hdf5".format(self.epochs_completed), model_symlink_path)
-    
-
 class GAN_BaseModel(BaseModel):
-    def __init__(self, model_name, hyperparams = hyper_params.default_dcgan_hyper_params):
-        super(BaseGAN, self).__init__(model_name = model_name, hyperparams = hyperparams)
+    def __init__(self, model_name, hyperparams = hyper_params.default_gan_basemodel_hyper_params):
+        super(GAN_BaseModel, self).__init__(model_name = model_name, hyperparams = hyperparams)
+        self.gen_path = "generator.npy"
+        self.disc_path = "discriminator.npy"
         self.generator = None
         self.discriminator = None
         self.train_fn = None
         self.gen_fn = None
 
-
+    def load_model(self):
+        """Return True if a valid model was found and correctly loaded. Return False if no model was loaded."""
+        from lasagne.layers import set_all_param_values
+        settings.touch_dir(settings.CHECKPOINTS_DIR)
+        settings.touch_dir(settings.BASE_DIR)
+        if os.path.isfile(self.gen_path) and os.path.isfile(self.disc_path):
+            print_positive("Found latest '.npy' model's weights file saved to disk at path:\n{}".format(latest_model_path))
+        else:
+            print_warning("Could not find '.npy'  weights files, either {} or {}.".format(self.gen_path, self.disc_path), e)
+            return False
             
+        try:
+            ### Load the generator model's weights
+            full_gen_path = os.path.join(settings.MODELS_DIR, self.gen_path)
+            print_info("Attempting to load generator model: {}".format(full_gen_path))
+            with np.load(full_gen_path) as fp:
+                param_values = [fp['arr_%d' % i] for i in range(len(fp.files))]
+            set_all_param_values(self.generator, param_values)
+
+            ### Load the discriminator model's weights
+            full_disc_path = os.path.join(settings.MODELS_DIR, self.disc_path)
+            print_info("Attempting to load generator model: {}".format(full_disc_path))
+            with np.load(full_disc_path) as fp:
+                param_values = [fp['arr_%d' % i] for i in range(len(fp.files))]
+            set_all_param_values(self.discriminator, param_values)
+        except Exception as e:
+            handle_error("Failed to read or parse the '.npz' weights files, either {} or {}.".format(self.gen_path, self.disc_path), e)
+            return False
+        return True
+
+        
+    def save_model(self):
+        from lasagne.layers import get_all_param_values
+        # Save the gen and disc weights to disk
+        settings.touch_dir(settings.CHECKPOINTS_DIR)
+        settings.touch_dir(settings.MODELS_DIR)
+        epoch_gen_path = "model_generator_epoch{}.npy".format(self.epochs_completed)
+        epoch_disc_path = "model_discriminator_epoch{}.npy".format(self.epochs_completed))
+        full_gen_path = os.path.join(settings.CHECKPOINTS_DIR, epoch_gen_path)
+        full_disc_path = os.path.join(settings.CHECKPOINTS_DIR, epoch_disc_path)
+        symlink_gen_path = os.path.join(settings.MODELS_DIR, "model_generator.npy")
+        symlink_disc_path = os.path.join(settings.MODELS_DIR, "model_discriminator.npy")
+        np.save(full_gen_path, *get_all_param_values(self.generator))
+        np.save(full_disc_path, *get_all_param_values(self.discriminator))
+        force_symlink("../checkpoints/{}".format(epoch_gen_path), symlink_gen_path)
+        force_symlink("../checkpoints/{}".format(epoch_disc_path), symlink_disc_path)
+
 class DCGAN_Model(BaseModel):
     def __init__(self, model_name, hyperparams = hyper_params.default_dcgan_hyper_params):
         super(DCGAN_Model, self).__init__(model_name = model_name, hyperparams = hyperparams)
