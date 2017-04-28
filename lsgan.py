@@ -41,8 +41,8 @@ class LSGAN_Model(GAN_BaseModel):
         self.gen_fn = None
 
         # TODO: Turn this into a hyperparameters
-        self.optimizer = "rmsprop"
-        #self.optimizer = "adam"
+        #self.optimizer = "rmsprop"
+        self.optimizer = "adam"
         
 
     # ##################### Build the neural network model #######################
@@ -427,7 +427,7 @@ class LSGAN_Model(GAN_BaseModel):
                 generator_loss, generator_params, learning_rate=eta)
             critic_updates = lasagne.updates.rmsprop(
                 critic_loss, critic_params, learning_rate=eta)
-        else #adam
+        else: #adam
             generator_updates = lasagne.updates.adam(
                 generator_loss, generator_params, learning_rate=eta, beta1=0.5)
             critic_updates = lasagne.updates.adam(
