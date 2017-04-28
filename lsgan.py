@@ -101,7 +101,7 @@ class LSGAN_Model(GAN_BaseModel):
             from lasagne.layers import batch_norm
         from lasagne.nonlinearities import sigmoid
         from lasagne.nonlinearities import LeakyRectify
-        from lasagne.init import Normal, GlorotUniform
+        from lasagne.init import Normal
         import theano.tensor as T
 
         ### Variable definitions
@@ -118,10 +118,8 @@ class LSGAN_Model(GAN_BaseModel):
         alpha = 0.1 # slope of negative x axis of leaky ReLU
         activation = LeakyRectify(alpha)
         uniform_range = 0.015
-        normal_std = 0.05 # What??
-        #W_init = Normal(normal_std)
-        gain = math.sqrt(2/(1+alpha**2))
-        W_init = GlorotUniform(Uniform(uniform_range), gain = gain)
+        normal_std = 0.04
+        W_init = Normal(normal_std)
 
         # TODO: Change this so that accessing a key which doesn't exist doesn't trigger an
         # unhandled exception, crashing our program.
@@ -255,7 +253,7 @@ class LSGAN_Model(GAN_BaseModel):
         except ImportError:
             from lasagne.layers import batch_norm
         from lasagne.nonlinearities import LeakyRectify
-        from lasagne.init import Normal, GlorotUniform
+        from lasagne.init import Normal
 
         ### Variable definitions
         ## MOCKING: Right now we are "mocking" the hyper parameters, but layer one we will use the user-provided values
@@ -271,10 +269,8 @@ class LSGAN_Model(GAN_BaseModel):
         alpha = 0.25 # slope of negative x axis of leaky ReLU
         activation = LeakyRectify(alpha)
         uniform_range = 0.015
-        normal_std = 0.05 # What??
-        #W_init = Normal(normal_std)
-        gain = math.sqrt(2/(1+alpha**2))
-        W_init = GlorotUniform(Uniform(uniform_range), gain = gain)
+        normal_std = 0.04
+        W_init = Normal(normal_std)
 
         # TODO: Change this so that accessing a key which doesn't exist doesn't trigger an
         # unhandled exception, crashing our program.
