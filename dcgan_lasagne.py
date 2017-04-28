@@ -137,10 +137,10 @@ def build_discriminator(input_var=None):
     layer = batch_norm(Conv2DLayer(layer, 256, 5, stride=1, pad=2, nonlinearity=lrelu))
     layer = batch_norm(Conv2DLayer(layer, 192, 5, stride=2, pad=2, nonlinearity=lrelu))
     # 4 convolutions
-    layer = batch_norm(Conv2DLayer(layer, 384, 3, stride=1, pad=2, nonlinearity=lrelu))
-    layer = batch_norm(Conv2DLayer(layer, 384, 3, stride=1, pad=2, nonlinearity=lrelu))
-    layer = batch_norm(Conv2DLayer(layer, 384, 3, stride=1, pad=2, nonlinearity=lrelu))
-    layer = batch_norm(Conv2DLayer(layer, 384, 3, stride=2, pad=2, nonlinearity=lrelu))
+    layer = batch_norm(Conv2DLayer(layer, 384, 5, stride=1, pad=2, nonlinearity=lrelu))
+    layer = batch_norm(Conv2DLayer(layer, 384, 5, stride=1, pad=2, nonlinearity=lrelu))
+    layer = batch_norm(Conv2DLayer(layer, 384, 5, stride=1, pad=2, nonlinearity=lrelu))
+    layer = batch_norm(Conv2DLayer(layer, 384, 5, stride=2, pad=2, nonlinearity=lrelu))
     # fully-connected layer
     layer = batch_norm(DenseLayer(layer, 4096, nonlinearity=lrelu)) 
     # output layer
