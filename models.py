@@ -84,6 +84,11 @@ class BaseModel(object):
         if self.is_there_hyperparams_file():
             hyperparams = self.load_hyperparams()
 
+        if checkpoint == None or hyperparams == None:
+            # Do not attempt to load the model if we don't even have a checkpoint or hyperparams
+            self.resume_from_checkpoint = False
+            return None, None, False
+
         loaded_model = self.load_model()
 
         if checkpoint == None or hyperparams == None or not loaded_model:
@@ -441,7 +446,7 @@ class GAN_BaseModel(BaseModel):
         if os.path.isfile(self.full_gen_path) and os.path.isfile(self.full_disc_path):
             print_positive("Found latest '.npz' model's weights files saved to disk at paths:\n{}\n{}".format(self.full_gen_path, self.full_disc_path))
         else:
-            print_warning("Could not find '.npz'  weights files, either {} or {}.".format(self.full_gen_path, self.full_disc_path), e)
+            print_info("Cannot resume from checkpoint. Could not find '.npz'  weights files, either {} or {}.".format(self.full_gen_path, self.full_disc_path))
             return False
             
         try:
