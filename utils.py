@@ -10,11 +10,13 @@ def normalize_data(data):
         return
     data = data.astype('float32')
     data /= 255
+    data -= 0.5
     return data
 
 def denormalize_data(data):
     if data.dtype == 'uint8':
         return
+    data += 0.5
     data *= 255
     data = data.astype('uint8')
     return data

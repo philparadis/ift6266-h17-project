@@ -43,8 +43,8 @@ class LSGAN_Model(GAN_BaseModel):
         self.gen_fn = None
 
         # TODO: Turn this into a hyperparameters
-        #self.optimizer = "rmsprop"
-        self.optimizer = "adam"
+        self.optimizer = "rmsprop"
+        #self.optimizer = "adam"
         
 
     # ##################### Build the neural network model #######################
@@ -103,26 +103,28 @@ class LSGAN_Model(GAN_BaseModel):
             from lasagne.layers import batch_norm
         from lasagne.nonlinearities import sigmoid
         from lasagne.nonlinearities import LeakyRectify
+        from lasagne.init import Normal, GlorotNormal
 
         activation = LeakyRectify(0.2)
 
         # input: 100dim
         layer = InputLayer(shape=(None, 100), input_var=input_var)
         # project and reshape
-        layer = batch_norm(DenseLayer(layer, 512*4*4))
+        layer = batch_norm(DenseLayer(layer, 512*4*4, W=GlorotNormal(), nonlinearity=activation))
         layer = ReshapeLayer(layer, ([0], 512, 4, 4))
         ### four fractional-stride convolutions
         # Note: Apply dropouts in G. See tip #17 from "ganhacks"
-        layer = batch_norm(Deconv2DLayer(layer, 192, 5, stride=2, crop='same',
+        layer = batch_norm(Deconv2DLayer(layer, 256, 5, stride=2, crop='same', W=GlorotNormal()
                                          output_size=8, nonlinearity=activation))
-        layer = batch_norm(Deconv2DLayer(layer, 128, 5, stride=2, crop='same',
+        layer = DropoutLayer(layer, p=0.5)
+        layer = batch_norm(Deconv2DLayer(layer, 128, 5, stride=2, crop='same', W=GlorotNormal()
                                          output_size=16, nonlinearity=activation))
         layer = DropoutLayer(layer, p=0.5)
-        layer = batch_norm(Deconv2DLayer(layer, 96, 5, stride=2, crop='same',
+        layer = batch_norm(Deconv2DLayer(layer, 96, 5, stride=2, crop='same', W=GlorotNormal()
                                          output_size=32, nonlinearity=activation))
         layer = DropoutLayer(layer, p=0.5)
-        layer = Deconv2DLayer(layer, 3, 5, stride=2, crop='same',
-                              output_size=64, nonlinearity=sigmoid)
+        layer = Deconv2DLayer(layer, 3, 5, stride=2, crop='same', W=GlorotNormal()
+                              output_size=64, nonlinearity=tanh)
         print ("Generator output:", layer.output_shape)
         return layer
 
@@ -198,7 +200,6 @@ class LSGAN_Model(GAN_BaseModel):
 
         from lasagne.nonlinearities import sigmoid
         from lasagne.nonlinearities import LeakyRectify
-        from lasagne.init import Normal, GlorotUniform
         import theano.tensor as T
 
         ### Variable definitions
@@ -447,30 +448,26 @@ class LSGAN_Model(GAN_BaseModel):
             from lasagne.layers import batch_norm
         import gan_lasagne as GAN
         from lasagne.nonlinearities import LeakyRectify
-        from lasagne.init import Normal
+        from lasagne.init import Normal, GlorotNormal
 
         activation = LeakyRectify(0.2)
-        W_init = Normal(0.05)
 
         # input: (None, 3, 64, 64)
         layer = InputLayer(shape=(None, 3, 64, 64), input_var=input_var)
         # Injecting some noise after input layer
-        layer = GAN.GaussianNoiseLayer(layer, sigma=0.2)
+        layer = GAN.GaussianNoiseLayer(layer, sigma=0.1)
 
         # four convolutions
-        layer = batch_norm(Conv2DLayer(layer, 96, 5, stride=2, pad='same', nonlinearity=activation)) # 64 -> 32
-        layer = batch_norm(Conv2DLayer(layer, 128, 5, stride=2, pad='same', nonlinearity=activation)) # 32 -> 16
-        layer = batch_norm(Conv2DLayer(layer, 192, 7, stride=2, pad='same', nonlinearity=activation)) # 16 -> 8
-        layer = batch_norm(Conv2DLayer(layer, 256, 7, stride=2, pad='same', nonlinearity=activation)) # 8 -> 4
+        layer = batch_norm(Conv2DLayer(layer, 96, 5, stride=2, pad='same', W=GlorotNormal(), nonlinearity=activation)) # 64 -> 32
+        layer = batch_norm(Conv2DLayer(layer, 128, 5, stride=2, pad='same', W=GlorotNormal(), nonlinearity=activation)) # 32 -> 16
+        layer = batch_norm(Conv2DLayer(layer, 192, 7, stride=2, pad='same', W=GlorotNormal(), nonlinearity=activation)) # 16 -> 8
+        layer = batch_norm(Conv2DLayer(layer, 256, 7, stride=2, pad='same', W=GlorotNormal(), nonlinearity=activation)) # 8 -> 4
 
         # fully-connected layer
-        layer = batch_norm(DenseLayer(layer, 128, nonlinearity=activation))
-
-        # Apply Gaussian noise to output
-        layer = GAN.GaussianNoiseLayer(layer, sigma=0.2)
+        layer = batch_norm(DenseLayer(layer, 128, W=GlorotNormal(), nonlinearity=activation))
 
         # Apply minibatch discrimination
-        layer = GAN.MinibatchLayer(layer, num_kernels = 250, dim_per_kernel=5, theta=Normal(0.05))
+        #layer = GAN.MinibatchLayer(layer, num_kernels = 250, dim_per_kernel=5, theta=Normal(0.05))
 
         # output layer (linear)
         layer = DenseLayer(layer, 1, nonlinearity=None)
@@ -951,15 +948,15 @@ class LSGAN_Model(GAN_BaseModel):
                 Image.fromarray(samples.reshape(10, 10, 3, 64, 64)
                                 .transpose(0, 3, 1, 4, 2)
                                 .reshape(10*64, 10*64, 3)).save(samples_path)
-                for ind in range(10):
-                    # Generate a single image
-                    sample = np.array(gen_fn(lasagne.utils.floatX(np.random.rand(1, 100))))
-                    sample = denormalize_data(sample)
-                    sample_path = os.path.join(settings.EPOCHS_DIR,
-                                               'one_sample_epoch_{0:0>5}_num{1}.png'.format(epoch + 1, ind))
-                    Image.fromarray(sample.reshape(3, 64, 64)
-                                    .transpose(1, 2, 0)
-                                    .reshape(64, 64, 3)).save(sample_path)
+                # for ind in range(10):
+                #     # Generate a single image
+                #     sample = np.array(gen_fn(lasagne.utils.floatX(np.random.rand(1, 100))))
+                #     sample = denormalize_data(sample)
+                #     sample_path = os.path.join(settings.EPOCHS_DIR,
+                #                                'one_sample_epoch_{0:0>5}_num{1}.png'.format(epoch + 1, ind))
+                #     Image.fromarray(sample.reshape(3, 64, 64)
+                #                     .transpose(1, 2, 0)
+                #                     .reshape(64, 64, 3)).save(sample_path)
 
             if epoch >= next_epoch_checkpoint:
                 ### Checkpoint time!!! (save model and checkpoint file)
