@@ -226,10 +226,8 @@ class LSGAN_Model(GAN_BaseModel):
                 self.discriminator = critic
                 self.epochs_completed = epoch
 
-                # Create checkpoint
-                self.checkpoint()
-                ## Save model to disk
-                self.save_model(latest_only = (not settings.KEEP_ALL_CHECKPOINTS))
+                # Update checkpoint, saving model to disk at the same time
+                self.update_checkpoint(settings.KEEP_ALL_CHECKPOINTS)
 
                 ### Save the model's performance to disk
                 path_model_score = os.path.join(settings.CHECKPOINTS_DIR, "score_epoch_{0:0>5}.txt".format(epoch + 1))
@@ -263,10 +261,8 @@ class LSGAN_Model(GAN_BaseModel):
         self.discriminator = critic
         self.epochs_completed = epoch
 
-        # Create checkpoint
-        self.checkpoint()
-        ## Save model to disk
-        self.save_model(latest_only = (not settings.KEEP_ALL_CHECKPOINTS))
+        # Update checkpoint, saving model to disk at the same time
+        self.update_checkpoint(settings.KEEP_ALL_CHECKPOINTS)
 
         ### Save the model's performance to disk
         path_model_score = os.path.join(settings.CHECKPOINTS_DIR, "score_epoch_{0:0>5}.txt".format(epoch + 1))
