@@ -9,7 +9,7 @@ def normalize_data(data):
     """Transform linearly integers within [0, 255] to float32 within [-1, 1]. Data must be numpy array of type 'uint8'."""
     if data.dtype == 'float32':
         return
-    if max(data) > 255 or min(data) < 0:
+    if np.amax(data) > 255 or np.amin(data) < 0:
         print_error("Trying to normalize data that does not fit within the uint8 range of [0, 255].")
     return (data.astype('float32') - 127.5) / 127.5
 
@@ -17,7 +17,7 @@ def denormalize_data(data):
     """Transform linearly floating points within [-1, 1] to uint8 within [0, 255]. Data must be numpy array of type 'float32'."""
     if data.dtype == 'uint8':
         return
-    if max(data) > 1.0 or min(data) < -1.0:
+    if np.amax(data) > 1.0 or np.amin(data) < -1.0:
         print_error("Trying to normalize data that does not fit within the uint8 range of [0, 255].")
     return (data*127.5 + 127.5).astype('uint8')
 
