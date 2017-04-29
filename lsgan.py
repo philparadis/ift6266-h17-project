@@ -931,7 +931,7 @@ class LSGAN_Model(GAN_BaseModel):
                 epoch + 1, num_epochs, time.time() - start_time))
             print("  generator loss: {}".format(np.mean(generator_losses)))
             print("  critic loss:    {}".format(np.mean(critic_losses)))
-            self.total_wall_time += time.time() - start_time
+            self.wall_time += time.time() - start_time
             # TODO: Append performance to a file
 
             # And finally, we plot some generated data

@@ -20,8 +20,8 @@ class BaseModel(object):
         self.epochs_completed = 0
         self.wall_time_start = 0
         self.process_time_start = 0
-        self.total_wall_time = 0
-        self.total_process_time = 0
+        self.wall_time = 0
+        self.process_time = 0
         self.resume_from_checkpoint = False
         self.model_compiled = False
 
@@ -70,10 +70,8 @@ class BaseModel(object):
             "epochs_completed" : self.epochs_completed,
             "model" : settings.MODEL,
             "exp_name" : settings.EXP_NAME,
-            "model_path" : os.path.join(settings.MODELS_DIR, "model.hdf5"),
-            "current_model_path" : os.path.join(settings.CHECKPOINTS_DIR, "model_epoch{0}.hdf5".format(self.epochs_completed)),
-            "wall_time" : self.total_wall_time,
-            "process_time" : self.total_process_time
+            "wall_time" : self.wall_time,
+            "process_time" : self.process_time
             }
         try:
             with open(chkpoint_path, 'w') as fp:
@@ -106,8 +104,8 @@ class BaseModel(object):
         ### Failed to find or open checkpoint file. Set some values to 0 and exit
         if checkpoint == None:
             self.epochs_completed = 0
-            self.total_wall_time = 0
-            self.total_process_time = 0
+            self.wall_time = 0
+            self.process_time = 0
             return None
 
         ### Succesfully loaded check point file, gather the data!
@@ -126,8 +124,6 @@ class BaseModel(object):
 
         #### Successfully loaded checkpoint file, try to load model
         print_positive("Found a a saved model in HDF5 format, located at:\n{}")
-        self.model_path = checkpoint['model_path']
-        self.current_model_path = checkpoint['current_model_path']
         self.wall_time = checkpoint['wall_time']
         self.process_time = checkpoint['process_time']
         self.resume_from_checkpoint = True
@@ -188,11 +184,13 @@ class KerasModel(BaseModel):
 
         settings.touch_dir(settings.CHECKPOINTS_DIR)
         settings.touch_dir(settings.BASE_DIR)
-        latest_model_path = self.model_path
+
+        current_model_path = os.path.join(settings.CHECKPOINTS_DIR, "model_epoch{0}.hdf5".format(self.epochs_completed))
+        latest_model_path = os.path.join(settings.MODELS_DIR, "model.hdf5")
         if not os.path.isfile(latest_model_path):
-            if not os.path.isfile(self.current_model_path):
-                latest_model_path = self.current_model_path
-                print_warning("Unexpected problem: cannot find the model's HDF5 file anymore at path:\n'{}'".format(self.current_model_path))
+            if not os.path.isfile(current_model_path):
+                latest_model_path = current_model_path
+                print_warning("Unexpected problem: cannot find the model's HDF5 file anymore at path:\n'{}'".format(current_model_path))
                 return False
             
         print_positive("Loading last known valid model (this includes the complete architecture, all weights, optimizer's state and so on)!")
@@ -222,9 +220,9 @@ class KerasModel(BaseModel):
 
         settings.touch_dir(settings.CHECKPOINTS_DIR)
         settings.touch_dir(settings.MODELS_DIR)
-        self.model_path = os.path.join(settings.CHECKPOINTS_DIR, "model_epoch{0}.hdf5".format(self.epochs_completed))
-        print_positive("Saving model after epoch #{} to disk:\n{}.".format(self.epochs_completed, self.model_path))
-        self.keras_model.save(self.model_path)
+        model_path = os.path.join(settings.CHECKPOINTS_DIR, "model_epoch{0}.hdf5".format(self.epochs_completed))
+        print_positive("Saving model after epoch #{} to disk:\n{}.".format(self.epochs_completed, model_path))
+        self.keras_model.save(model_path)
         model_symlink_path = os.path.join(settings.MODELS_DIR, "model.hdf5")
         force_symlink("../checkpoints/model_epoch{0}.hdf5".format(self.epochs_completed), model_symlink_path)
 
@@ -429,7 +427,7 @@ class GAN_BaseModel(BaseModel):
         full_disc_path = os.path.join(settings.MODELS_DIR, self.disc_path)
         
         if os.path.isfile(full_gen_path) and os.path.isfile(full_disc_path):
-            print_positive("Found latest '.npz' model's weights file saved to disk at path:\n{}".format(latest_model_path))
+            print_positive("Found latest '.npz' model's weights files saved to disk at paths:\n{}\n{}".format(full_gen_path, full_disc_path))
         else:
             print_warning("Could not find '.npz'  weights files, either {} or {}.".format(full_gen_path, full_disc_path), e)
             return False
