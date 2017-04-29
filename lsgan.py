@@ -64,7 +64,7 @@ class LSGAN_Model(GAN_BaseModel):
         except ImportError:
             print_warning("Couldn't import lasagne.layers.dnn, so using the regular lasagne.layers.batch_norm function")
             from lasagne.layers import batch_norm
-        from lasagne.nonlinearities import sigmoid
+        from lasagne.nonlinearities import sigmoid, tanh
         from lasagne.nonlinearities import LeakyRectify
         activation = LeakyRectify(0.2)
         # input: 100dim
@@ -84,7 +84,7 @@ class LSGAN_Model(GAN_BaseModel):
                                          output_size=32, nonlinearity=activation))
         layer = DropoutLayer(layer, p=0.5)
         layer = Deconv2DLayer(layer, 3, 5, stride=2, crop='same',
-                              output_size=64, nonlinearity=sigmoid)
+                              output_size=64, nonlinearity=tanh)
         print ("Generator output:", layer.output_shape)
         return layer
 
@@ -101,7 +101,7 @@ class LSGAN_Model(GAN_BaseModel):
         except ImportError:
             print_warning("Couldn't import lasagne.layers.dnn, so using the regular lasagne.layers.batch_norm function")
             from lasagne.layers import batch_norm
-        from lasagne.nonlinearities import sigmoid
+        from lasagne.nonlinearities import sigmoid, tanh
         from lasagne.nonlinearities import LeakyRectify
         from lasagne.init import Normal, GlorotNormal
 
@@ -142,7 +142,7 @@ class LSGAN_Model(GAN_BaseModel):
             print_warning("Couldn't import lasagne.layers.dnn, so using the regular lasagne.layers.batch_norm function")
             from lasagne.layers import batch_norm
 
-        from lasagne.nonlinearities import sigmoid
+        from lasagne.nonlinearities import sigmoid, tanh
         from lasagne.nonlinearities import LeakyRectify
         import gan_lasagne as GAN
 
@@ -177,7 +177,7 @@ class LSGAN_Model(GAN_BaseModel):
                                          output_size=32, nonlinearity=activation))
         layer = DropoutLayer(layer, p=0.5)
         layer = Deconv2DLayer(layer, 3, 5, stride=2, crop='same',
-                              output_size=64, nonlinearity=sigmoid)
+                              output_size=64, nonlinearity=tanh)
         print ("Generator output:", layer.output_shape)
         return layer
 
@@ -198,7 +198,7 @@ class LSGAN_Model(GAN_BaseModel):
             from lasagne.layers import batch_norm
         import gan_lasagne as GAN
 
-        from lasagne.nonlinearities import sigmoid
+        from lasagne.nonlinearities import sigmoid, tanh
         from lasagne.nonlinearities import LeakyRectify
         import theano.tensor as T
 
@@ -274,7 +274,7 @@ class LSGAN_Model(GAN_BaseModel):
 
         # 1x Deconvs and batch norms
         layer = GAN.weight_norm(GAN.Deconv2DLayer(layer, (None, 3, 64, 64), (5, 5), W=W_init,
-                                                  stride=1, nonlinearity=sigmoid),
+                                                  stride=1, nonlinearity=tanh),
                                 train_g=True, init_stdv=0.1)
         
         gen_dat = ll.get_output(layer)
@@ -296,7 +296,7 @@ class LSGAN_Model(GAN_BaseModel):
             print_warning("Couldn't import lasagne.layers.dnn, so using the regular lasagne.layers.batch_norm function")
             from lasagne.layers import batch_norm
 
-        from lasagne.nonlinearities import sigmoid
+        from lasagne.nonlinearities import sigmoid, tanh
         from lasagne.nonlinearities import LeakyRectify
         from lasagne.init import Normal, GlorotUniform
         import theano.tensor as T
@@ -364,7 +364,7 @@ class LSGAN_Model(GAN_BaseModel):
         layer = DropoutLayer(layer, p=0.5) if dropout else layer
 
         # 1x Deconvs and batch norms
-        layer = Deconv2DLayer(layer, 3, 5, stride=1, output_size = 64, nonlinearity=sigmoid)
+        layer = Deconv2DLayer(layer, 3, 5, stride=1, output_size = 64, nonlinearity=tanh)
         
         gen_dat = ll.get_output(layer)
         print ("Generator output:", layer.output_shape)
@@ -447,7 +447,7 @@ class LSGAN_Model(GAN_BaseModel):
             print_warning("Couldn't import lasagne.layers.dnn, so using the regular lasagne.layers.batch_norm function")
             from lasagne.layers import batch_norm
         import gan_lasagne as GAN
-        from lasagne.nonlinearities import LeakyRectify
+        from lasagne.nonlinearities import LeakyRectify, sigmoid
         from lasagne.init import Normal, GlorotNormal
 
         activation = LeakyRectify(0.2)
@@ -470,7 +470,8 @@ class LSGAN_Model(GAN_BaseModel):
         #layer = GAN.MinibatchLayer(layer, num_kernels = 250, dim_per_kernel=5, theta=Normal(0.05))
 
         # output layer (linear)
-        layer = DenseLayer(layer, 1, nonlinearity=None)
+        #layer = DenseLayer(layer, 1, nonlinearity=None)
+        layer = DenseLayer(layer, 1, nonlinearity=sigmoid)
         print ("critic output:", layer.output_shape)
         return layer
 
