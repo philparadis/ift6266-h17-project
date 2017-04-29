@@ -224,7 +224,7 @@ class BaseDataset(object):
 
 
     def return_data(self):
-        settings.TRAINING_BATCH_SIZE = len(id_train)
+        settings.TRAINING_BATCH_SIZE = len(self.id_train)
         return self.X[self.id_train,], self.X[self.id_test,], \
             self.Y[self.id_train,], self.Y[self.id_test,], \
             self.id_train, self.id_test

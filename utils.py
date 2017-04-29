@@ -3,6 +3,7 @@ import json
 import numpy as np
 from termcolor import cprint
 import datetime
+
 import settings
 
 ### Utility functions to manipule numpy datasets
@@ -104,16 +105,21 @@ def curtime(msg):
 def handle_exceptions(msg, e, type, fg = None, bg = None, attrs = []):
     from settings import VERBOSE, MODULE_HAVE_XTRACEBACK
 
-    msg = curtime("(!) {0}: {1}".format(type, msg))
+    msg = curtime("[ EXCEPTION ] {0}: {1}".format(type, msg))
     cprint(msg, fg, bg, attrs=attrs)
     logerr(msg)
     logerr(curtime("Reason for exception:"))
-    logerr(curtime(str(e)))
+    logerr(str(e))
     # Write the exception reason/message in Magenta
     sys.stdout.write("\033[35m(!) Reason: ")
     print(e)
     # Return to normal color
     sys.stdout.write("\033[30m")
+
+    format_str = format_exc()
+    logerr(curtime("Traceback of the exception:"))
+    logerr(format_str)
+    logout(format_str)
 
     if not MODULE_HAVE_XTRACEBACK:
         raise e
@@ -122,14 +128,14 @@ def handle_exceptions(msg, e, type, fg = None, bg = None, attrs = []):
         # Print in Magenta
         from traceback import print_exc
 
-        print("\033[35m(!) Traceback of exception:\033[30m")
+        print("\033[35m(!) Traceback of the exception:\033[30m")
         print_exc()
 
 def handle_critical(msg, e):
-    handle_exceptions(curtime(msg), e, type = "CRITICAL", fg = "white", bg = "on_red", attrs=["bold", "underline"])
+    handle_exceptions(msg, e, type = "CRITICAL", fg = "white", bg = "on_red", attrs=["bold", "underline"])
 
 def print_critical(msg):
-    msg = curtime("(!) {0}: {1}".format("CRITICAL", msg))
+    msg = curtime("(!!!!) {0}: {1}".format("CRITICAL", msg))
     cprint(msg, "white", "on_red", attrs=["bold", "underline"])
     logerr(msg)
     logout(msg)
@@ -138,7 +144,7 @@ def handle_error(msg, e):
     handle_exceptions(msg, e, type = "ERROR", fg = "red")
 
 def print_error(msg):
-    msg = curtime("(!) {0}: {1}".format("ERROR", msg))
+    msg = curtime("(!!) {0}: {1}".format("ERROR", msg))
     cprint(msg, "red")
     logout(msg)
     logerr(msg)
@@ -147,17 +153,17 @@ def handle_warning(msg, e):
     handle_exceptions(msg, e, type = "WARNING", fg = "yellow")
 
 def print_warning(msg):
-    msg = curtime("(!) {0}: {1}".format("GOOD", msg))
-    cprint("(!) {0}: {1}".format("WARNING", msg), "yellow")
+    msg = curtime("(!) {0}: {1}".format("WARNING", msg))
+    cprint(msg, "yellow")
     logout(msg)
                       
 def print_info(msg):
-    msg = curtime("(!) {0}: {1}".format("GOOD", msg))
-    cprint("(!) {0}: {1}".format("INFO", msg), "cyan")
+    msg = curtime("{0}: {1}".format("INFO", msg))
+    cprint(msg, "cyan")
     logout(msg)
 
 def print_positive(msg):
-    msg = curtime("(!) {0}: {1}".format("GOOD", msg))
+    msg = curtime("(!) {0}: {1}".format("EXCELLENT", msg))
     cprint(msg, "cyan", attrs=["bold"])
     logout(msg)
 

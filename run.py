@@ -5,11 +5,8 @@ import os, sys
 import argparse
 import datetime
 
-import settings
-from utils import handle_error, log
-
-
 def initialize_directories():
+    import settings
     settings.BASE_DIR    = os.path.join(settings.MODEL, settings.EXP_NAME)
     settings.MODELS_DIR  = os.path.join(settings.BASE_DIR, "models/")
     settings.EPOCHS_DIR  = os.path.join(settings.BASE_DIR, "epochs/")
@@ -36,12 +33,10 @@ def initialize_directories():
     # Set some file paths
     settings.OUTLOGFILE = os.path.join(settings.LOGS_DIR, "output.log")
     settings.ERRLOGFILE = os.path.join(settings.LOGS_DIR, "errors.log")
-
-    open(settings.OUTLOGFILE, 'a').close()
-    open(settings.ERRLOGFILE, 'a').close()
-    
+   
 
 if __name__ == "__main__":
+    import settings
         
     ### Parse arguments
     parser = argparse.ArgumentParser()
@@ -63,7 +58,7 @@ if __name__ == "__main__":
                         help="Only set this if you want to override the default hyper parameter value for your model. It may be better to create an experiment directory with an 'hyperparameters.json' file and tweak the parameters there.")
     parser.add_argument("-g", "--gan_learning_rate", type=float, default=settings.GAN_LEARNING_RATE,
                         help="Only set this if you want to override the default hyper parameter value for your GAN model. It may be better to create an experiment directory with an 'hyperparameters.json' file and tweak the parameters there.") 
-   parser.add_argument("-f", "--force", action="store_true", default=settings.FORCE_RUN,
+    parser.add_argument("-f", "--force", action="store_true", default=settings.FORCE_RUN,
                         help="Force the experiment to run even if a STOP file is present. This will also delete the STOP file.")
 #    parser.add_argument("-o", "--optimizer", type=string,
 #                        default=settings.OPTIMIZER, help="Optimizer (available: adam, sgd, rmsprop, adamax, nadam)")
@@ -98,6 +93,8 @@ if __name__ == "__main__":
 
     if not settings.MODEL in ["test", "mlp", "conv_mlp", "dcgan", "wgan", "lsgan"]:
         raise NotImplementedError("The model '{}' is not yet implemented yet, sorry!".format(settings.MODEL))
+
+    from utils import print_warning, handle_error, log
 
     ### Setup logging and xtraceback
     try:
