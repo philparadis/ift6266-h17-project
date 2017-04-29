@@ -123,20 +123,21 @@ class BaseDataset(object):
             self._save_jpgs_and_captions_npy()
 
     def _load_jpgs_and_captions_npy(self):
-        print_info("Found '.npy' file whose names and paths match those of the dataset. Attempting to load them...")
+        print_positive("Found the project datasets encoded as a 4-tensor in '.npy' format. Attempting to load...")
         try:
             for i, filename in enumerate([self._images_filename, self._captions_ids_filename, self._captions_dict_filename]):
                 path = os.path.join(settings.MSCOCO_DIR, filename)
                 if i == 0:
-                    print_positive("Found training images dataset {} on disk, loading it...".format(path))
                     self.images = np.load(path)
+                    print_info("Loaded: {}".format(path))
                 elif i == 1:
-                    print_positive("Found captions ids {} on disk, loading it...".format(path))
                     self.captions_ids = np.load(path)
+                    print_info("Loaded: {}".format(path))
                 elif i == 2:
-                    print_positive("Found captions dictionary {} on disk, loading it...".format(path))
                     self.captions_dict = np.load(path)
-            print_positive("Successfully loaded entire dataset from the '.npy' files!")
+                    print_info("Loaded: {}".format(path))
+            log("")
+            print_positive("Successfully loaded entire datasets!")
             self._is_dataset_loaded = True
         except Exception as e:
             handle_warning("Unable to load some of the '.npy' dataset files. Going back to loading '.jpg' files one at a time.", e)

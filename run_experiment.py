@@ -59,8 +59,10 @@ def download_dataset():
 
 def run_experiment():
     log("Welcome! This is my final project for the course:")
-    log("IFT6266-H2017 (Prof. Aaron Courville)")
-    log("Copyright 2017 Philippe Paradis. All Rights Reserved.")
+    log('    IFT6266-H2017 (a.k.a. "Deep Learning"')
+    log("         Prof. Aaron Courville")
+    log("")
+    log("This program is copyrighted 2017 Philippe Paradis. All Rights Reserved.")
     log("")
     log("Enjoy!")
     log("")
@@ -78,7 +80,6 @@ def run_experiment():
     elif settings.MODEL == "lsgan":
         from lsgan import LSGAN_Model
         model = LSGAN_Model(settings.MODEL)
-        print_info("Using LSGAN with architecture={}.".format(settings.LSGAN_ARCHITECTURE))
     else:
         raise NotImplementedError()
 
@@ -97,11 +98,11 @@ def run_experiment():
     ### Load checkpoint (if any). This will also load the hyper parameters file.
     ### This will also load the model's architecture, weights, optimizer states,
     ### that is, everything necessary to resume training.
-        
+    print_info("Checking for a valid checkpoint. If so, load hyper parameters and all data from the last known state...")
     checkpoint, hyperparams, resume_from_checkpoint = model.resume_last_checkpoint()
     
     if resume_from_checkpoint:
-        print_positive("Ready to resume from a valid checkpoint!")
+        print_positive("Found a checkpoint passing all integrity tests! Ready to resume training!")
         log("")
         print_info("State of last checkpoint:")
         for key in checkpoint:
@@ -109,7 +110,7 @@ def run_experiment():
         log("")
     else:
         ### Build model's architecture
-        log("(!) No valid checkpoint found for this experiment. Building and training model from scratch.")
+        print_info("No valid checkpoint found for this experiment. Building and training model from scratch.")
         if settings.MODEL == "mlp" or settings.MODEL == "test":
             model.initialize()
             model.build()
@@ -145,25 +146,45 @@ def run_experiment():
             sys.exit(rc)
 
     verbosity_level = "Low"
-    if settings.VERBOSE == 0:
+    if settings.VERBOSE == 1:
         verbosity_level = "High"
     elif settings.VERBOSE == 2:
-        verbosity_level = "medium"
+        verbosity_level = "Medium"
 
     # Print info about our settings
     log("============================================================")
-    log("* Experiment name  = %s" % settings.EXP_NAME)
+    print_info("Experiment name       = %s" % settings.EXP_NAME)
     log("============================================================")
     log("")
-    log("Settings:")
+    print_info("Experiment settings and options:")
+    log(" * Model type            = " + str(settings.MODEL))
     log(" * Training epochs       = " + str(settings.NUM_EPOCHS))
-    log(" * Verbosity             = " + verbosity_level)
-    log(" * Dta augmentation      = " + str(settings.DATASET_AUGMENTATION))
-    log(" * Load greyscale images = " + str(not settings.LOAD_BLACK_AND_WHITE_IMAGES))
+    log(" * Batch size            = " + str(settings.BATCH_SIZE))
+    log(" * Learning rate         = " + str(settings.LEARNING_RATE))
+    log(" * Epochs per checkpoint = " + str(settings.EPOCHS_PER_CHECKPOINT))
+    log(" * Feature Matching Loss = " + str(settings.FEATURE_MATCHING))
+    log(" * Keep model's data for every checkpoint  = " + str(settings.KEEP_ALL_CHECKPOINTS))
+    log(" * Verbosity             = " + str(settings.VERBOSITY) + " ({})".format(verbosity_level))
+    log(" * Data augmentation     = " + str(settings.DATASET_AUGMENTATION))
+    log(" * Load greyscale images = " + str(settings.LOAD_BLACK_AND_WHITE_IMAGES))
     log("")
 
+    if settings.MODEL in ["dcgan", "wgan", "lsgan"]:
+        print_info("GAN-specific settings:")
+        log(" * Type of GAN used      = " + str(settings.MODEL))
+        log(" * Generator/critic updates per epoch = " + str(settings.UPDATES_PER_EPOCH))
+        log(" * GAN learning rate     = " + str(settings.GAN_LEARNING_RATE))
+        if settings.MODEL == "lsgan":
+            log(" * LSGAN architecture #  = " + str(settings.LSGAN_ARCHITECTURE))
+        log("")
+ 
+    ### Print hyperparameters, as loaded from existing file or as initialized for new experiment
+    print_info("Hyper parameters:")
+    for key in model.hyper:
+        log(" * {0: <20} = {1}".format(str(key), str(model.hyper[key])))
+    log("")        
 
-    #######################################
+      #######################################
     # Info about the dataset
     #######################################
     # The data is already split into training and validation datasets
@@ -185,29 +206,15 @@ def run_experiment():
 
     ### Load dataset
     Dataset.load_dataset()
-    log("Finished loading dataset...")
+
     log("")
-    
-    log("Summary of data within dataset:")
-    log(" * images.shape            = " + str(Dataset.images.shape))
-    log(" * captions_ids.shape      = " + str(Dataset.captions_ids.shape))
-    log(" * captions_dict.shape     = " + str(Dataset.captions_dict.shape))
-    # log("images_outer2d.shape    = " + str(Dataset.images_outer2d.shape))
-    # log("images_inner2d.shape    = " + str(Dataset.images_inner2d.shape))
-    # log("images_outer_flat.shape = " + str(Dataset.images_outer_flat.shape))
-    # log("images_inner_flat.shape = " + str(Dataset.images_inner_flat.shape))
-    # log("images_T.shape          = " + str(Dataset.images_T.shape))
-    # log("images_outer2d_T.shape  = " + str(Dataset.images_outer2d_T.shape))
-    # log("images_inner2d_T.shape  = " + str(Dataset.images_inner2d_T.shape))
+    print_info("Summary of data within dataset:")
+    log(" * images.shape        = " + str(Dataset.images.shape))
+    log(" * captions_ids.shape  = " + str(Dataset.captions_ids.shape))
+    log(" * captions_dict.shape = " + str(Dataset.captions_dict.shape))
     log("")
 
-    ### Print hyperparameters, as loaded from existing file or as initialized for new experiment
-    print_info("Hyperparameters:")
-    for key in model.hyper:
-        log(" * {0: <20} = {1}".format(str(key), str(model.hyper[key])))
-    log("")        
-
-    ### Train the model (computation intensive)
+   ### Train the model (computation intensive)
     if settings.MODEL == "mlp" or settings.MODEL == "test":
         Dataset.preprocess()
         Dataset.normalize()

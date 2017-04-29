@@ -125,8 +125,8 @@ class BaseModel(object):
         """Read the 'checkpoint.json' file and update the class variables accordingly."""
         checkpoint = None
         if os.path.isfile(self.path_checkpoint_file):
-            print_positive("Found matching checkpoint file: {}".format(self.path_checkpoint_file))
-            print_info("Verifying that we can parse the checkpoint file correctly...")
+            print_positive("Found checkpoint file: {}".format(self.path_checkpoint_file))
+            print_info("Verifying integrity of checkpoint file...")
             try:
                 with open(self.path_checkpoint_file, "r") as fp:
                     try:
@@ -140,16 +140,15 @@ class BaseModel(object):
         ### Failed to find or open checkpoint file. Set some values to 0 and exit
         if checkpoint != None:
             ### Succesfully loaded check point file, gather the data!
-            print_positive("Successfully loaded checkpoint!! Reading its data...")
+            print_positive("Successfully loaded checkpoint! Reading its data...")
             self.epochs_completed = checkpoint['epochs_completed']
             if checkpoint['model'] != settings.MODEL:
-                print_warning("The checkpoint model '{0}' does not match command line argument of '{1}'."
+                print_warning("Inconsistency detected: the checkpoint model '{0}' does not match command line argument of '{1}'."
                               .format(checkpoint['model'], settings.MODEL))
                 print_info("Discarding checkpoint and starting from scratch.")
                 return None
             if checkpoint['exp_name'] != settings.EXP_NAME:
-                print_warning("The checkpoint experiment name '{0}' does not match command line argument of '{1}'."
-                              .format(checkpoint['exp_name'], settings.EXP_NAME))
+                print_warning("Inconsistency detected: the checkpoint experiment name '{0}' does not match command line argument of '{1}'.".format(checkpoint['exp_name'], settings.EXP_NAME))
                 print_info("Discarding checkpoint and starting from scratch.")
                 return None
 
