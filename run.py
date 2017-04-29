@@ -31,7 +31,8 @@ if __name__ == "__main__":
 #                        default=settings.OPTIMIZER, help="Optimizer (available: adam, sgd, rmsprop, adamax, nadam)")
     parser.add_argument("-c", "--epochs_per_checkpoint", type=int, default=settings.EPOCHS_PER_CHECKPOINT,
                         help="Amount of epochs to perform during training between every checkpoint.")
-#    parser.add_argument("--cpu", action="store_true", default=settings.USE_CPU,
+    parser.add_argument("-a", "--architecture", type=int, default=settings.LSGAN_ARCHITECTURE,
+                        help="Architecture type, only applies to the LSGAN model (values: 1, 2 or 3).")
 #                        help="Use CPU instead of GPU. Used for debugging and testing purposes.")
 
     args = parser.parse_args()
@@ -45,6 +46,7 @@ if __name__ == "__main__":
     settings.LEARNING_RATE = args.learning_rate
     settings.FORCE_RUN = args.force
     settings.EPOCHS_PER_CHECKPOINT = args.epochs_per_checkpoint
+    settings.LSGAN_ARCHITECTURE = args.architecture
 #    settings.USE_CPU = args.cpu
 
     if not settings.MODEL in ["test", "mlp", "conv_mlp", "dcgan", "wgan", "lsgan"]:
