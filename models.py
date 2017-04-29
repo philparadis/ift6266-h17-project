@@ -26,6 +26,7 @@ class BaseModel(object):
         self.model_compiled = False
 
         # Constant variables
+        self.path_stop_file = os.path.join(settings.BASE_DIR, "STOP")
         self.checkpoint_filename = "checkpoint.json"
         self.path_checkpoint_file = os.path.join(settings.BASE_DIR, self.checkpoint_filename)
         self.hyperparams_filename = "hyperparams.json"
@@ -163,17 +164,16 @@ class BaseModel(object):
 
     def check_stop_file(self):
         """Return True if a file with name STOP is found in the base directory, return False otherwise"""
-        return os.path.isfile(os.path.join(settings.BASE_DIR, "STOP"))
+        return os.path.isfile(self.path_stop_file)
                       
     def create_stop_file(self):
         """Adds an file with name STOP within experiment's root directory. This prevents further training unless the file is deleted. This also prevents loading the dataset and performing any pre-processing."""
-        open(os.path.join(settings.BASE_DIR, "STOP"), 'a').close()
+        open(self.path_stop_file, 'a').close()
 
     def remove_stop_file(self):
         """Deletes the STOP file in order to allow training to be resumed."""
-        stopfile = os.path.join(settings.BASE_DIR, "STOP")
-        if os.path.isfile(stopfile):
-            os.remove(stopfile)
+        if os.path.isfile(self.path_stop_file):
+            os.remove(self.path_stop_file)
 
     def build(self):
         raise NotImplemented()
