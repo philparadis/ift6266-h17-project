@@ -260,6 +260,10 @@ def build_generator_architecture(input_var=None, architecture=1):
         print ("Generator output:", layer.output_shape)
         return layer
     elif architecture == 6:
+        from theano.sandbox.rng_mrg import MRG_RandomStreams
+        rng = np.random.RandomState(1000)
+        theano_rng = MRG_RandomStreams(rng.randint(2 ** 15))
+
         batch_rows = settings.TRAINING_BATCH_SIZE
         noise_dim = (batch_rows, 100)
         noise = theano_rng.uniform(size=noise_dim)
