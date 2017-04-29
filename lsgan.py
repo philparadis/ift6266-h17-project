@@ -30,7 +30,7 @@ import hyper_params
 import settings
 from models import GAN_BaseModel
 from utils import handle_critical, handle_error, handle_warning
-from utils import print_critical, print_error, print_warning, print_info, print_positive
+from utils import print_critical, print_error, print_warning, print_info, print_positive, log
 
 class LSGAN_Model(GAN_BaseModel):
     def __init__(self, model_name, hyperparams = hyper_params.default_lsgan_hyper_params):
@@ -83,32 +83,22 @@ class LSGAN_Model(GAN_BaseModel):
     # more functions to better separate the code, but it wouldn't make it any
     # easier to read.
 
-    def _pre_train(self):
-        pass
-
-    def _gan_train(self):
-        pass
-
-    def _post_train(self):
-        pass
-
-    def train(self, dataset, num_epochs = 1000, epochsize = 50, batchsize = 64, initial_eta = 0.0003, architecture = 2):
-        """You can choose architecture = 1, 2, 3, 4 or 5."""
+    def train(self, dataset, num_epochs = 1000, epochsize = 50, batchsize = 64, initial_eta = 0.0001, architecture = 7):
+        """You can choose architecture = 1 through 7."""
         import lasagne
         import theano.tensor as T
         from theano import shared, function
         # Load the dataset
-        print("Loading data...")
+        log("Fetching data...")
 
         X_train, X_val, y_train, y_val, ind_train, ind_test = dataset.return_data()
-        settings.TRAINING_BATCH_SIZE = X_train.shape[0]
 
         # Prepare Theano variables for inputs and targets
         noise_var = T.matrix('noise')
         input_var = T.tensor4('inputs')
 
         # Create neural network model
-        print("Building model and compiling functions...")
+        log("Building model and compiling functions...")
         generator = self.build_generator(noise_var, architecture = architecture)
         critic = self.build_critic(input_var, architecture = architecture)
 
@@ -166,7 +156,7 @@ class LSGAN_Model(GAN_BaseModel):
         settings.touch_dir(settings.MODELS_DIR)
 
         # Finally, launch the training loop.
-        print("Starting training...")
+        log("Starting training...")
         # We create an infinite supply of batches (as an iterable generator):
         batches = self.iterate_minibatches(X_train, y_train, batchsize, shuffle=True,
                                       forever=True)
@@ -186,10 +176,10 @@ class LSGAN_Model(GAN_BaseModel):
 
             # Then we print the results for this epoch:
             time_delta = time.time() - start_time
-            print("Epoch {} of {} took {:.3f}s".format(
+            log("Epoch {} of {} took {:.3f}s".format(
                 epoch + 1, num_epochs, time_delta))
-            print("  generator loss: {}".format(np.mean(generator_losses)))
-            print("  critic loss:    {}".format(np.mean(critic_losses)))
+            log("  generator loss: {}".format(np.mean(generator_losses)))
+            log("  critic loss:    {}".format(np.mean(critic_losses)))
             self.wall_time += time_delta
             # TODO: Append performance to a file
 

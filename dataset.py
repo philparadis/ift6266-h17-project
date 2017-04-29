@@ -12,7 +12,7 @@ import utils
 from utils import normalize_data, denormalize_data
 from utils import force_symlink, get_json_pretty_print
 from utils import handle_critical, handle_error, handle_warning
-from utils import print_critical, print_error, print_warning, print_info, print_positive
+from utils import print_critical, print_error, print_warning, print_info, print_positive, log
 #from utils import save_keras_predictions, print_results_as_html
 #from utils import unflatten_to_4tensor, unflatten_to_3tensor, transpose_colors_channel
 
@@ -79,12 +79,12 @@ class BaseDataset(object):
 
             # Get a list of all training images full filename paths
             print_info("Loading dataset from individual JPG files and pickled dictionaries...")
-            print(" * Training images paths     = " + settings.TRAIN_DIR + "*.jpg")
+            log(" * Training images paths     = " + settings.TRAIN_DIR + "*.jpg")
             train_images_paths = glob.glob(settings.TRAIN_DIR + "/*.jpg")
             num_train_images_path = len(train_images_paths)
-            print(" * Number of training images =  %i" % num_train_images_path)
+            log(" * Number of training images =  %i" % num_train_images_path)
             print_info("Loading images and captions into memory...")
-            print("")
+            log("")
             
             with open(settings.CAPTIONS_PKL_PATH) as fd:
                 cap_dict = pkl.load(fd)
@@ -105,19 +105,19 @@ class BaseDataset(object):
                 captions_dict.append(cap_dict[cap_id])
                 
                 if i % 5000 == 0:
-                    print(" - Loaded image #%i" % i)
-            print(" - Loaded image #%i as the last image..." % i)
+                    log(" - Loaded image #%i" % i)
+            log(" - Loaded image #%i as the last image..." % i)
             self.images = self.transform_images(images)
             self.captions_ids = np.array(captions_ids)
             self.captions_dict = np.array(captions_dict)
             self._is_dataset_loaded = True
 
-            print("Summary of data within dataset:")
-            print(" * images.shape            = " + str(self.images.shape))
-            print(" * captions_ids.shape      = " + str(self.captions_ids.shape))
-            print(" * captions_dict.shape     = " + str(self.captions_dict.shape))
-            print(" * Number of color images loaded        = {}".format(self.images.shape[0]))
-            print(" * Number of greyscale images discarded = {}".format(num_train_images_path - self.images.shape[0]))
+            log("Summary of data within dataset:")
+            log(" * images.shape            = " + str(self.images.shape))
+            log(" * captions_ids.shape      = " + str(self.captions_ids.shape))
+            log(" * captions_dict.shape     = " + str(self.captions_dict.shape))
+            log(" * Number of color images loaded        = {}".format(self.images.shape[0]))
+            log(" * Number of greyscale images discarded = {}".format(num_train_images_path - self.images.shape[0]))
 
             # Save dataset as npy file so that loading can be sped up in the future
             self._save_jpgs_and_captions_npy()
@@ -204,11 +204,11 @@ class BaseDataset(object):
         self.id_train = id_train
         self.id_test = id_test
 
-        print("Preloading is complete, with the following results:")
-        print("Input training dataset X has shape:    {0}".format(str(self.X[id_train].shape)))
-        print("Output training dataset Y has shape:   {0}".format(str(self.Y[id_train].shape)))
-        print("Input validation dataset X has shape:  {0}".format(str(self.X[id_test].shape)))
-        print("Output validation dataset Y has shape: {0}".format(str(self.Y[id_test].shape)))
+        log("Preloading is complete, with the following results:")
+        log("Input training dataset X has shape:    {0}".format(str(self.X[id_train].shape)))
+        log("Output training dataset Y has shape:   {0}".format(str(self.Y[id_train].shape)))
+        log("Input validation dataset X has shape:  {0}".format(str(self.X[id_test].shape)))
+        log("Output validation dataset Y has shape: {0}".format(str(self.Y[id_test].shape)))
 
             
     def denormalize(self, model = settings.MODEL):
@@ -224,6 +224,7 @@ class BaseDataset(object):
 
 
     def return_data(self):
+        settings.TRAINING_BATCH_SIZE = len(id_train)
         return self.X[self.id_train,], self.X[self.id_test,], \
             self.Y[self.id_train,], self.Y[self.id_test,], \
             self.id_train, self.id_test

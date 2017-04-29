@@ -61,7 +61,9 @@ if __name__ == "__main__":
                         default=settings.BATCH_SIZE, help="Only use this if you want to override the default hyper parameter value for your model. It may be better to create an experiment directory with an 'hyperparameters.json' file and tweak the parameters there.")
     parser.add_argument("-l", "--learning_rate", type=float, default=settings.LEARNING_RATE,
                         help="Only set this if you want to override the default hyper parameter value for your model. It may be better to create an experiment directory with an 'hyperparameters.json' file and tweak the parameters there.")
-    parser.add_argument("-f", "--force", action="store_true", default=settings.FORCE_RUN,
+    parser.add_argument("-g", "--gan_learning_rate", type=float, default=settings.GAN_LEARNING_RATE,
+                        help="Only set this if you want to override the default hyper parameter value for your GAN model. It may be better to create an experiment directory with an 'hyperparameters.json' file and tweak the parameters there.") 
+   parser.add_argument("-f", "--force", action="store_true", default=settings.FORCE_RUN,
                         help="Force the experiment to run even if a STOP file is present. This will also delete the STOP file.")
 #    parser.add_argument("-o", "--optimizer", type=string,
 #                        default=settings.OPTIMIZER, help="Optimizer (available: adam, sgd, rmsprop, adamax, nadam)")
@@ -72,6 +74,8 @@ if __name__ == "__main__":
                         help="Architecture type, only applies to the LSGAN model (values: 1, 2, 3 or 4).")
     parser.add_argument("-u", "--updates_per_epoch", type=int, default=settings.UPDATES_PER_EPOCH,
                         help="Number of times to update the generator and discriminator/critic per epoch. Applies to GAN models only.")
+    parser.add_argument("-m", "--feature_matching", type=int, default=settings.FEATURE_MATCHING, help="By default, feature matching is not used (equivalently, it is set to 0, meaning that the loss function uses the last layer's output). You can set this value to 1 to use the output of the second-to-last layer, or a value of 2 to use the output of the third-to-last layer, and so on. This technique is called 'feature matching' and many provide benefits in some cases. Note that it is not currently implemented in all models and you will receive a message indicating if feature matching is used for your model.")
+    
 #                        help="Use CPU instead of GPU. Used for debugging and testing purposes.")
 
     args = parser.parse_args()
@@ -83,11 +87,13 @@ if __name__ == "__main__":
     #settings.MAX_EPOCHS = args.max_epochs
     settings.BATCH_SIZE = args.batch_size
     settings.LEARNING_RATE = args.learning_rate
+    settings.GAN_LEARNING_RATE = args.gan_learning_rate
     settings.FORCE_RUN = args.force
     settings.EPOCHS_PER_CHECKPOINT = args.epochs_per_checkpoint
     settings.KEEP_ALL_CHECKPOINTS = args.keep_all_checkpoints
     settings.LSGAN_ARCHITECTURE = args.architecture
     settings.UPDATES_PER_EPOCH = args.updates_per_epoch
+    settings.FEATURE_MATCHING = args.feature_matching
 #    settings.USE_CPU = args.cpu
 
     if not settings.MODEL in ["test", "mlp", "conv_mlp", "dcgan", "wgan", "lsgan"]:

@@ -30,7 +30,7 @@ import lasagne
 import settings
 import dataset
 from utils import normalize_data, denormalize_data 
-
+from utils import log
 
 # ##################### Build the neural network model #######################
 # We create two models: The generator and the critic network.
@@ -132,7 +132,7 @@ def iterate_minibatches(inputs, targets, batchsize, shuffle=False,
 def train(Dataset, num_epochs=1000, epochsize=100, batchsize=64, initial_eta=5e-5,
          clip=0.01):
     # Load the dataset
-    print("Loading data...")
+    log("Loading data...")
     X_train, X_test, y_train, y_test, ind_train, ind_test = Dataset.return_data()
 
     # Prepare Theano variables for inputs and targets
@@ -140,7 +140,7 @@ def train(Dataset, num_epochs=1000, epochsize=100, batchsize=64, initial_eta=5e-
     input_var = T.tensor4('inputs')
 
     # Create neural network model
-    print("Building model and compiling functions...")
+    log("Building model and compiling functions...")
     generator = build_generator(noise_var)
     critic = build_critic(input_var)
 
@@ -192,7 +192,7 @@ def train(Dataset, num_epochs=1000, epochsize=100, batchsize=64, initial_eta=5e-
     settings.touch_dir(settings.EPOCHS_DIR)
 
     # Finally, launch the training loop.
-    print("Starting training...")
+    log("Starting training...")
     # We create an infinite supply of batches (as an iterable generator):
     batches = iterate_minibatches(X_train, y_train, batchsize, shuffle=True,
                                   forever=True)
@@ -220,10 +220,10 @@ def train(Dataset, num_epochs=1000, epochsize=100, batchsize=64, initial_eta=5e-
             generator_updates += 1
 
         # Then we print the results for this epoch:
-        print("Epoch {} of {} took {:.3f}s".format(
+        log("Epoch {} of {} took {:.3f}s".format(
             epoch + 1, num_epochs, time.time() - start_time))
-        print("  generator score:\t\t{}".format(np.mean(generator_scores)))
-        print("  Wasserstein distance:\t\t{}".format(np.mean(critic_scores)))
+        log("  generator score:\t\t{}".format(np.mean(generator_scores)))
+        log("  Wasserstein distance:\t\t{}".format(np.mean(critic_scores)))
 
         # And finally, we plot some generated data
         samples = np.array(gen_fn(lasagne.utils.floatX(np.random.rand(10*10, 100))))

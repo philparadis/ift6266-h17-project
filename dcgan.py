@@ -35,6 +35,7 @@ import lasagne
 import settings
 import dataset
 from utils import normalize_data, denormalize_data
+from utils import log
 
 # ##################### Build the neural network model #######################
 # We create two models: The generator and the discriminator network. The
@@ -181,7 +182,7 @@ def iterate_minibatches(inputs, targets, batchsize, shuffle=False):
 
 def train(Dataset, num_epochs=200, batchsize=128, initial_eta=2e-4):
     # Load the dataset
-    print("Loading data...")
+    log("Loading data...")
     X_train, X_test, y_train, y_test, ind_train, ind_test = Dataset.return_data()
 
     # Prepare Theano variables for inputs and targets
@@ -190,7 +191,7 @@ def train(Dataset, num_epochs=200, batchsize=128, initial_eta=2e-4):
 #    target_var = T.ivector('targets')
 
     # Create neural network model
-    print("Building model and compiling functions...")
+    log("Building model and compiling functions...")
     generator = build_generator(noise_var)
     discriminator = build_discriminator(input_var)
 
@@ -231,7 +232,7 @@ def train(Dataset, num_epochs=200, batchsize=128, initial_eta=2e-4):
     settings.touch_dir(settings.EPOCHS_DIR)
 
     # Finally, launch the training loop.
-    print("Starting training...")
+    log("Starting training...")
     # We iterate over epochs:
     for epoch in range(num_epochs):
         # In each epoch, we do a full pass over the training data:
@@ -245,9 +246,9 @@ def train(Dataset, num_epochs=200, batchsize=128, initial_eta=2e-4):
             train_batches += 1
 
         # Then we print the results for this epoch:
-        print("Epoch {} of {} took {:.3f}s".format(
+        log("Epoch {} of {} took {:.3f}s".format(
             epoch + 1, num_epochs, time.time() - start_time))
-        print("  training loss:\t\t{}".format(train_err / train_batches))
+        log("  training loss:\t\t{}".format(train_err / train_batches))
 
         # And finally, we plot some generated data
         samples = np.array(gen_fn(lasagne.utils.floatX(np.random.rand(10*10, 100))))

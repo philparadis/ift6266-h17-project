@@ -258,10 +258,10 @@ def run_experiment():
         print_positive("To do so, we create a new class ColorsLastDataset that will take care of loading the data in the right format.")
         NewDataset = dataset.ColorsLastDataset(settings.IMAGE_WIDTH, settings.IMAGE_HEIGHT)
         NewDataset.load_dataset()
-        print("Summary of data within ColorsLastDataset:")
-        print(" * images.shape            = " + str(NewDataset.images.shape))
-        print(" * captions_ids.shape      = " + str(NewDataset.captions_ids.shape))
-        print(" * captions_dict.shape     = " + str(NewDataset.captions_dict.shape))
+        log("Summary of data within ColorsLastDataset:")
+        log(" * images.shape            = " + str(NewDataset.images.shape))
+        log(" * captions_ids.shape      = " + str(NewDataset.captions_ids.shape))
+        log(" * captions_dict.shape     = " + str(NewDataset.captions_dict.shape))
         NewDataset.preprocess()
         NewDataset.preload(model = "conv_mlp")
 
@@ -311,11 +311,15 @@ def run_experiment():
         Dataset.preprocess()
         Dataset.normalize()
         Dataset.preload()
-#        try:
-        generator, critic, generator_train_fn, critic_train_fn, gen_fn = model.train(Dataset, num_epochs = settings.NUM_EPOCHS, epochsize = settings.UPDATES_PER_EPOCH, batchsize = settings.BATCH_SIZE, architecture = settings.LSGAN_ARCHITECTURE)
-#        except Exception as e:
-#            model.create_stop_file()
-#            handle_error("Failure during training of LS-GAN model, experiment name = '{}'.\nAdding STOP file to the base directory.".format(settings.EXP_NAME), e)
+        
+        generator, critic,\
+        generator_train_fn,\
+        critic_train_fn, gen_fn = model.train(Dataset, num_epochs = settings.NUM_EPOCHS,
+                                              epochsize = settings.UPDATES_PER_EPOCH,
+                                              batchsize = settings.BATCH_SIZE,
+                                              architecture = settings.LSGAN_ARCHITECTURE,
+                                              initial_eta = settings.GAN_LEARNING_RATE)
+
         Dataset.denormalize()
         
         settings.touch_dir(settings.SAMPLES_DIR)
@@ -335,6 +339,6 @@ def run_experiment():
     
 
     ### Success...? Well, at least we didn't crash :P
-    print("Exiting normally. That's typically a good sign :-)")
+    log("Exiting normally. That's typically a good sign :-)")
     sys.exit(0)
 

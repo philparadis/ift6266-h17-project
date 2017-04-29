@@ -6,7 +6,7 @@ import math
 
 import settings
 from utils import handle_critical, handle_error, handle_warning
-from utils import print_critical, print_error, print_warning, print_info, print_positive
+from utils import print_critical, print_error, print_warning, print_info, print_positive, log
 
 ### THINGS TODO:
 

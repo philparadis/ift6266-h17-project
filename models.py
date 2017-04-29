@@ -8,7 +8,7 @@ import utils
 import hyper_params
 import settings
 from utils import handle_critical, handle_error, handle_warning
-from utils import print_critical, print_error, print_warning, print_info, print_positive
+from utils import print_critical, print_error, print_warning, print_info, print_positive, log
 from utils import force_symlink, get_json_pretty_print
 
 class BaseModel(object):
@@ -271,7 +271,7 @@ class KerasModel(BaseModel):
 
         #### Print model summary
         print_info("Model summary:")
-        print(self.keras_model.summary())
+        log(self.keras_model.summary())
 
         #### Compile the model (if necessary)
         self._compile()
@@ -295,14 +295,14 @@ class KerasModel(BaseModel):
 
         print_info("Ready to start training! For convenience, here are the most important parameters we shall be using again.")
         print_positive("TRAINING PARAMETERS:")
-        print(" * num_epochs            = {}".format(settings.NUM_EPOCHS))
-        print(" * initial_epoch         = {}".format(self.epochs_completed + 1))
-        print(" * final_epoch           = {}".format(self.epochs_completed + settings.NUM_EPOCHS))
-        print(" * epochs_per_checkpoint = {}".format(settings.EPOCHS_PER_CHECKPOINT))
-        print(" * batch_size            = {}".format(self.hyper['batch_size']))
-        print(" * optimizer             = {}".format(self.hyper['optimizer']))
-        print(" * loss_function         = {}".format(self.hyper['loss_function']))
-        print(" * learning_rate         = {}".format(self.hyper['learning_rate']))
+        log(" * num_epochs            = {}".format(settings.NUM_EPOCHS))
+        log(" * initial_epoch         = {}".format(self.epochs_completed + 1))
+        log(" * final_epoch           = {}".format(self.epochs_completed + settings.NUM_EPOCHS))
+        log(" * epochs_per_checkpoint = {}".format(settings.EPOCHS_PER_CHECKPOINT))
+        log(" * batch_size            = {}".format(self.hyper['batch_size']))
+        log(" * optimizer             = {}".format(self.hyper['optimizer']))
+        log(" * loss_function         = {}".format(self.hyper['loss_function']))
+        log(" * learning_rate         = {}".format(self.hyper['learning_rate']))
 
         print_positive("Starting to train model...")
         epoch = 0
