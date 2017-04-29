@@ -27,6 +27,8 @@ OPTIMIZER = "adam"
 LSGAN_ARCHITECTURE = 1
 UPDATES_PER_EPOCH = 10
 
+TRAINING_BATCH_SIZE = 0 # Total number of training examples (i.e. size of first dimension of training tensor)
+
 THEANO_CONFIG_FLOATX = 'float32'
 DATASET_AUGMENTATION = True
 LOAD_BLACK_AND_WHITE_IMAGES = False
