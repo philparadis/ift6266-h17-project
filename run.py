@@ -32,7 +32,7 @@ if __name__ == "__main__":
     parser.add_argument("-c", "--epochs_per_checkpoint", type=int, default=settings.EPOCHS_PER_CHECKPOINT,
                         help="Amount of epochs to perform during training between every checkpoint.")
     parser.add_argument("-a", "--architecture", type=int, default=settings.LSGAN_ARCHITECTURE,
-                        help="Architecture type, only applies to the LSGAN model (values: 1, 2 or 3).")
+                        help="Architecture type, only applies to the LSGAN model (values: 1, 2, 3 or 4).")
 #                        help="Use CPU instead of GPU. Used for debugging and testing purposes.")
 
     args = parser.parse_args()

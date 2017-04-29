@@ -420,6 +420,7 @@ class GAN_BaseModel(BaseModel):
 
     def load_model(self):
         """Return True if a valid model was found and correctly loaded. Return False if no model was loaded."""
+        import numpy as np
         from lasagne.layers import set_all_param_values
         settings.touch_dir(settings.CHECKPOINTS_DIR)
         settings.touch_dir(settings.BASE_DIR)
@@ -450,6 +451,7 @@ class GAN_BaseModel(BaseModel):
 
         
     def save_model(self, latest_only=False):
+        import numpy as np
         from lasagne.layers import get_all_param_values
         # Save the gen and disc weights to disk
         settings.touch_dir(settings.CHECKPOINTS_DIR)
