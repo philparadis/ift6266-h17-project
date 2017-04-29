@@ -249,100 +249,34 @@ class LSGAN_Model(GAN_BaseModel):
         layer = batch_norm(DenseLayer(layer, num_units = 512*4*4, W=W_init, nonlinearity=activation))
         layer = ReshapeLayer(layer, ([0], 512, 4, 4))
         
-        # 3x Deconvs and batch norms
+        # 2x Deconvs and batch norms
         layer = batch_norm(Deconv2DLayer(layer, 256, 5, stride=1, nonlinearity=activation))
         layer = DropoutLayer(layer, p=0.5) if dropout else layer
         layer = batch_norm(Deconv2DLayer(layer, 256, 5, stride=2, output_size=8, nonlinearity=activation))
         layer = DropoutLayer(layer, p=0.5) if dropout else layer
 
-        # 3x Deconvs and batch norms
-        layer = batch_norm(Deconv2DLayer(layer, 128, 5, stride=1, nonlinearity=activation))
-        layer = DropoutLayer(layer, p=0.5) if dropout else layer
+        # 2x Deconvs and batch norms
         layer = batch_norm(Deconv2DLayer(layer, 128, 5, stride=1, nonlinearity=activation))
         layer = DropoutLayer(layer, p=0.5) if dropout else layer
         layer = batch_norm(Deconv2DLayer(layer, 128, 5, stride=2, output_size=16, nonlinearity=activation))
 
-        # 3x Deconvs and batch norms
+        # 2x Deconvs and batch norms
+        layer = batch_norm(Deconv2DLayer(layer, 96, 5, stride=1, nonlinearity=activation))
+        layer = DropoutLayer(layer, p=0.5) if dropout else layer
+        layer = batch_norm(Deconv2DLayer(layer, 96, 5, stride=2, output_size=32, nonlinearity=activation))
+        layer = DropoutLayer(layer, p=0.5) if dropout else layer
+
+        # 2x Deconvs and batch norms
         layer = batch_norm(Deconv2DLayer(layer, 64, 5, stride=1, nonlinearity=activation))
         layer = DropoutLayer(layer, p=0.5) if dropout else layer
-        layer = batch_norm(Deconv2DLayer(layer, 64, 5, stride=1, nonlinearity=activation))
-        layer = DropoutLayer(layer, p=0.5) if dropout else layer
-        layer = batch_norm(Deconv2DLayer(layer, 64, 5, stride=2, output_size=32, nonlinearity=activation))
+        layer = batch_norm(Deconv2DLayer(layer, 64, 5, stride=2, output_size=64, nonlinearity=activation))
         layer = DropoutLayer(layer, p=0.5) if dropout else layer
 
         # 1x Deconvs and batch norms
-        layer = Deconv2DLayer(layer, 3, 5, stride=2, output_size=64, nonlinearity=sigmoid)
+        layer = Deconv2DLayer(layer, 3, 5, stride=1, output_size = 64, nonlinearity=sigmoid)
         
         gen_dat = ll.get_output(layer)
         print ("Generator output:", layer.output_shape)
-        return layer
-
-
-    def build_critic_architecture1(self, input_var=None):
-        from lasagne.layers import (InputLayer, Conv2DLayer, ReshapeLayer,
-                                    DenseLayer)
-        try:
-            from lasagne.layers.dnn import batch_norm_dnn as batch_norm
-        except ImportError:
-            print_warning("Couldn't import lasagne.layers.dnn, so using the regular lasagne.layers.batch_norm function")
-            from lasagne.layers import batch_norm
-        import gan_lasagne as GAN
-        from lasagne.nonlinearities import LeakyRectify
-        from lasagne.init import Normal
-
-        ### Variable definitions
-        ## MOCKING: Right now we are "mocking" the hyper parameters, but layer one we will use the user-provided values
-        ## TODO: Turn these functions into methods of a class which derived from a BaseModel class
-        # Optional layers
-        input_noise = True
-        output_noise = True
-        dropout = True
-
-        # Various activation settings
-        input_sigma = 0.1 # Gaussian noise to inject to output
-        output_sigma = 0.2 # Gaussian noise to inject to output
-        alpha = 0.1 # slope of negative x axis of leaky ReLU
-        activation = LeakyRectify(alpha)
-        uniform_range = 0.015
-        normal_std = 0.05
-        W_init = Normal(normal_std)
-
-
-        # TODO: Change this so that accessing a key which doesn't exist doesn't trigger an
-        # unhandled exception, crashing our program.
-        # if self.hyper['input_noise']:
-        #     input_noise = True
-        # if self.hyper['activation'] == "relu":
-        #     activation = lasagne.nonlinearities.rectify
-        # elif self.hyper['activation'] == "lrelu":
-        #     activation = LeakyRectify(0.2)
-        # if self.hyper['dropout'] == True:
-        #     dropout = True
-
-        # input: (None, 3, 64, 64)
-        layer = InputLayer(shape=(None, 3, 64, 64), input_var=input_var)
-        # Injecting some noise after input layer
-        if input_noise:
-            layer = GAN.GaussianNoiseLayer(layer, sigma=0.2)
-        # four convolutions
-        layer = batch_norm(Conv2DLayer(layer, 96, 5, stride=2, pad='same',
-                                       nonlinearity=activation))
-        layer = batch_norm(Conv2DLayer(layer, 128, 5, stride=2, pad='same',
-                                       nonlinearity=activation))
-        layer = batch_norm(Conv2DLayer(layer, 192, 7, stride=2, pad='same',
-                                       nonlinearity=activation))
-        layer = batch_norm(Conv2DLayer(layer, 256, 7, stride=2, pad='same',
-                                       nonlinearity=activation))
-        # fully-connected layer
-        layer = batch_norm(DenseLayer(layer, 512, nonlinearity=activation))
-
-        # Apply Gaussian noise to output
-        if output_noise:
-            layer = GAN.GaussianNoiseLayer(layer, sigma=output_sigma)
-
-        # output layer (linear)
-        layer = DenseLayer(layer, 1, nonlinearity=None)
-        print ("critic output:", layer.output_shape)
         return layer
 
     def build_critic_architecture1(self, input_var=None):
@@ -762,6 +696,7 @@ class LSGAN_Model(GAN_BaseModel):
                                       forever=True)
         # We iterate over epochs:
         generator_updates = 0
+        next_epoch_checkpoint = settings.EPOCHS_PER_CHECKPOINT        
         for epoch in range(num_epochs):
             start_time = time.time()
 
