@@ -265,12 +265,12 @@ def build_generator_architecture(input_var=None, architecture=1):
         noise = theano_rng.uniform(size=noise_dim)
         
         layer = ll.InputLayer(shape=noise_dim, input_var=noise)
-        layer = GAN.batch_norm(ll.DenseLayer(layer, num_units=4*4*512, W=Normal(0.05), nonlinearity=GAN.relu), g=None))
-        layer = ll.ReshapeLayer(layer, (batch_rows,512,4,4)))
-        layer = GAN.batch_norm(GAN.Deconv2DLayer(layer, (batch_rows,256,8,8), (5,5), W=Normal(0.05), nonlinearity=GAN.relu), g=None)) # 4 -> 8
-        layer = GAN.batch_norm(GAN.Deconv2DLayer(layer, (batch_rows,128,16,16), (5,5), W=Normal(0.05), nonlinearity=GAN.relu), g=None)) # 8 -> 16
-        layer = GAN.batch_norm(GAN.Deconv2DLayer(layer, (batch_rows,64,32,32), (5,5), W=Normal(0.05), nonlinearity=GAN.relu), g=None)) # 16 -> 32
-        layer = GAN.weight_norm(GAN.Deconv2DLayer(layer, (batch_rows,3,64,64), (5,5), W=Normal(0.05), nonlinearity=T.tanh), train_g=True, init_stdv=0.1)) # 32 -> 64
+        layer = GAN.batch_norm(ll.DenseLayer(layer, num_units=4*4*512, W=Normal(0.05), nonlinearity=GAN.relu), g=None)
+        layer = ll.ReshapeLayer(layer, (batch_rows,512,4,4))
+        layer = GAN.batch_norm(GAN.Deconv2DLayer(layer, (batch_rows,256,8,8), (5,5), W=Normal(0.05), nonlinearity=GAN.relu), g=None) # 4 -> 8
+        layer = GAN.batch_norm(GAN.Deconv2DLayer(layer, (batch_rows,128,16,16), (5,5), W=Normal(0.05), nonlinearity=GAN.relu), g=None) # 8 -> 16
+        layer = GAN.batch_norm(GAN.Deconv2DLayer(layer, (batch_rows,64,32,32), (5,5), W=Normal(0.05), nonlinearity=GAN.relu), g=None) # 16 -> 32
+        layer = GAN.weight_norm(GAN.Deconv2DLayer(layer, (batch_rows,3,64,64), (5,5), W=Normal(0.05), nonlinearity=T.tanh), train_g=True, init_stdv=0.1) # 32 -> 64
 
         gen_dat = ll.get_output(layer)
 
