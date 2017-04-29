@@ -161,6 +161,7 @@ class LSGAN_Model(GAN_BaseModel):
         batches = self.iterate_minibatches(X_train, y_train, batchsize, shuffle=True,
                                       forever=True)
         # We iterate over epochs:
+        found_stop_file = False
         generator_updates = 0
         next_epoch_checkpoint = settings.EPOCHS_PER_CHECKPOINT        
         for epoch in range(num_epochs):
@@ -181,7 +182,6 @@ class LSGAN_Model(GAN_BaseModel):
             log("  generator loss: {}".format(np.mean(generator_losses)))
             log("  critic loss:    {}".format(np.mean(critic_losses)))
             self.wall_time += time_delta
-            # TODO: Append performance to a file
 
             # And finally, we plot some generated data
             from utils import normalize_data, denormalize_data
@@ -208,6 +208,15 @@ class LSGAN_Model(GAN_BaseModel):
                 #     Image.fromarray(sample.reshape(3, 64, 64)
                 #                     .transpose(1, 2, 0)
                 #                     .reshape(64, 64, 3)).save(sample_path)
+
+
+            # Check for STOP file
+            if self.check_stop_file():
+                found_stop_file = True
+                print_warning("Detected STOP file in the experiment's base directory, "
+                              + "after completing fully epoch {}. ".format(epoch + 1)
+                              + "Updating checkpoint, saving models and aborting.")
+                break
 
             if epoch >= next_epoch_checkpoint:
                 ### Checkpoint time!!! (save model and checkpoint file)
@@ -245,13 +254,19 @@ class LSGAN_Model(GAN_BaseModel):
         ### We are done training here!
         ### Time for a checkpoint!
         ### Checkpoint time!!! (save model and checkpoint file)
-        print_positive("TRAINING COMPLETE! LAST CHECKPOINT AT EPOCH {}. "
-                       "Updating 'checkpoint.json' file and saving model...".format(epoch + 1))
+        if found_stop_file:
+            print_warning("TRAINING ABORTED EARLY DUE TO A STOP FILE BEING CREATED!")
+            print_info("Performing checkpoint update at epoch {}.".format(epoch + 1))
+        else:
+            print_positive("TRAINING COMPLETED SUCCESSFULLY! We reached the desired number of epochs of {} without a hitch. High five!".format(num_epochs))
+            print_info("Performing checkpoint update at epoch {}.".format(epoch + 1))
+
         self.generator = generator
         self.discriminator = critic
         self.epochs_completed = epoch
 
         # Update checkpoint, saving model to disk at the same time
+        print_info("Updating 'checkpoint.json' and saving both model's weights to disk...")
         self.update_checkpoint(settings.KEEP_ALL_CHECKPOINTS)
 
         ### Save the model's performance to disk
