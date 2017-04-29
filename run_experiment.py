@@ -12,7 +12,7 @@ from utils import normalize_data, denormalize_data
 from utils import save_keras_predictions, print_results_as_html
 from utils import unflatten_to_4tensor, unflatten_to_3tensor, transpose_colors_channel
 from utils import handle_critical, handle_error, handle_warning
-from utils import print_critical, print_error, print_warning, print_info, print_positive
+from utils import print_critical, print_error, print_warning, print_info, print_positive, log
 
 #######################
 # Helper functions
@@ -38,18 +38,6 @@ def download_dataset():
     raise OSError("Could not find the script '%s'." % dataset_script)
 
 
-def initialize_directories():
-    settings.BASE_DIR    = os.path.join(settings.MODEL, settings.EXP_NAME)
-    settings.MODELS_DIR  = os.path.join(settings.BASE_DIR, "models/")
-    settings.EPOCHS_DIR  = os.path.join(settings.BASE_DIR, "epochs/")
-    settings.PERF_DIR    = os.path.join(settings.BASE_DIR, "performance/")
-    settings.SAMPLES_DIR = os.path.join(settings.BASE_DIR, "samples/")
-    settings.PRED_DIR    = os.path.join(settings.BASE_DIR, "predictions/")
-    settings.ASSETS_DIR  = os.path.join(settings.PRED_DIR, "assets/")
-    settings.HTML_DIR    = settings.PRED_DIR
-    settings.CHECKPOINTS_DIR = os.path.join(settings.BASE_DIR, "checkpoints/")
-
-
 #################################################
 # Run experiments here
 # Define your global options and experiment name
@@ -68,16 +56,16 @@ def initialize_directories():
 ##                                    predictions/assets/<experiment_name>/X_full_<i>.jpg
 ##                                    predictions/assets/<experiment_name>/X_full_pred_<i>.jpg
 
+
 def run_experiment():
+    log("Welcome! This is my final project for the course:")
+    log("IFT6266-H2017 (Prof. Aaron Courville)")
+    log("Copyright 2017 Philippe Paradis. All Rights Reserved.")
+    log("")
+    log("Enjoy!")
+    log("")
     model = None
 
-    ### Set the experiment name according to a boring structure (but simple is good :D)
-    settings.EXP_NAME = "{}_model_{}".format(settings.EXP_NAME_PREFIX, settings.MODEL)
-
-    ### Initialize global variables that store the various directories where
-    ### results will be saved for this experiment. Moreover, create them.
-    initialize_directories()
-    
     # Define model's specific settings
     if settings.MODEL == "test":
         model = models.Test_Model(settings.MODEL)
@@ -109,17 +97,19 @@ def run_experiment():
     ### Load checkpoint (if any). This will also load the hyper parameters file.
     ### This will also load the model's architecture, weights, optimizer states,
     ### that is, everything necessary to resume training.
-    checkpoint = model.load_checkpoint()
-    if checkpoint != None:
+        
+    checkpoint, hyperparams, resume_from_checkpoint = model.resume_last_checkpoint()
+    
+    if resume_from_checkpoint:
         print_positive("Ready to resume from a valid checkpoint!")
-        print("")
+        log("")
         print_info("State of last checkpoint:")
         for key in checkpoint:
-            print(" * {0: <20} = {1}".format(str(key), str(checkpoint[key])))
-        print("")
+            log(" * {0: <20} = {1}".format(str(key), str(checkpoint[key])))
+        log("")
     else:
         ### Build model's architecture
-        print("(!) No valid checkpoint found for this experiment. Building and training model from scratch.")
+        log("(!) No valid checkpoint found for this experiment. Building and training model from scratch.")
         if settings.MODEL == "mlp" or settings.MODEL == "test":
             model.initialize()
             model.build()
@@ -139,19 +129,19 @@ def run_experiment():
         model.save_hyperparams()
 
     if settings.NUM_EPOCHS == 0 and not settings.PERFORM_PREDICT_ONLY:
-        print("Okay, we specified 0 epochs, so we only created the experiment directory:\m{}\mand the hyper parameters file within that directory 'hyperparameters.json'.".format(settings.BASE_DIR))
+        log("Okay, we specified 0 epochs, so we only created the experiment directory:\m{}\mand the hyper parameters file within that directory 'hyperparameters.json'.".format(settings.BASE_DIR))
         sys.exit(0)
 
     ###
     ### Make sure the dataset has been downloaded and extracted correctly on disk
     ###
     if check_mscoco_dir() == False:
-        print("(!) The project dataset based on MSCOCO was not found in its expected location '{}' or the symlink is broken."
+        log("(!) The project dataset based on MSCOCO was not found in its expected location '{}' or the symlink is broken."
               .format(settings.MSCOCO_DIR))
-        print("Attempting to download the dataset...")
+        log("Attempting to download the dataset...")
         rc = download_dataset()
         if rc != 0:
-            print("(!) Failed to download the project dataset, exiting...")
+            log("(!) Failed to download the project dataset, exiting...")
             sys.exit(rc)
 
     verbosity_level = "Low"
@@ -161,20 +151,16 @@ def run_experiment():
         verbosity_level = "medium"
 
     # Print info about our settings
-    print("IFT6266-H2017 (Prof. Aaron Courville)")
-    print("Final Project")
-    print("Copyright 2017 Philippe Paradis. All Rights Reserved.")
-    print("")
-    print("============================================================")
-    print("* Experiment name  = %s" % settings.EXP_NAME)
-    print("============================================================")
-    print("")
-    print("Settings:")
-    print(" * Training epochs       = " + str(settings.NUM_EPOCHS))
-    print(" * Verbosity             = " + verbosity_level)
-    print(" * Dta augmentation      = " + str(settings.DATASET_AUGMENTATION))
-    print(" * Load greyscale images = " + str(not settings.LOAD_BLACK_AND_WHITE_IMAGES))
-    print("")
+    log("============================================================")
+    log("* Experiment name  = %s" % settings.EXP_NAME)
+    log("============================================================")
+    log("")
+    log("Settings:")
+    log(" * Training epochs       = " + str(settings.NUM_EPOCHS))
+    log(" * Verbosity             = " + verbosity_level)
+    log(" * Dta augmentation      = " + str(settings.DATASET_AUGMENTATION))
+    log(" * Load greyscale images = " + str(not settings.LOAD_BLACK_AND_WHITE_IMAGES))
+    log("")
 
 
     #######################################
@@ -199,27 +185,27 @@ def run_experiment():
 
     ### Load dataset
     Dataset.load_dataset()
-    print("Finished loading dataset...")
-    print("")
+    log("Finished loading dataset...")
+    log("")
     
-    print("Summary of data within dataset:")
-    print(" * images.shape            = " + str(Dataset.images.shape))
-    print(" * captions_ids.shape      = " + str(Dataset.captions_ids.shape))
-    print(" * captions_dict.shape     = " + str(Dataset.captions_dict.shape))
-    # print("images_outer2d.shape    = " + str(Dataset.images_outer2d.shape))
-    # print("images_inner2d.shape    = " + str(Dataset.images_inner2d.shape))
-    # print("images_outer_flat.shape = " + str(Dataset.images_outer_flat.shape))
-    # print("images_inner_flat.shape = " + str(Dataset.images_inner_flat.shape))
-    # print("images_T.shape          = " + str(Dataset.images_T.shape))
-    # print("images_outer2d_T.shape  = " + str(Dataset.images_outer2d_T.shape))
-    # print("images_inner2d_T.shape  = " + str(Dataset.images_inner2d_T.shape))
-    print("")
+    log("Summary of data within dataset:")
+    log(" * images.shape            = " + str(Dataset.images.shape))
+    log(" * captions_ids.shape      = " + str(Dataset.captions_ids.shape))
+    log(" * captions_dict.shape     = " + str(Dataset.captions_dict.shape))
+    # log("images_outer2d.shape    = " + str(Dataset.images_outer2d.shape))
+    # log("images_inner2d.shape    = " + str(Dataset.images_inner2d.shape))
+    # log("images_outer_flat.shape = " + str(Dataset.images_outer_flat.shape))
+    # log("images_inner_flat.shape = " + str(Dataset.images_inner_flat.shape))
+    # log("images_T.shape          = " + str(Dataset.images_T.shape))
+    # log("images_outer2d_T.shape  = " + str(Dataset.images_outer2d_T.shape))
+    # log("images_inner2d_T.shape  = " + str(Dataset.images_inner2d_T.shape))
+    log("")
 
     ### Print hyperparameters, as loaded from existing file or as initialized for new experiment
     print_info("Hyperparameters:")
     for key in model.hyper:
-        print(" * {0: <20} = {1}".format(str(key), str(model.hyper[key])))
-    print("")        
+        log(" * {0: <20} = {1}".format(str(key), str(model.hyper[key])))
+    log("")        
 
     ### Train the model (computation intensive)
     if settings.MODEL == "mlp" or settings.MODEL == "test":

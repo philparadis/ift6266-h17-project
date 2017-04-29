@@ -1,9 +1,46 @@
 #!/usr/bin/env python2
 # coding: utf-8
 
+import os, sys
 import argparse
-import settings
+import datetime
 
+import settings
+from logger import Logger, LogOutput
+from utils import handle_error, log
+
+
+def initialize_directories():
+    settings.BASE_DIR    = os.path.join(settings.MODEL, settings.EXP_NAME)
+    settings.MODELS_DIR  = os.path.join(settings.BASE_DIR, "models/")
+    settings.EPOCHS_DIR  = os.path.join(settings.BASE_DIR, "epochs/")
+    settings.PERF_DIR    = os.path.join(settings.BASE_DIR, "performance/")
+    settings.SAMPLES_DIR = os.path.join(settings.BASE_DIR, "samples/")
+    settings.PRED_DIR    = os.path.join(settings.BASE_DIR, "predictions/")
+    settings.ASSETS_DIR  = os.path.join(settings.PRED_DIR, "assets/")
+    settings.HTML_DIR    = settings.PRED_DIR
+    settings.CHECKPOINTS_DIR = os.path.join(settings.BASE_DIR, "checkpoints/")
+    settings.LOGS_DIR    = os.path.join(settings.BASE_DIR, "logs/")
+
+    # Create the directories
+    settings.touch_dir(settings.BASE_DIR)
+    settings.touch_dir(settings.MODELS_DIR)
+    settings.touch_dir(settings.EPOCHS_DIR)
+    settings.touch_dir(settings.PERF_DIR)
+    settings.touch_dir(settings.SAMPLES_DIR)
+    settings.touch_dir(settings.PRED_DIR)
+    settings.touch_dir(settings.ASSETS_DIR)
+    settings.touch_dir(settings.HTML_DIR)
+    settings.touch_dir(settings.CHECKPOINTS_DIR)
+    settings.touch_dir(settings.LOGS_DIR)
+
+    # Set some file paths
+    settings.OUTLOGFILE = os.path.join(settings.LOGS_DIR, "output.log")
+    settings.ERRLOGFILE = os.path.join(settings.LOGS_DIR, "errors.log")
+
+    open(settings.OUTLOGFILE, 'a').close()
+    open(settings.ERRLOGFILE, 'a').close()
+    
 
 if __name__ == "__main__":
         
@@ -74,9 +111,24 @@ if __name__ == "__main__":
                       " installing it, and all other required or optional " +
                       "modules, via the command line \"> pip install -r requirements.txt\"")
 
-#    try:
-    from run_experiment import run_experiment
-        ### All systems are go, let's fire up this ship to infinity and beyond!
-    run_experiment()
-#    except ImportError as e:
-#        handle_error("Failed to import 'run_experiment', the most important module. Debugging time!", e)
+    ### Initialize experiment directories and global variables
+    ## Set the experiment name according to a boring structure (but simple is good :D)
+    settings.EXP_NAME = "{}_model_{}".format(settings.EXP_NAME_PREFIX, settings.MODEL)
+
+    ## Initialize global variables that store the various directories where
+    ## results will be saved for this experiment. Moreover, create them.
+    initialize_directories()
+
+    ### All systems are go, let's fire up this ship to infinity and beyond!
+    try:
+        from run_experiment import run_experiment
+        t = datetime.datetime.now()
+        log("Current stardate: {0}".format(t.strftime("%Y-%m-%d %H:%M:%S")))
+        log("")
+        log("All output is logged on disk to: {}".format(settings.OUTLOGFILE))
+        log("All errors are logged on disk to: {}".format(settings.ERRLOGFILE))
+        log("")
+
+        run_experiment()
+    except Exception as e:
+        handle_error("This is the most vague error possible. Sorry :( Good luck!", e)

@@ -60,6 +60,10 @@ PRED_DIR = None # Location for model predictions
 ASSETS_DIR = None # Location to store the various images produced for HTML visualization
 HTML_DIR = None # Location to store the HTML page(s) for nicer visualization of results
 CHECKPOINTS_DIR = None # Location to store the various checkpoints files
+LOGS_DIR = None # Location for the log files produced during program execution, errors, stack traces,
+
+OUTLOGFILE = None
+ERRLOGFILE = None
 
 def touch_dir(directory):
     if not os.path.exists(directory):
