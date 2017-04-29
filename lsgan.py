@@ -927,11 +927,12 @@ class LSGAN_Model(GAN_BaseModel):
                 generator_losses.append(generator_train_fn())
 
             # Then we print the results for this epoch:
+            time_delta = time.time() - start_time
             print("Epoch {} of {} took {:.3f}s".format(
-                epoch + 1, num_epochs, time.time() - start_time))
+                epoch + 1, num_epochs, time_delta))
             print("  generator loss: {}".format(np.mean(generator_losses)))
             print("  critic loss:    {}".format(np.mean(critic_losses)))
-            self.wall_time += time.time() - start_time
+            self.wall_time += time_delta
             # TODO: Append performance to a file
 
             # And finally, we plot some generated data
