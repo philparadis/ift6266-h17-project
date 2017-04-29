@@ -6,7 +6,6 @@ import argparse
 import datetime
 
 import settings
-from logger import Logger, LogOutput
 from utils import handle_error, log
 
 
