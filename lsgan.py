@@ -114,16 +114,16 @@ class LSGAN_Model(GAN_BaseModel):
         layer = ReshapeLayer(layer, ([0], 512, 4, 4))
         ### four fractional-stride convolutions
         # Note: Apply dropouts in G. See tip #17 from "ganhacks"
-        layer = batch_norm(Deconv2DLayer(layer, 256, 5, stride=2, crop='same', W=GlorotNormal()
+        layer = batch_norm(Deconv2DLayer(layer, 256, 5, stride=2, crop='same', W=GlorotNormal(),
                                          output_size=8, nonlinearity=activation))
         layer = DropoutLayer(layer, p=0.5)
-        layer = batch_norm(Deconv2DLayer(layer, 128, 5, stride=2, crop='same', W=GlorotNormal()
+        layer = batch_norm(Deconv2DLayer(layer, 128, 5, stride=2, crop='same', W=GlorotNormal(),
                                          output_size=16, nonlinearity=activation))
         layer = DropoutLayer(layer, p=0.5)
-        layer = batch_norm(Deconv2DLayer(layer, 96, 5, stride=2, crop='same', W=GlorotNormal()
+        layer = batch_norm(Deconv2DLayer(layer, 96, 5, stride=2, crop='same', W=GlorotNormal(),
                                          output_size=32, nonlinearity=activation))
         layer = DropoutLayer(layer, p=0.5)
-        layer = Deconv2DLayer(layer, 3, 5, stride=2, crop='same', W=GlorotNormal()
+        layer = Deconv2DLayer(layer, 3, 5, stride=2, crop='same', W=GlorotNormal(),
                               output_size=64, nonlinearity=tanh)
         print ("Generator output:", layer.output_shape)
         return layer
