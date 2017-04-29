@@ -135,37 +135,37 @@ def handle_critical(msg, e):
     handle_exceptions(msg, e, type = "CRITICAL", fg = "white", bg = "on_red", attrs=["bold", "underline"])
 
 def print_critical(msg):
-    msg = curtime("(!!!!) {0}: {1}".format("CRITICAL", msg))
-    cprint(msg, "white", "on_red", attrs=["bold", "underline"])
+    msg = curtime("(!!!) {0}: {1}".format("CRITICAL", msg))
     logerr(msg)
     logout(msg)
+    cprint(msg, "white", "on_red", attrs=["bold", "underline"])
 
 def handle_error(msg, e):
     handle_exceptions(msg, e, type = "ERROR", fg = "red")
 
 def print_error(msg):
-    msg = curtime("(!!) {0}: {1}".format("ERROR", msg))
-    cprint(msg, "red")
+    msg = curtime("(!) {0}: {1}".format("ERROR", msg))
     logout(msg)
     logerr(msg)
+    cprint(msg, "red")
 
 def handle_warning(msg, e):
     handle_exceptions(msg, e, type = "WARNING", fg = "yellow")
 
 def print_warning(msg):
-    msg = curtime("(!) {0}: {1}".format("WARNING", msg))
-    cprint(msg, "yellow")
+    msg = curtime("{0}: {1}".format("WARNING", msg))
     logout(msg)
+    cprint(msg, "yellow")
                       
 def print_info(msg):
     msg = curtime("{0}: {1}".format("INFO", msg))
-    cprint(msg, "cyan")
     logout(msg)
+    cprint(msg, "cyan")
 
 def print_positive(msg):
     msg = curtime("(!) {0}: {1}".format("EXCELLENT", msg))
-    cprint(msg, "cyan", attrs=["bold"])
     logout(msg)
+    cprint(msg, "cyan", attrs=["bold"])
 
 def logout(msg):
     with open(settings.OUTLOGFILE, 'a') as fd:
