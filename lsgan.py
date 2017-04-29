@@ -227,7 +227,7 @@ class LSGAN_Model(GAN_BaseModel):
                 self.epochs_completed = epoch
 
                 # Create checkpoint
-                self.create_checkpoint()
+                self.checkpoint()
                 ## Save model to disk
                 self.save_model(latest_only = (not settings.KEEP_ALL_CHECKPOINTS))
 
@@ -264,7 +264,7 @@ class LSGAN_Model(GAN_BaseModel):
         self.epochs_completed = epoch
 
         # Create checkpoint
-        self.create_checkpoint()
+        self.checkpoint()
         ## Save model to disk
         self.save_model(latest_only = (not settings.KEEP_ALL_CHECKPOINTS))
 

@@ -25,43 +25,77 @@ class BaseModel(object):
         self.resume_from_checkpoint = False
         self.model_compiled = False
 
+        # Constant variables
+        self.checkpoint_filename = "checkpoint.json"
+        self.path_checkpoint_file = os.path.join(settings.BASE_DIR, self.checkpoint_filename)
+        self.hyperparams_filename = "hyperparams.json"
+        self.path_hyperparams_file = os.path.join(settings.BASE_DIR, self.hyperparams_filename)
+
     def initialize(self):
         pass
 
     def load_model(self):
-        pass
+        return None
     
-    def save_model(self, latest_only=False):
-        pass
+    def save_model(self, keep_all_checkpoints=False):
+        return None
 
+    def is_there_hyperparams_file(self):
+        return os.path.isfile(self.path_hyperparams_file)
+    
     def save_hyperparams(self):
-        settings.touch_dir(settings.BASE_DIR)
-        path = os.path.join(settings.BASE_DIR, "hyperparams.json")
         try:
-            with open(path, 'w') as fp:
+            with open(self.path_hyperparams_file, 'w') as fp:
                 fp.write(get_json_pretty_print(self.hyper))
         except Exception as e:
-            handle_warning("Failed to write hyper parameters file '{0}'.".format(path), e)
+            handle_warning("Failed to write hyper parameters file '{0}'.".format(self.path_hyperparams_file), e)
             return False
         return True
 
     def load_hyperparams(self):
-        settings.touch_dir(settings.BASE_DIR)
-        path = os.path.join(settings.BASE_DIR, "hyperparams.json")
         try:
-            with open(path, 'r') as fp:
+            with open(self.path_hyperparams_file, 'r') as fp:
                 self.hyper = json.load(fp)
         except Exception as e:
-            handle_warning("Failed to load hyper parameters file '{0}'.".format(path), e)
+            handle_warning("Failed to load hyper parameters file '{0}'.".format(self.path_hyperparams_file), e)
             print_warning("Using default hyper parameters instead...")
-            return False
+            return None
 
         print_positive("Loaded hyper parameters from 'hyperparameters.json' file succesfully!")
-        return True
+        return self.hyper
 
-    def create_checkpoint(self):
-        settings.touch_dir(settings.BASE_DIR)
-        chkpoint_path = os.path.join(settings.BASE_DIR, "checkpoint.json")
+    def is_there_checkpoint_file(self):
+        """Check if 'checkpoint.json' exists within the base directory."""
+        return os.path.isfile(self.path_checkpoint_file)
+
+    def checkpoint(self, keep_all_checkpoints=False):
+        """This initiates a checkpoint, including updating 'checkpoint.json', saving whatever appropriate model(s) and other data within the checkpoints directory and so on. If keep_all_checkpoints is set to True, then a copy of the entire model's weight and optimizer state is preserved for each checkpoint, along with the corresponding epoch in the file name. If set to False, then only the latest model is kept on disk, saving a lot of space, but potentially losing a good model due to overtraining."""
+        return (self.save_hyperparams()
+                and self.write_checkpoint_file()
+                and self.save_model(keep_all_checkpoints = keep_all_checkpoints))
+
+    def resume_last_checkpoint(self):
+        checkpoint = None
+        hyperparams = None
+        loaded_model = False
+        if self.is_there_checkpoint_file():
+            checkpoint = self.read_checkpoint_file()
+            
+        if self.is_there_hyperparams_file():
+            hyperparams = self.load_hyperparams()
+
+        loaded_model = self.load_model()
+
+        if checkpoint == None or hyperparams == None or not loaded_model:
+            self.resume_from_checkpoint = False
+        else:
+            self.resume_from_checkpoint = True
+            self.model_compiled = True
+
+        return checkpoint, hyperparams, self.resume_from_checkpoint
+
+    def write_checkpoint_file(self):
+        """Write the 'checkpoint.json' file."""
         # TODO: Add a lot more to checkpoint file, such as:
         # - current training loss
         # - current validation loss
@@ -74,88 +108,67 @@ class BaseModel(object):
             "process_time" : self.process_time
             }
         try:
-            with open(chkpoint_path, 'w') as fp:
+            with open(self.path_checkpoint_file, 'w') as fp:
                 fp.write(get_json_pretty_print(checkpoint))
         except Exception as e:
-            handle_error("Unable to write checkpoint file '{}'.".format(chkpoint_path), e)
+            handle_error("Unable to write checkpoint file '{}'.".format(self.path_checkpoint_file), e)
             return False
         return True
-        
 
-    def load_checkpoint(self):
+    def read_checkpoint_file(self):
+        """Read the 'checkpoint.json' file and update the class variables accordingly."""
         checkpoint = None
-        settings.touch_dir(settings.BASE_DIR)
-        chkpoint_path = os.path.join(settings.BASE_DIR, "checkpoint.json")
-        if os.path.isfile(chkpoint_path):
-            print_positive("Found matching checkpoint file: {}".format(chkpoint_path))
+        if os.path.isfile(self.path_checkpoint_file):
+            print_positive("Found matching checkpoint file: {}".format(self.path_checkpoint_file))
             print_info("Verifying that we can parse the checkpoint file correctly...")
             try:
-                with open(chkpoint_path, "r") as fp:
+                with open(self.path_checkpoint_file, "r") as fp:
                     try:
                         checkpoint = json.load(fp)
                     except ValueError as e:
-                        handle_error("Failed to open checkpoint file '{0}'. ".format(chkpoint_path) +
+                        handle_error("Failed to open checkpoint file '{0}'. ".format(self.path_checkpoint_file) +
                                      "It does not appear to be a valid JSON file.", e)
                         checkpoint = None
             except IOError as e:
-                handle_error("Unable to open checkpoint file '{}' for reading.".format(chkpoint_path), e)
-                checkpoint = None
-
+                handle_error("Unable to open checkpoint file '{}' for reading.".format(self.path_checkpoint_file), e)
         ### Failed to find or open checkpoint file. Set some values to 0 and exit
-        if checkpoint == None:
+        if checkpoint != None:
+            ### Succesfully loaded check point file, gather the data!
+            print_positive("Successfully loaded checkpoint!! Reading its data...")
+            self.epochs_completed = checkpoint['epochs_completed']
+            if checkpoint['model'] != settings.MODEL:
+                print_warning("The checkpoint model '{0}' does not match command line argument of '{1}'."
+                              .format(checkpoint['model'], settings.MODEL))
+                print_info("Discarding checkpoint and starting from scratch.")
+                return None
+            if checkpoint['exp_name'] != settings.EXP_NAME:
+                print_warning("The checkpoint experiment name '{0}' does not match command line argument of '{1}'."
+                              .format(checkpoint['exp_name'], settings.EXP_NAME))
+                print_info("Discarding checkpoint and starting from scratch.")
+                return None
+
+            self.wall_time = checkpoint['wall_time']
+            self.process_time = checkpoint['process_time']
+        else:
             self.epochs_completed = 0
             self.wall_time = 0
             self.process_time = 0
-            return None
 
-        ### Succesfully loaded check point file, gather the data!
-        print_positive("Successfully loaded checkpoint!! Reading its data...")
-        self.epochs_completed = checkpoint['epochs_completed']
-        if checkpoint['model'] != settings.MODEL:
-            print_warning("The checkpoint model '{0}' does not match command line argument of '{1}'."
-                          .format(checkpoint['model'], settings.MODEL))
-            print_info("Discarding checkpoint and starting from scratch.")
-            return None
-        if checkpoint['exp_name'] != settings.EXP_NAME:
-            print_warning("The checkpoint experiment name '{0}' does not match command line argument of '{1}'."
-                          .format(checkpoint['exp_name'], settings.EXP_NAME))
-            print_info("Discarding checkpoint and starting from scratch.")
-            return None
-
-        #### Successfully loaded checkpoint file, try to load model
-        print_positive("Found a a saved model in HDF5 format, located at:\n{}")
-        self.wall_time = checkpoint['wall_time']
-        self.process_time = checkpoint['process_time']
-        self.resume_from_checkpoint = True
-
-        if not self.load_model():
-            self.build()
-            self._compile()
-        self.model_compiled = True
-
-        # Successfully loaded checkpoint, so try to load hyper parameters as well
-        print_info("Loading hyper parameters JSON file...")
-        self.load_hyperparams()
-                    
         return checkpoint
-
 
     def check_stop_file(self):
         """Return True if a file with name STOP is found in the base directory, return False otherwise"""
-        path = os.path.join(settings.BASE_DIR, "STOP")
-        return os.path.isfile(path)
+        return os.path.isfile(os.path.join(settings.BASE_DIR, "STOP"))
                       
     def create_stop_file(self):
         """Adds an file with name STOP within experiment's root directory. This prevents further training unless the file is deleted. This also prevents loading the dataset and performing any pre-processing."""
-        settings.touch_dir(settings.BASE_DIR)
-        path = os.path.join(settings.BASE_DIR, "STOP")
-        open(path, 'a').close()
+        open(os.path.join(settings.BASE_DIR, "STOP"), 'a').close()
 
     def remove_stop_file(self):
         """Deletes the STOP file in order to allow training to be resumed."""
-        path = os.path.join(settings.BASE_DIR, "STOP")
-        if os.path.isfile(path):
-            os.remove(path)
+        stopfile = os.path.join(settings.BASE_DIR, "STOP")
+        if os.path.isfile(stopfile):
+            os.remove(stopfile)
 
     def build(self):
         raise NotImplemented()
@@ -177,20 +190,21 @@ class KerasModel(BaseModel):
         super(KerasModel, self).__init__(model_name = model_name, hyperparams = hyperparams)
         self.keras_model = None
 
+        # Constants
+        self.model_path = os.path.join(settings.MODELS_DIR, "model.hdf5")
+
     def load_model(self):
         """Return True if a valid model was found and correctly loaded. Return False if no model was loaded."""
         from shutil import copyfile
         from keras.models import load_model
 
-        settings.touch_dir(settings.CHECKPOINTS_DIR)
-        settings.touch_dir(settings.BASE_DIR)
-
-        current_model_path = os.path.join(settings.CHECKPOINTS_DIR, "model_epoch{0}.hdf5".format(self.epochs_completed))
-        latest_model_path = os.path.join(settings.MODELS_DIR, "model.hdf5")
+        model_epoch_filename = "model_epoch_{0:0>4}.hdf5".format(self.epochs_completed)
+        most_recent_model_path = os.path.join(settings.CHECKPOINTS_DIR, model_epoch_filename)
+        latest_model_path = self.model_path
         if not os.path.isfile(latest_model_path):
-            if not os.path.isfile(current_model_path):
-                latest_model_path = current_model_path
-                print_warning("Unexpected problem: cannot find the model's HDF5 file anymore at path:\n'{}'".format(current_model_path))
+            if not os.path.isfile(most_recent_model_path):
+                latest_model_path = most_recent_model_path
+                print_warning("Unexpected problem: cannot find the model's HDF5 file anymore at path:\n'{}'".format(most_recent_model_path))
                 return False
             
         print_positive("Loading last known valid model (this includes the complete architecture, all weights, optimizer's state and so on)!")
@@ -213,18 +227,21 @@ class KerasModel(BaseModel):
                 sys.exit(-3)
             return False
         return True
-
         
-    def save_model(self, latest_only=False):
+    def save_model(self, keep_all_checkpoints=False):
+        """Save model. If keep_all_checkpoints is set to True, then a copy of the entire model's weight and optimizer state is preserved for each checkpoint, along with the corresponding epoch in the file name. If set to False, then only the latest model is kept on disk, saving a lot of space, but potentially losing a good model due to overtraining."""
         from keras import models
+        model_epoch_filename = "model_epoch_{0:0>4}.hdf5".format(self.epochs_completed)
 
-        settings.touch_dir(settings.CHECKPOINTS_DIR)
-        settings.touch_dir(settings.MODELS_DIR)
-        model_path = os.path.join(settings.CHECKPOINTS_DIR, "model_epoch{0}.hdf5".format(self.epochs_completed))
-        print_positive("Saving model after epoch #{} to disk:\n{}.".format(self.epochs_completed, model_path))
-        self.keras_model.save(model_path)
-        model_symlink_path = os.path.join(settings.MODELS_DIR, "model.hdf5")
-        force_symlink("../checkpoints/model_epoch{0}.hdf5".format(self.epochs_completed), model_symlink_path)
+        if keep_all_checkpoints:
+            chkpoint_model_path = os.path.join(settings.CHECKPOINTS_DIR, model_epoch_filename)
+            print_positive("Saving model after epoch #{} to disk:\n{}.".format(self.epochs_completed, chkpoint_model_path))
+            self.keras_model.save(chkpoint_model_path)
+            force_symlink("../checkpoints/{}".format(model_epoch_filename), self.model_path)
+        else:
+            print_positive("Overwriting latest model after epoch #{} to disk:\n{}.".format(self.epochs_completed, self.model_path))
+            self.keras_model.save(self.model_path)
+        return True
 
     def _compile(self):
         # Compile model
@@ -298,8 +315,7 @@ class KerasModel(BaseModel):
                 self.epochs_completed += epochs_for_this_fit
             # Checkpoint time (save hyper parameters, model and checkpoint file)
             print_positive("CHECKPOINT AT EPOCH {}. Updating 'checkpoint.json' file...".format(self.epochs_completed))
-            self.save_model()
-            self.create_checkpoint()
+            self.checkpoint()
             next_epoch_checkpoint += settings.EPOCHS_PER_CHECKPOINT
 
         ### Training complete
@@ -314,7 +330,6 @@ class KerasModel(BaseModel):
         print_positive("Testing score  {0: >6}: {1:.5f}".format(metric, train_scores[1]))
 
         ### Save the model's performance to disk
-        settings.touch_dir(settings.MODELS_DIR)
         path_model_score = os.path.join(settings.MODELS_DIR, "model_score.txt")
         print_info("Saving performance to file '{}'".format(path_model_score))
         with open(path_model_score, "w") as fd:
@@ -349,7 +364,6 @@ class MLP_Model(KerasModel):
             try:
                 import graphviz
                 from keras.utils import plot_model
-                settings.touch_dir(settings.MODELS_DIR)
                 plot_model(self.keras_model, to_file=os.path.join(settings.MODELS_DIR, 'model_plot.png'), show_shapes=True)
             except ImportError as e:
                 handle_warning("Module graphviz not found, cannot plot a diagram of the model's architecture.", e)
@@ -357,7 +371,6 @@ class MLP_Model(KerasModel):
             handle_warning("Module pydot not found, cannot plot a diagram of the model's architecture.", e)
 
         ### Output a summary of the model, including the various layers, activations and total number of weights
-        settings.touch_dir(settings.MODELS_DIR)
         old_stdout = sys.stdout
         sys.stdout = open(os.path.join(settings.MODELS_DIR, 'model_summary.txt'), 'w')
         self.keras_model.summary()
@@ -409,67 +422,63 @@ class Conv_MLP(KerasModel):
 class GAN_BaseModel(BaseModel):
     def __init__(self, model_name, hyperparams = hyper_params.default_gan_basemodel_hyper_params):
         super(GAN_BaseModel, self).__init__(model_name = model_name, hyperparams = hyperparams)
-        self.gen_path = "generator.npz"
-        self.disc_path = "discriminator.npz"
         self.generator = None
         self.discriminator = None
         self.train_fn = None
         self.gen_fn = None
 
+        # Constants
+        self.gen_filename = "model_generator.npz"
+        self.disc_filename = "model_discriminator.npz"
+        self.full_gen_path = os.path.join(settings.MODELS_DIR, self.gen_filename)
+        self.full_disc_path = os.path.join(settings.MODELS_DIR, self.disc_filename)
+
     def load_model(self):
         """Return True if a valid model was found and correctly loaded. Return False if no model was loaded."""
         import numpy as np
         from lasagne.layers import set_all_param_values
-        settings.touch_dir(settings.CHECKPOINTS_DIR)
-        settings.touch_dir(settings.BASE_DIR)
 
-        full_gen_path = os.path.join(settings.MODELS_DIR, self.gen_path)
-        full_disc_path = os.path.join(settings.MODELS_DIR, self.disc_path)
-        
-        if os.path.isfile(full_gen_path) and os.path.isfile(full_disc_path):
-            print_positive("Found latest '.npz' model's weights files saved to disk at paths:\n{}\n{}".format(full_gen_path, full_disc_path))
+        if os.path.isfile(self.full_gen_path) and os.path.isfile(self.full_disc_path):
+            print_positive("Found latest '.npz' model's weights files saved to disk at paths:\n{}\n{}".format(self.full_gen_path, self.full_disc_path))
         else:
-            print_warning("Could not find '.npz'  weights files, either {} or {}.".format(full_gen_path, full_disc_path), e)
+            print_warning("Could not find '.npz'  weights files, either {} or {}.".format(self.full_gen_path, self.full_disc_path), e)
             return False
             
         try:
             ### Load the generator model's weights
-            print_info("Attempting to load generator model: {}".format(full_gen_path))
-            with np.load(full_gen_path) as fp:
+            print_info("Attempting to load generator model: {}".format(self.full_gen_path))
+            with np.load(self.full_gen_path) as fp:
                 param_values = [fp['arr_%d' % i] for i in range(len(fp.files))]
             set_all_param_values(self.generator, param_values)
 
             ### Load the discriminator model's weights
-            print_info("Attempting to load generator model: {}".format(full_disc_path))
-            with np.load(full_disc_path) as fp:
+            print_info("Attempting to load generator model: {}".format(self.full_disc_path))
+            with np.load(self.full_disc_path) as fp:
                 param_values = [fp['arr_%d' % i] for i in range(len(fp.files))]
             set_all_param_values(self.discriminator, param_values)
         except Exception as e:
-            handle_error("Failed to read or parse the '.npz' weights files, either {} or {}.".format(full_gen_path, full_disc_path), e)
+            handle_error("Failed to read or parse the '.npz' weights files, either {} or {}.".format(self.full_gen_path, self.full_disc_path), e)
             return False
         return True
 
         
-    def save_model(self, latest_only=False):
+    def save_model(self, keep_all_checkpoints=False):
+        """Save model. If keep_all_checkpoints is set to True, then a copy of the entire model's weight and optimizer state is preserved for each checkpoint, along with the corresponding epoch in the file name. If set to False, then only the latest model is kept on disk, saving a lot of space, but potentially losing a good model due to overtraining."""
         import numpy as np
         from lasagne.layers import get_all_param_values
         # Save the gen and disc weights to disk
-        settings.touch_dir(settings.CHECKPOINTS_DIR)
-        settings.touch_dir(settings.MODELS_DIR)
-        if latest_only:
-            epoch_gen_path = "model_generator_lastest.npz".format(self.epochs_completed)
-            epoch_disc_path = "model_discriminator_latest.npz".format(self.epochs_completed)
+        if keep_all_checkpoints:
+            epoch_gen_path = "model_generator_epoch{0:0>4}.npz".format(self.epochs_completed)
+            epoch_disc_path = "model_discriminator_epoch{0:0>4}.npz".format(self.epochs_completed)
+            chkpoint_gen_path = os.path.join(settings.CHECKPOINTS_DIR, epoch_gen_path)
+            chkpoint_disc_path = os.path.join(settings.CHECKPOINTS_DIR, epoch_disc_path)
+            np.savez(chkpoint_gen_path, *get_all_param_values(self.generator))
+            np.savez(chkpoint_disc_path, *get_all_param_values(self.discriminator))
+            force_symlink("../checkpoints/{}".format(epoch_gen_path), self.full_gen_path)
+            force_symlink("../checkpoints/{}".format(epoch_disc_path), self.full_disc_path)
         else:
-            epoch_gen_path = "model_generator_epoch{}.npz".format(self.epochs_completed)
-            epoch_disc_path = "model_discriminator_epoch{}.npz".format(self.epochs_completed)
-        full_gen_path = os.path.join(settings.MODELS_DIR, self.gen_path)
-        full_disc_path = os.path.join(settings.MODELS_DIR, self.disc_path)
-        chkpoint_gen_path = os.path.join(settings.CHECKPOINTS_DIR, epoch_gen_path)
-        chkpoint_disc_path = os.path.join(settings.CHECKPOINTS_DIR, epoch_disc_path)
-        np.savez(chkpoint_gen_path, *get_all_param_values(self.generator))
-        np.savez(chkpoint_disc_path, *get_all_param_values(self.discriminator))
-        force_symlink("../checkpoints/{}".format(epoch_gen_path), full_gen_path)
-        force_symlink("../checkpoints/{}".format(epoch_disc_path), full_disc_path)
+            np.savez(self.full_gen_path, *get_all_param_values(self.generator))
+            np.savez(self.full_disc_path, *get_all_param_values(self.discriminator))
 
 class DCGAN_Model(BaseModel):
     def __init__(self, model_name, hyperparams = hyper_params.default_dcgan_hyper_params):
