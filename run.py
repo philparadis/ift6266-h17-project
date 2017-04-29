@@ -31,6 +31,7 @@ if __name__ == "__main__":
 #                        default=settings.OPTIMIZER, help="Optimizer (available: adam, sgd, rmsprop, adamax, nadam)")
     parser.add_argument("-c", "--epochs_per_checkpoint", type=int, default=settings.EPOCHS_PER_CHECKPOINT,
                         help="Amount of epochs to perform during training between every checkpoint.")
+    parser.add_argument("-k", "--keep_all_checkpoints", action="store_true", default=settings.KEEP_ALL_CHECKPOINTS, help="By default, only the model saved during the last checkpoint is saved. Pass this flag if you want to keep a models on disk with its associated epoch in the filename at every checkpoint.")
     parser.add_argument("-a", "--architecture", type=int, default=settings.LSGAN_ARCHITECTURE,
                         help="Architecture type, only applies to the LSGAN model (values: 1, 2, 3 or 4).")
     parser.add_argument("-u", "--updates_per_epoch", type=int, default=settings.UPDATES_PER_EPOCH,
@@ -48,6 +49,7 @@ if __name__ == "__main__":
     settings.LEARNING_RATE = args.learning_rate
     settings.FORCE_RUN = args.force
     settings.EPOCHS_PER_CHECKPOINT = args.epochs_per_checkpoint
+    settings.KEEP_ALL_CHECKPOINTS = args.keep_all_checkpoints
     settings.LSGAN_ARCHITECTURE = args.architecture
     settings.UPDATES_PER_EPOCH = args.updates_per_epoch
 #    settings.USE_CPU = args.cpu
