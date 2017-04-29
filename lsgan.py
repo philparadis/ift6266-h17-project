@@ -971,7 +971,7 @@ class LSGAN_Model(GAN_BaseModel):
                 # Create checkpoint
                 self.create_checkpoint()
                 ## Save model to disk
-                self.save_model(latest_only = (not setting.KEEP_ALL_CHECKPOINTS))
+                self.save_model(latest_only = (not settings.KEEP_ALL_CHECKPOINTS))
 
                 ### Save the model's performance to disk
                 path_model_score = os.path.join(settings.CHECKPOINTS_DIR, "score_epoch_{0:0>5}.txt".format(epoch + 1))
