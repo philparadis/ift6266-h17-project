@@ -260,7 +260,7 @@ def build_generator_architecture(input_var=None, architecture=1):
         print ("Generator output:", layer.output_shape)
         return layer
     elif architecture == 6:
-        layer = ll.InputLayer(shape=noise_dim, input_var=input_var)
+        layer = InputLayer(shape=(None, 100), input_var=input_var)
         layer = GAN.batch_norm(ll.DenseLayer(layer, num_units=4*4*512, W=Normal(0.05), nonlinearity=GAN.relu), g=None)
         layer = ll.ReshapeLayer(layer, (None,512,4,4))
         layer = GAN.batch_norm(GAN.Deconv2DLayer(layer, (None,256,8,8), (5,5), W=Normal(0.05), nonlinearity=GAN.relu), g=None) # 4 -> 8
