@@ -110,7 +110,7 @@ class LSGAN_Model(GAN_BaseModel):
         # Create neural network model
         print("Building model and compiling functions...")
         generator = self.build_generator(noise_var, architecture = architecture)
-        critic = self.build_critic(input_var, architecture = architecture))
+        critic = self.build_critic(input_var, architecture = architecture)
 
         # Create expression for passing real data through the critic
         real_out = lasagne.layers.get_output(critic)
