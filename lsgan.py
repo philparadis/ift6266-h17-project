@@ -69,8 +69,6 @@ class LSGAN_Model(GAN_BaseModel):
         activation = LeakyRectify(0.2)
         # input: 100dim
         layer = InputLayer(shape=(None, 100), input_var=input_var)
-        # fully-connected layer
-        layer = batch_norm(DenseLayer(layer, 1024))
         # project and reshape
         layer = batch_norm(DenseLayer(layer, 256*4*4))
         layer = ReshapeLayer(layer, ([0], 256, 4, 4))
@@ -90,6 +88,43 @@ class LSGAN_Model(GAN_BaseModel):
         print ("Generator output:", layer.output_shape)
         return layer
 
+    def build_generator_architecture5(self, input_var=None):
+        from lasagne.layers import InputLayer, ReshapeLayer, DenseLayer, DropoutLayer
+        try:
+            from lasagne.layers import TransposedConv2DLayer as Deconv2DLayer
+        except ImportError:
+            raise ImportError("Your Lasagne is too old. Try the bleeding-edge "
+                              "version: http://lasagne.readthedocs.io/en/latest/"
+                              "user/installation.html#bleeding-edge-version")
+        try:
+            from lasagne.layers.dnn import batch_norm_dnn as batch_norm
+        except ImportError:
+            print_warning("Couldn't import lasagne.layers.dnn, so using the regular lasagne.layers.batch_norm function")
+            from lasagne.layers import batch_norm
+        from lasagne.nonlinearities import sigmoid
+        from lasagne.nonlinearities import LeakyRectify
+
+        activation = LeakyRectify(0.2)
+
+        # input: 100dim
+        layer = InputLayer(shape=(None, 100), input_var=input_var)
+        # project and reshape
+        layer = batch_norm(DenseLayer(layer, 512*4*4))
+        layer = ReshapeLayer(layer, ([0], 512, 4, 4))
+        ### four fractional-stride convolutions
+        # Note: Apply dropouts in G. See tip #17 from "ganhacks"
+        layer = batch_norm(Deconv2DLayer(layer, 192, 5, stride=2, crop='same',
+                                         output_size=8, nonlinearity=activation))
+        layer = batch_norm(Deconv2DLayer(layer, 128, 5, stride=2, crop='same',
+                                         output_size=16, nonlinearity=activation))
+        layer = DropoutLayer(layer, p=0.5)
+        layer = batch_norm(Deconv2DLayer(layer, 96, 5, stride=2, crop='same',
+                                         output_size=32, nonlinearity=activation))
+        layer = DropoutLayer(layer, p=0.5)
+        layer = Deconv2DLayer(layer, 3, 5, stride=2, crop='same',
+                              output_size=64, nonlinearity=sigmoid)
+        print ("Generator output:", layer.output_shape)
+        return layer
 
     def build_generator_architecture4(self, input_var=None):
         from lasagne.layers import InputLayer, ReshapeLayer, DenseLayer, DropoutLayer
@@ -396,6 +431,46 @@ class LSGAN_Model(GAN_BaseModel):
         # Apply Gaussian noise to output
         if output_noise:
             layer = GAN.GaussianNoiseLayer(layer, sigma=output_sigma)
+
+        # output layer (linear)
+        layer = DenseLayer(layer, 1, nonlinearity=None)
+        print ("critic output:", layer.output_shape)
+        return layer
+
+    def build_critic_architecture5(self, input_var=None):
+        from lasagne.layers import (InputLayer, Conv2DLayer, ReshapeLayer,
+                                    DenseLayer, DropoutLayer)
+        try:
+            from lasagne.layers.dnn import batch_norm_dnn as batch_norm
+        except ImportError:
+            print_warning("Couldn't import lasagne.layers.dnn, so using the regular lasagne.layers.batch_norm function")
+            from lasagne.layers import batch_norm
+        import gan_lasagne as GAN
+        from lasagne.nonlinearities import LeakyRectify
+        from lasagne.init import Normal
+
+        activation = LeakyRectify(0.2)
+        W_init = Normal(0.05)
+
+        # input: (None, 3, 64, 64)
+        layer = InputLayer(shape=(None, 3, 64, 64), input_var=input_var)
+        # Injecting some noise after input layer
+        layer = GAN.GaussianNoiseLayer(layer, sigma=0.2)
+
+        # four convolutions
+        layer = batch_norm(Conv2DLayer(layer, 96, 5, stride=2, pad='same', nonlinearity=activation)) # 64 -> 32
+        layer = batch_norm(Conv2DLayer(layer, 128, 5, stride=2, pad='same', nonlinearity=activation)) # 32 -> 16
+        layer = batch_norm(Conv2DLayer(layer, 192, 7, stride=2, pad='same', nonlinearity=activation)) # 16 -> 8
+        layer = batch_norm(Conv2DLayer(layer, 256, 7, stride=2, pad='same', nonlinearity=activation)) # 8 -> 4
+
+        # fully-connected layer
+        layer = batch_norm(DenseLayer(layer, 128, nonlinearity=activation))
+
+        # Apply Gaussian noise to output
+        layer = GAN.GaussianNoiseLayer(layer, sigma=0.2)
+
+        # Apply minibatch discrimination
+        layer = GAN.MinibatchLayer(layer, num_kernels = 250, dim_per_kernel=5, theta=Normal(0.05))
 
         # output layer (linear)
         layer = DenseLayer(layer, 1, nonlinearity=None)
@@ -736,7 +811,7 @@ class LSGAN_Model(GAN_BaseModel):
         pass
 
     def train(self, dataset, num_epochs = 1000, epochsize = 50, batchsize = 64, initial_eta = 0.0003, architecture = 2):
-        """You can choose architecture = 1, 2, 3 or 4."""
+        """You can choose architecture = 1, 2, 3, 4 or 5."""
         import lasagne
         import theano.tensor as T
         from theano import shared, function
@@ -763,6 +838,9 @@ class LSGAN_Model(GAN_BaseModel):
         elif architecture == 4:
             generator = self.build_generator_architecture4(noise_var)
             critic = self.build_critic_architecture4(input_var)
+        elif architecture == 5:
+            generator = self.build_generator_architecture5(noise_var)
+            critic = self.build_critic_architecture5(input_var)
         else:
             raise Exception("Invalid argument: architecture = {}".format(architecture))
 
