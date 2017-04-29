@@ -189,13 +189,13 @@ class BaseDataset(object):
             raise Exception("You need to specify a model for the InpaintingDataset object using 'use_model(...)'.")
             
         ### Split into training and testing data
-        print_info("Splitting the training dataset containingg {} images into training and validation sets using an 80:20 split after random shuffling...".format(self.images.shape[0]))
+        log("Splitting the training dataset containingg {} images into training and validation sets  after random shuffling...".format(self.images.shape[0]))
         from sklearn.model_selection import train_test_split  
         indices = np.arange(self.images.shape[0])
         id_train, id_test = train_test_split(indices,
                                              test_size=test_size,
                                              random_state=rand_seed)
-        print_info("After the split, there are {} training images and {} validation images.".format(len(id_train), len(id_test)))
+        log("After the split, there are {} training images and {} validation images.".format(len(id_train), len(id_test)))
         
         ### Generating the training and testing datasets (80%/20% train/test split)
         #X_train, X_test, Y_train, Y_test = x[id_train], x[id_test], y[id_train], y[id_test]
@@ -206,10 +206,10 @@ class BaseDataset(object):
         self.id_test = id_test
 
         log("Preloading is complete, with the following results:")
-        log("Input training dataset X has shape:    {0}".format(str(self.X[id_train].shape)))
-        log("Output training dataset Y has shape:   {0}".format(str(self.Y[id_train].shape)))
-        log("Input validation dataset X has shape:  {0}".format(str(self.X[id_test].shape)))
-        log("Output validation dataset Y has shape: {0}".format(str(self.Y[id_test].shape)))
+        log("Input training dataset X has shape     =  {0}".format(str(self.X[id_train].shape)))
+        log("Output training dataset Y has shape    =  {0}".format(str(self.Y[id_train].shape)))
+        log("Input validation dataset X has shape   =  {0}".format(str(self.X[id_test].shape)))
+        log("Output validation dataset Y has shape  =  {0}".format(str(self.Y[id_test].shape)))
 
             
     def denormalize(self, model = settings.MODEL):

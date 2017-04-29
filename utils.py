@@ -103,7 +103,7 @@ def cprint_curtime(msg, fg=None, bg=None, attrs=[]):
     well as the text attributes are only applied to the 'msg' portion."""
     sys.stdout.write("[{0}] ".format(datetime.datetime.now().strftime("%H:%M:%S")))
     sys.stdout.flush()
-    cprint(msg, fg=fg, bg=bg, attrs=attrs)
+    cprint(msg, fg, bg, attrs)
 
 def handle_exceptions(msg, e, exception_type, fg=None, bg=None, attrs=[]):
     from settings import VERBOSE, MODULE_HAVE_XTRACEBACK
@@ -116,14 +116,14 @@ def handle_exceptions(msg, e, exception_type, fg=None, bg=None, attrs=[]):
     logerr("EXCEPTION CAUSE: " + str(e))
     logout("EXCEPTION CAUSE: " + str(e))
 
-    format_str = format_exc()
-    logerr("EXCEPTION TRACEBACK: " + format_str)
-    logout("EXCEPTION TRACEBACK: " + format_str)
-
     if not MODULE_HAVE_XTRACEBACK:
         raise e
     else:
-        from traceback import print_exc
+        from traceback import format_exc, print_exc
+
+        format_str = format_exc()
+        logerr("EXCEPTION TRACEBACK: " + format_str)
+        logout("EXCEPTION TRACEBACK: " + format_str)
 
         cprint_curtime("EXCEPTION TRACEBACK:", fg=fg, bg=bg, attrs=attrs)
         print_exc()
@@ -157,8 +157,7 @@ def print_info(msg):
 
 def print_positive(msg):
     logout(msg)
-    #cprint_curtime("{0}: {1}".format("EXCELLENT", msg), "cyan", attrs=["bold"])
-    cprint_curtime("{0}: {1}".format("EXCELLENT", msg), fg = "green")
+    cprint_curtime("{0}: {1}".format("EXCELLENT", msg), "cyan", attrs=["bold"])
 
 def logout(msg):
     with open(settings.OUTLOGFILE, 'a') as fd:

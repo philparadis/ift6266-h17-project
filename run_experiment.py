@@ -102,7 +102,8 @@ def run_experiment():
     checkpoint, hyperparams, resume_from_checkpoint = model.resume_last_checkpoint()
     
     if resume_from_checkpoint:
-        print_positive("Found a checkpoint passing all integrity tests! Ready to resume training!")
+        print_positive("Found checkpoint, hyper parameters and model data all passing the integrity tests!"
+                       "Ready to resume training!")
         log("")
         print_info("State of last checkpoint:")
         for key in checkpoint:
@@ -153,7 +154,7 @@ def run_experiment():
 
     # Print info about our settings
     log("============================================================")
-    print_info("Experiment name       = %s" % settings.EXP_NAME)
+    print_info("Experiment name    = %s" % settings.EXP_NAME)
     log("============================================================")
     log("")
     print_info("Experiment settings and options:")
@@ -164,7 +165,7 @@ def run_experiment():
     log(" * Epochs per checkpoint = " + str(settings.EPOCHS_PER_CHECKPOINT))
     log(" * Feature Matching Loss = " + str(settings.FEATURE_MATCHING))
     log(" * Keep model's data for every checkpoint  = " + str(settings.KEEP_ALL_CHECKPOINTS))
-    log(" * Verbosity             = " + str(settings.VERBOSITY) + " ({})".format(verbosity_level))
+    log(" * Verbosity             = " + str(settings.VERBOSE) + " ({})".format(verbosity_level))
     log(" * Data augmentation     = " + str(settings.DATASET_AUGMENTATION))
     log(" * Load greyscale images = " + str(settings.LOAD_BLACK_AND_WHITE_IMAGES))
     log("")

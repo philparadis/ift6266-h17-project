@@ -62,7 +62,6 @@ class BaseModel(object):
             print_warning("Using default hyper parameters instead...")
             return None
 
-        print_positive("Loaded hyper parameters from 'hyperparameters.json' file succesfully!")
         return self.hyper
 
     def is_there_checkpoint_file(self):
