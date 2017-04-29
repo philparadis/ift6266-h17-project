@@ -2,6 +2,8 @@ import os, sys, errno
 import json
 import numpy as np
 from termcolor import cprint
+import datetime
+import settings
 
 ### Utility functions to manipule numpy datasets
 
@@ -90,10 +92,19 @@ def transpose_colors_channel(data, from_first_to_last = True):
 
 ### Pretty exceptions handling and pretty logging messages
 
+def curtime(msg):
+    t = datetime.datetime.now()
+    return "[{0}] {1}".format(t.strftime("%H:%M"), msg)
+
+
 def handle_exceptions(msg, e, type, fg = None, bg = None, attrs = []):
     from settings import VERBOSE, MODULE_HAVE_XTRACEBACK
 
-    cprint("(!) {0}: {1}".format(type, msg), fg, bg, attrs=attrs)
+    msg = curtime("(!) {0}: {1}".format(type, msg))
+    cprint(msg, fg, bg, attrs=attrs)
+    logerr(msg)
+    logerr(curtime("Reason for exception:"))
+    logerr(curtime(str(e)))
     # Write the exception reason/message in Magenta
     sys.stdout.write("\033[35m(!) Reason: ")
     print(e)
@@ -111,28 +122,53 @@ def handle_exceptions(msg, e, type, fg = None, bg = None, attrs = []):
         print_exc()
 
 def handle_critical(msg, e):
-    handle_exceptions(msg, e, type = "CRITICAL", fg = "white", bg = "on_red", attrs=["bold", "underline"])
+    handle_exceptions(curtime(msg), e, type = "CRITICAL", fg = "white", bg = "on_red", attrs=["bold", "underline"])
 
 def print_critical(msg):
-    cprint("(!) {0}: {1}".format("WARNING", msg), "white", "on_red", attrs=["bold", "underline"])
+    msg = curtime("(!) {0}: {1}".format("CRITICAL", msg))
+    cprint(msg, "white", "on_red", attrs=["bold", "underline"])
+    logerr(msg)
+    logout(msg)
 
 def handle_error(msg, e):
     handle_exceptions(msg, e, type = "ERROR", fg = "red")
 
 def print_error(msg):
-    cprint("(!) {0}: {1}".format("ERROR", msg), "red")
+    msg = curtime("(!) {0}: {1}".format("ERROR", msg))
+    cprint(msg, "red")
+    logout(msg)
+    logerr(msg)
 
 def handle_warning(msg, e):
     handle_exceptions(msg, e, type = "WARNING", fg = "yellow")
 
 def print_warning(msg):
+    msg = curtime("(!) {0}: {1}".format("GOOD", msg))
     cprint("(!) {0}: {1}".format("WARNING", msg), "yellow")
+    logout(msg)
                       
 def print_info(msg):
+    msg = curtime("(!) {0}: {1}".format("GOOD", msg))
     cprint("(!) {0}: {1}".format("INFO", msg), "cyan")
+    logout(msg)
 
 def print_positive(msg):
-    cprint("(!) {0}: {1}".format("GOOD", msg), "cyan", attrs=["bold"])
+    msg = curtime("(!) {0}: {1}".format("GOOD", msg))
+    cprint(msg, "cyan", attrs=["bold"])
+    logout(msg)
+
+def logout(msg):
+    with open(settings.OUTLOGFILE, 'a') as fd:
+        fd.write(msg+"\n")
+
+def logerr(msg):
+    with open(settings.ERRLOGFILE, 'a') as fd:
+        fd.write(msg+"\n")
+
+def log(msg):
+    msg = curtime(msg)
+    print(msg)
+    logout(msg)
                       
 def force_symlink(src, dst):
     try:
