@@ -13,7 +13,10 @@ import numpy as np
 import theano as th
 import theano.tensor as T
 import lasagne
-#from lasagne.layers import dnn
+try:
+    from lasagne.layers import dnn
+except ImportError as e:
+    pass
 from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 
 # T.nnet.relu has some stability issues, this is better
