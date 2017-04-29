@@ -35,17 +35,24 @@ from utils import print_critical, print_error, print_warning, print_info, print_
 class LSGAN_Model(GAN_BaseModel):
     def __init__(self, model_name, hyperparams = hyper_params.default_lsgan_hyper_params):
         super(LSGAN_Model, self).__init__(model_name = model_name, hyperparams = hyperparams)
-        self._W_std = 0.02
-
-    def initialize(self):
-        self.gen_path = "generator.npy"
-        self.disc_path = "critic.npy"
         self.train_fn = None
         self.gen_fn = None
-
+        self.generator_train_fn = None
+        self,critic_train_fn = None
+        
         # TODO: Turn this into a hyperparameters
         self.optimizer = "rmsprop"
         #self.optimizer = "adam"
+
+        # Constants
+        self.gen_filename = "model_generator.npz"
+        self.disc_filename = "model_critic.npz"
+        self.full_gen_path = os.path.join(settings.MODELS_DIR, self.gen_filename)
+        self.full_disc_path = os.path.join(settings.MODELS_DIR, self.disc_filename)
+
+        
+    def initialize(self):
+        pass
         
 
     # ##################### Build the neural network model #######################
@@ -284,9 +291,10 @@ class LSGAN_Model(GAN_BaseModel):
 
 
         ### Save model to class variables
-        self.critic_train_fn = critic_train_fn
-        self.generator_train_fn = critic_generator_fn
+        self.train_fn = train_fn
         self.gen_fn = gen_fn
+        self.critic_train_fn = critic_train_fn
+        self.generator_train_fn = generator_train_fn
 
         return generator, critic, train_fn, gen_fn
 
