@@ -411,8 +411,8 @@ class Conv_MLP(KerasModel):
 class GAN_BaseModel(BaseModel):
     def __init__(self, model_name, hyperparams = hyper_params.default_gan_basemodel_hyper_params):
         super(GAN_BaseModel, self).__init__(model_name = model_name, hyperparams = hyperparams)
-        self.gen_path = "generator.npy"
-        self.disc_path = "discriminator.npy"
+        self.gen_path = "generator.npz"
+        self.disc_path = "discriminator.npz"
         self.generator = None
         self.discriminator = None
         self.train_fn = None
@@ -424,28 +424,30 @@ class GAN_BaseModel(BaseModel):
         from lasagne.layers import set_all_param_values
         settings.touch_dir(settings.CHECKPOINTS_DIR)
         settings.touch_dir(settings.BASE_DIR)
-        if os.path.isfile(self.gen_path) and os.path.isfile(self.disc_path):
-            print_positive("Found latest '.npy' model's weights file saved to disk at path:\n{}".format(latest_model_path))
+
+        full_gen_path = os.path.join(settings.MODELS_DIR, self.gen_path)
+        full_disc_path = os.path.join(settings.MODELS_DIR, self.disc_path)
+        
+        if os.path.isfile(full_gen_path) and os.path.isfile(full_disc_path):
+            print_positive("Found latest '.npz' model's weights file saved to disk at path:\n{}".format(latest_model_path))
         else:
-            print_warning("Could not find '.npy'  weights files, either {} or {}.".format(self.gen_path, self.disc_path), e)
+            print_warning("Could not find '.npz'  weights files, either {} or {}.".format(full_gen_path, full_disc_path), e)
             return False
             
         try:
             ### Load the generator model's weights
-            full_gen_path = os.path.join(settings.MODELS_DIR, self.gen_path)
             print_info("Attempting to load generator model: {}".format(full_gen_path))
             with np.load(full_gen_path) as fp:
                 param_values = [fp['arr_%d' % i] for i in range(len(fp.files))]
             set_all_param_values(self.generator, param_values)
 
             ### Load the discriminator model's weights
-            full_disc_path = os.path.join(settings.MODELS_DIR, self.disc_path)
             print_info("Attempting to load generator model: {}".format(full_disc_path))
             with np.load(full_disc_path) as fp:
                 param_values = [fp['arr_%d' % i] for i in range(len(fp.files))]
             set_all_param_values(self.discriminator, param_values)
         except Exception as e:
-            handle_error("Failed to read or parse the '.npy' weights files, either {} or {}.".format(self.gen_path, self.disc_path), e)
+            handle_error("Failed to read or parse the '.npz' weights files, either {} or {}.".format(full_gen_path, full_disc_path), e)
             return False
         return True
 
@@ -457,19 +459,19 @@ class GAN_BaseModel(BaseModel):
         settings.touch_dir(settings.CHECKPOINTS_DIR)
         settings.touch_dir(settings.MODELS_DIR)
         if latest_only:
-            epoch_gen_path = "model_generator_lastest.npy".format(self.epochs_completed)
-            epoch_disc_path = "model_discriminator_latest.npy".format(self.epochs_completed)
+            epoch_gen_path = "model_generator_lastest.npz".format(self.epochs_completed)
+            epoch_disc_path = "model_discriminator_latest.npz".format(self.epochs_completed)
         else:
-            epoch_gen_path = "model_generator_epoch{}.npy".format(self.epochs_completed)
-            epoch_disc_path = "model_discriminator_epoch{}.npy".format(self.epochs_completed)
-        full_gen_path = os.path.join(settings.CHECKPOINTS_DIR, epoch_gen_path)
-        full_disc_path = os.path.join(settings.CHECKPOINTS_DIR, epoch_disc_path)
-        symlink_gen_path = os.path.join(settings.MODELS_DIR, "model_generator.npy")
-        symlink_disc_path = os.path.join(settings.MODELS_DIR, "model_discriminator.npy")
-        np.save(full_gen_path, *get_all_param_values(self.generator))
-        np.save(full_disc_path, *get_all_param_values(self.discriminator))
-        force_symlink("../checkpoints/{}".format(epoch_gen_path), symlink_gen_path)
-        force_symlink("../checkpoints/{}".format(epoch_disc_path), symlink_disc_path)
+            epoch_gen_path = "model_generator_epoch{}.npz".format(self.epochs_completed)
+            epoch_disc_path = "model_discriminator_epoch{}.npz".format(self.epochs_completed)
+        full_gen_path = os.path.join(settings.MODELS_DIR, self.gen_path)
+        full_disc_path = os.path.join(settings.MODELS_DIR, self.disc_path)
+        chkpoint_gen_path = os.path.join(settings.CHECKPOINTS_DIR, epoch_gen_path)
+        chkpoint_disc_path = os.path.join(settings.CHECKPOINTS_DIR, epoch_disc_path)
+        np.savez(chkpoint_gen_path, *get_all_param_values(self.generator))
+        np.savez(chkpoint_disc_path, *get_all_param_values(self.discriminator))
+        force_symlink("../checkpoints/{}".format(epoch_gen_path), full_gen_path)
+        force_symlink("../checkpoints/{}".format(epoch_disc_path), full_disc_path)
 
 class DCGAN_Model(BaseModel):
     def __init__(self, model_name, hyperparams = hyper_params.default_dcgan_hyper_params):
