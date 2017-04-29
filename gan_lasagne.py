@@ -13,7 +13,7 @@ import numpy as np
 import theano as th
 import theano.tensor as T
 import lasagne
-from lasagne.layers import dnn
+#from lasagne.layers import dnn
 from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 
 # T.nnet.relu has some stability issues, this is better
@@ -48,6 +48,43 @@ def adam_updates(params, cost, lr=0.001, mom1=0.9, mom2=0.999):
         updates.append((p, p_t))
     updates.append((t, t+1))
     return updates
+
+
+def as_tuple(x, N, t=None):
+    """
+    Coerce a value to a tuple of given length (and possibly given type).
+    Parameters
+    ----------
+    x : value or iterable
+    N : integer
+        length of the desired tuple
+    t : type, optional
+        required type for all elements
+    Returns
+    -------
+    tuple
+        ``tuple(x)`` if `x` is iterable, ``(x,) * N`` otherwise.
+    Raises
+    ------
+    TypeError
+        if `type` is given and `x` or any of its elements do not match it
+    ValueError
+        if `x` is iterable, but does not have exactly `N` elements
+    """
+    try:
+        X = tuple(x)
+    except TypeError:
+        X = (x,) * N
+
+    if (t is not None) and not all(isinstance(v, t) for v in X):
+        raise TypeError("expected a single value or an iterable "
+                        "of {0}, got {1} instead".format(t.__name__, x))
+
+    if len(X) != N:
+        raise ValueError("expected a single value or an iterable "
+                         "with length {0}, got {1} instead".format(N, x))
+
+    return X
 
 class WeightNormLayer(lasagne.layers.Layer):
     def __init__(self, incoming, b=lasagne.init.Constant(0.), g=lasagne.init.Constant(1.),
@@ -112,8 +149,8 @@ class Deconv2DLayer(lasagne.layers.Layer):
         super(Deconv2DLayer, self).__init__(incoming, **kwargs)
         self.target_shape = target_shape
         self.nonlinearity = (lasagne.nonlinearities.identity if nonlinearity is None else nonlinearity)
-        self.filter_size = lasagne.layers.dnn.as_tuple(filter_size, 2)
-        self.stride = lasagne.layers.dnn.as_tuple(stride, 2)
+        self.filter_size = as_tuple(filter_size, 2)
+        self.stride = as_tuple(stride, 2)
         self.target_shape = target_shape
 
         self.W_shape = (incoming.output_shape[1], target_shape[1], filter_size[0], filter_size[1])
