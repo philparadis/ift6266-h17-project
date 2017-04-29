@@ -97,87 +97,79 @@ def transpose_colors_channel(data, from_first_to_last = True):
 
 ### Pretty exceptions handling and pretty logging messages
 
-def curtime(msg):
-    t = datetime.datetime.now()
-    return "[{0}] {1}".format(t.strftime("%H:%M"), msg)
+def cprint_curtime(msg, **kwargs):
+    """Print the line in format "[HH:MM:SS] msg", where HH:MM:SS is the current time
+    in zero-padded hours, minutes and seconds. The foreground and background colors, as
+    well as the text attributes are only applied to the 'msg' portion."""
+    sys.stdout.write("[{0}] ".format(datetime.datetime.now().strftime("%H:%M:%S")))
+    sys.stdout.flush()
+    cprint(msg, **kwargs)
 
-
-def handle_exceptions(msg, e, type, fg = None, bg = None, attrs = []):
+def handle_exceptions(msg, e, exception_type, **kwargs):
     from settings import VERBOSE, MODULE_HAVE_XTRACEBACK
 
-    msg = curtime("[ EXCEPTION ] {0}: {1}".format(type, msg))
-    cprint(msg, fg, bg, attrs=attrs)
-    logerr(msg)
-    logerr(curtime("Reason for exception:"))
-    logerr(str(e))
+    cprint_curtime("[EXCEPTION] {0}: {1}".format(exception_type, msg), **kwargs)
+    logerr("[EXCEPTION] {0}: {1}".format(exception_type, msg))
+    logout("[EXCEPTION] {0}: {1}".format(exception_type, msg))
     # Write the exception reason/message in Magenta
-    sys.stdout.write("\033[35m(!) Reason: ")
-    print(e)
-    # Return to normal color
-    sys.stdout.write("\033[30m")
+    cprint_curtime("EXCEPTION CAUSE: " + str(e), fg="magenta")
+    logerr("EXCEPTION CAUSE: " + str(e))
+    logout("EXCEPTION CAUSE: " + str(e))
 
     format_str = format_exc()
-    logerr(curtime("Traceback of the exception:"))
-    logerr(format_str)
-    logout(format_str)
+    logerr("EXCEPTION TRACEBACK: " + format_str)
+    logout("EXCEPTION TRACEBACK: " + format_str)
 
     if not MODULE_HAVE_XTRACEBACK:
         raise e
-    elif VERBOSE >= 1:
-        # If verbose is not 0, print the trace
-        # Print in Magenta
+    else:
         from traceback import print_exc
 
-        print("\033[35m(!) Traceback of the exception:\033[30m")
+        cprint_curtime("EXCEPTION TRACEBACK:", **kwargs)
         print_exc()
 
 def handle_critical(msg, e):
-    handle_exceptions(msg, e, type = "CRITICAL", fg = "white", bg = "on_red", attrs=["bold", "underline"])
+    handle_exceptions(msg, e, exception_type = "CRITICAL", fg = "white", bg = "on_red", attrs=["bold", "underline"])
 
 def print_critical(msg):
-    msg = curtime("(!!!) {0}: {1}".format("CRITICAL", msg))
     logerr(msg)
     logout(msg)
-    cprint(msg, "white", "on_red", attrs=["bold", "underline"])
+    cprint_curtime("(!!!) {0}: {1}".format("CRITICAL", msg), fg = "white", bg = "on_red", attrs=["bold", "underline"])
 
 def handle_error(msg, e):
-    handle_exceptions(msg, e, type = "ERROR", fg = "red")
+    handle_exceptions(msg, e, exception_type = "ERROR", fg = "red")
 
 def print_error(msg):
-    msg = curtime("(!) {0}: {1}".format("ERROR", msg))
     logout(msg)
     logerr(msg)
-    cprint(msg, "red")
+    cprint_curtime("(!) {0}: {1}".format("ERROR", msg), fg = "red")
 
 def handle_warning(msg, e):
-    handle_exceptions(msg, e, type = "WARNING", fg = "yellow")
+    handle_exceptions(msg, e, exception_type = "WARNING", fg = "yellow")
 
 def print_warning(msg):
-    msg = curtime("{0}: {1}".format("WARNING", msg))
     logout(msg)
-    cprint(msg, "yellow")
+    cprint_curtime("{0}: {1}".format("WARNING", msg), fg = "yellow")
                       
 def print_info(msg):
-    msg = curtime("{0}: {1}".format("INFO", msg))
     logout(msg)
-    cprint(msg, "cyan")
+    cprint_curtime("{0}: {1}".format("INFO", msg), fg = "cyan")
 
 def print_positive(msg):
-    msg = curtime("(!) {0}: {1}".format("EXCELLENT", msg))
     logout(msg)
-    cprint(msg, "cyan", attrs=["bold"])
+    #cprint_curtime("{0}: {1}".format("EXCELLENT", msg), "cyan", attrs=["bold"])
+    cprint_curtime("{0}: {1}".format("EXCELLENT", msg), fg = "green")
 
 def logout(msg):
     with open(settings.OUTLOGFILE, 'a') as fd:
-        fd.write(msg+"\n")
+        fd.write("[{0}] ".format(datetime.datetime.now().strftime("%H:%M:%S"))+msg+"\n")
 
 def logerr(msg):
     with open(settings.ERRLOGFILE, 'a') as fd:
-        fd.write(msg+"\n")
+        fd.write("[{0}] ".format(datetime.datetime.now().strftime("%H:%M:%S"))+msg+"\n")
 
 def log(msg):
-    msg = curtime(msg)
-    print(msg)
+    cprint_curtime(msg)
     logout(msg)
                       
 def force_symlink(src, dst):
