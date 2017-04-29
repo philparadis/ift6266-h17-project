@@ -97,18 +97,18 @@ def transpose_colors_channel(data, from_first_to_last = True):
 
 ### Pretty exceptions handling and pretty logging messages
 
-def cprint_curtime(msg, **kwargs):
+def cprint_curtime(msg, fg=None, bg=None, attrs=[]):
     """Print the line in format "[HH:MM:SS] msg", where HH:MM:SS is the current time
     in zero-padded hours, minutes and seconds. The foreground and background colors, as
     well as the text attributes are only applied to the 'msg' portion."""
     sys.stdout.write("[{0}] ".format(datetime.datetime.now().strftime("%H:%M:%S")))
     sys.stdout.flush()
-    cprint(msg, **kwargs)
+    cprint(msg, fg=fg, bg=bg, attrs=attrs)
 
-def handle_exceptions(msg, e, exception_type, **kwargs):
+def handle_exceptions(msg, e, exception_type, fg=None, bg=None, attrs=[]):
     from settings import VERBOSE, MODULE_HAVE_XTRACEBACK
 
-    cprint_curtime("[EXCEPTION] {0}: {1}".format(exception_type, msg), **kwargs)
+    cprint_curtime("[EXCEPTION] {0}: {1}".format(exception_type, msg), fg=fg, bg=bg, attrs=attrs)
     logerr("[EXCEPTION] {0}: {1}".format(exception_type, msg))
     logout("[EXCEPTION] {0}: {1}".format(exception_type, msg))
     # Write the exception reason/message in Magenta
@@ -125,7 +125,7 @@ def handle_exceptions(msg, e, exception_type, **kwargs):
     else:
         from traceback import print_exc
 
-        cprint_curtime("EXCEPTION TRACEBACK:", **kwargs)
+        cprint_curtime("EXCEPTION TRACEBACK:", fg=fg, bg=bg, attrs=attrs)
         print_exc()
 
 def handle_critical(msg, e):

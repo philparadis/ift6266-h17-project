@@ -133,4 +133,8 @@ if __name__ == "__main__":
 
         run_experiment()
     except Exception as e:
-        handle_error("This is the most vague error possible. Sorry :( Good luck!", e)
+        handle_error("This exception reached the top-most level and couldn't be caught earlier. "
+                     "We shall provide the entire stack trace with context.", e)
+
+    ### Graceful exit
+    sys.exit(0)
