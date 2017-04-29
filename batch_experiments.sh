@@ -3,7 +3,7 @@
 TESTSERIES=A
 TESTNUM=1
 
-while [[ -d lsgan/arch-1-test-${TESTNUM} ]]; do
+while [[ -d "lsgan/arch-1-test-${TESTNUM}*model*" ]]; do
     TESTNUM=$((TESTNUM+1))
 done
 
