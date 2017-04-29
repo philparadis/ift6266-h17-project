@@ -68,7 +68,7 @@ class BaseModel(object):
         """Check if 'checkpoint.json' exists within the base directory."""
         return os.path.isfile(self.path_checkpoint_file)
 
-    def checkpoint(self, keep_all_checkpoints=False):
+    def update_checkpoint(self, keep_all_checkpoints=False):
         """This initiates a checkpoint, including updating 'checkpoint.json', saving whatever appropriate model(s) and other data within the checkpoints directory and so on. If keep_all_checkpoints is set to True, then a copy of the entire model's weight and optimizer state is preserved for each checkpoint, along with the corresponding epoch in the file name. If set to False, then only the latest model is kept on disk, saving a lot of space, but potentially losing a good model due to overtraining."""
         return (self.save_hyperparams()
                 and self.write_checkpoint_file()
@@ -320,7 +320,7 @@ class KerasModel(BaseModel):
                 self.epochs_completed += epochs_for_this_fit
             # Checkpoint time (save hyper parameters, model and checkpoint file)
             print_positive("CHECKPOINT AT EPOCH {}. Updating 'checkpoint.json' file...".format(self.epochs_completed))
-            self.checkpoint()
+            self.update_checkpoint(settings.KEEP_ALL_CHECKPOINTS)
             next_epoch_checkpoint += settings.EPOCHS_PER_CHECKPOINT
 
         ### Training complete
