@@ -33,6 +33,8 @@ if __name__ == "__main__":
                         help="Amount of epochs to perform during training between every checkpoint.")
     parser.add_argument("-a", "--architecture", type=int, default=settings.LSGAN_ARCHITECTURE,
                         help="Architecture type, only applies to the LSGAN model (values: 1, 2, 3 or 4).")
+    parser.add_argument("-u", "--updates_per_epoch", type=int, default=settings.UPDATES_PER_EPOCH,
+                        help="Number of times to update the generator and discriminator/critic per epoch. Applies to GAN models only.")
 #                        help="Use CPU instead of GPU. Used for debugging and testing purposes.")
 
     args = parser.parse_args()
@@ -47,6 +49,7 @@ if __name__ == "__main__":
     settings.FORCE_RUN = args.force
     settings.EPOCHS_PER_CHECKPOINT = args.epochs_per_checkpoint
     settings.LSGAN_ARCHITECTURE = args.architecture
+    settings.UPDATES_PER_EPOCH = args.updates_per_epoch
 #    settings.USE_CPU = args.cpu
 
     if not settings.MODEL in ["test", "mlp", "conv_mlp", "dcgan", "wgan", "lsgan"]:
