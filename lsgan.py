@@ -106,24 +106,25 @@ class LSGAN_Model(GAN_BaseModel):
         from lasagne.init import Normal, GlorotNormal
 
         activation = LeakyRectify(0.2)
+        W_init = Normal(0.05)
 
         # input: 100dim
         layer = InputLayer(shape=(None, 100), input_var=input_var)
         # project and reshape
-        layer = batch_norm(DenseLayer(layer, 512*4*4, W=GlorotNormal(), nonlinearity=activation))
+        layer = batch_norm(DenseLayer(layer, 512*4*4, W=W_init, nonlinearity=activation))
         layer = ReshapeLayer(layer, ([0], 512, 4, 4))
         ### four fractional-stride convolutions
         # Note: Apply dropouts in G. See tip #17 from "ganhacks"
-        layer = batch_norm(Deconv2DLayer(layer, 256, 5, stride=2, crop='same', W=GlorotNormal(),
+        layer = batch_norm(Deconv2DLayer(layer, 256, 5, stride=2, crop='same', W=W_init,
                                          output_size=8, nonlinearity=activation))
         layer = DropoutLayer(layer, p=0.5)
-        layer = batch_norm(Deconv2DLayer(layer, 128, 5, stride=2, crop='same', W=GlorotNormal(),
+        layer = batch_norm(Deconv2DLayer(layer, 128, 5, stride=2, crop='same', W=W_init,
                                          output_size=16, nonlinearity=activation))
         layer = DropoutLayer(layer, p=0.5)
-        layer = batch_norm(Deconv2DLayer(layer, 96, 5, stride=2, crop='same', W=GlorotNormal(),
+        layer = batch_norm(Deconv2DLayer(layer, 96, 5, stride=2, crop='same', W=W_init,
                                          output_size=32, nonlinearity=activation))
         layer = DropoutLayer(layer, p=0.5)
-        layer = Deconv2DLayer(layer, 3, 5, stride=2, crop='same', W=GlorotNormal(),
+        layer = Deconv2DLayer(layer, 3, 5, stride=2, crop='same', W=W_init,
                               output_size=64, nonlinearity=tanh)
         print ("Generator output:", layer.output_shape)
         return layer
@@ -451,6 +452,7 @@ class LSGAN_Model(GAN_BaseModel):
         from lasagne.init import Normal, GlorotNormal
 
         activation = LeakyRectify(0.2)
+        W_init = Normal(0.05)
 
         # input: (None, 3, 64, 64)
         layer = InputLayer(shape=(None, 3, 64, 64), input_var=input_var)
@@ -458,20 +460,20 @@ class LSGAN_Model(GAN_BaseModel):
         layer = GAN.GaussianNoiseLayer(layer, sigma=0.1)
 
         # four convolutions
-        layer = batch_norm(Conv2DLayer(layer, 96, 5, stride=2, pad='same', W=GlorotNormal(), nonlinearity=activation)) # 64 -> 32
-        layer = batch_norm(Conv2DLayer(layer, 128, 5, stride=2, pad='same', W=GlorotNormal(), nonlinearity=activation)) # 32 -> 16
-        layer = batch_norm(Conv2DLayer(layer, 192, 7, stride=2, pad='same', W=GlorotNormal(), nonlinearity=activation)) # 16 -> 8
-        layer = batch_norm(Conv2DLayer(layer, 256, 7, stride=2, pad='same', W=GlorotNormal(), nonlinearity=activation)) # 8 -> 4
+        layer = batch_norm(Conv2DLayer(layer, 96, 5, stride=2, pad='same', W=W_init, nonlinearity=activation)) # 64 -> 32
+        layer = batch_norm(Conv2DLayer(layer, 128, 5, stride=2, pad='same', W=W_init, nonlinearity=activation)) # 32 -> 16
+        layer = batch_norm(Conv2DLayer(layer, 192, 7, stride=2, pad='same', W=W_init, nonlinearity=activation)) # 16 -> 8
+        layer = batch_norm(Conv2DLayer(layer, 256, 7, stride=2, pad='same', W=W_init, nonlinearity=activation)) # 8 -> 4
 
         # fully-connected layer
-        layer = batch_norm(DenseLayer(layer, 128, W=GlorotNormal(), nonlinearity=activation))
+        layer = batch_norm(DenseLayer(layer, 128, W=W_init, nonlinearity=activation))
 
         # Apply minibatch discrimination
         #layer = GAN.MinibatchLayer(layer, num_kernels = 250, dim_per_kernel=5, theta=Normal(0.05))
 
         # output layer (linear)
-        #layer = DenseLayer(layer, 1, nonlinearity=None)
-        layer = DenseLayer(layer, 1, nonlinearity=sigmoid)
+        layer = DenseLayer(layer, 1, nonlinearity=None)
+
         print ("critic output:", layer.output_shape)
         return layer
 
