@@ -259,7 +259,7 @@ def build_generator_architecture(input_var=None, architecture=1):
                               output_size=64, nonlinearity=T.tanh)
         print ("Generator output:", layer.output_shape)
         return layer
-    elif architecture == 6:
+    elif architecture == 6 or architecture == 7:
         layer = InputLayer(shape=(None, 100), input_var=input_var)
         layer = GAN.batch_norm(ll.DenseLayer(layer, num_units=4*4*512, W=Normal(0.05), nonlinearity=GAN.relu), g=None)
         layer = ll.ReshapeLayer(layer, ([0],512,4,4))
@@ -598,7 +598,6 @@ def build_critic_architecture(input_var=None, architecture=1):
 
         layer = InputLayer(shape=(None, 3, 64, 64), input_var=input_var)
         layer = DropoutLayer(layer, p=0.2)
-        layer = GAN.GaussianNoiseLayer(layer, sigma=0.2)
         layer = GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 96, (3,3), pad=1, W=Normal(0.05), nonlinearity=GAN.lrelu))
         layer = GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 96, (3,3), pad=1, W=Normal(0.05), nonlinearity=GAN.lrelu))
         layer = GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 96, (3,3), pad=1, stride=2, W=Normal(0.05), nonlinearity=GAN.lrelu))
@@ -618,6 +617,36 @@ def build_critic_architecture(input_var=None, architecture=1):
 
         print ("critic output:", layer.output_shape)
         return layer
+    elif architecture == 7:
+        try:
+            from lasagne.layers import dnn
+        except ImportError as e:
+            raise ImportError("Architecture #6 of LSGAN requires lasagne.layers.dnn (which requires "
+                              "a functional cuDNN installation).")
 
+        layer = InputLayer(shape=(None, 3, 64, 64), input_var=input_var)
+        layer = GAN.GaussianNoiseLayer(layer, sigma=0.2)
+        layer = GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 96, (3,3), pad=1, W=Normal(0.05), nonlinearity=GAN.lrelu))
+        layer = GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 96, (3,3), pad=1, W=Normal(0.05), nonlinearity=GAN.lrelu))
+        layer = GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 96, (3,3), pad=1, stride=2, W=Normal(0.05), nonlinearity=GAN.lrelu))
+        layer = ll.DropoutLayer(layer, p=0.5)
+        layer = GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 192, (3,3), pad=1, W=Normal(0.05), nonlinearity=GAN.lrelu))
+        layer = GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 192, (3,3), pad=1, stride=2, W=Normal(0.05), nonlinearity=GAN.lrelu))
+        layer = ll.DropoutLayer(layer, p=0.5)
+        layer = GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 256, (3,3), pad=1, W=Normal(0.05), nonlinearity=GAN.lrelu))
+        layer = GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 256, (3,3), pad=1, stride=2, W=Normal(0.05), nonlinearity=GAN.lrelu))
+        layer = ll.DropoutLayer(layer, p=0.5)
+        layer = GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 256, (3,3), pad=1, W=Normal(0.05), nonlinearity=GAN.lrelu))
+        layer = GAN.weight_norm(ll.NINLayer(layer, num_units=192, W=Normal(0.05), nonlinearity=GAN.lrelu))
+        layer = GAN.weight_norm(ll.NINLayer(layer, num_units=192, W=Normal(0.05), nonlinearity=GAN.lrelu))
+        layer = ll.GlobalPoolLayer(layer)
+        layer = GAN.MinibatchLayer(layer, num_kernels=100)
+        layer = GAN.weight_norm(ll.DenseLayer(layer, num_units=1, W=Normal(0.05), nonlinearity=None), train_g=True, init_stdv=0.1)
+
+        disc_params = ll.get_all_params(layer, trainable=True)
+
+        print ("critic output:", layer.output_shape)
+        return layer
+    
     raise Exception("Invalid argument to LSGAN's build_critic: architecture = {}".format(architecture))
 
