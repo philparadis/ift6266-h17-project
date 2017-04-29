@@ -445,7 +445,7 @@ class GAN_BaseModel(BaseModel):
                 param_values = [fp['arr_%d' % i] for i in range(len(fp.files))]
             set_all_param_values(self.discriminator, param_values)
         except Exception as e:
-            handle_error("Failed to read or parse the '.npz' weights files, either {} or {}.".format(self.gen_path, self.disc_path), e)
+            handle_error("Failed to read or parse the '.npy' weights files, either {} or {}.".format(self.gen_path, self.disc_path), e)
             return False
         return True
 

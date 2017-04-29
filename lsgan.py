@@ -931,6 +931,7 @@ class LSGAN_Model(GAN_BaseModel):
                 epoch + 1, num_epochs, time.time() - start_time))
             print("  generator loss: {}".format(np.mean(generator_losses)))
             print("  critic loss:    {}".format(np.mean(critic_losses)))
+            self.total_wall_time += time.time() - start_time
             # TODO: Append performance to a file
 
             # And finally, we plot some generated data
@@ -960,12 +961,30 @@ class LSGAN_Model(GAN_BaseModel):
                                     .reshape(64, 64, 3)).save(sample_path)
 
             if epoch >= next_epoch_checkpoint:
-                # Checkpoint time (save hyper parameters, model and checkpoint file)
-                print_positive("CHECKPOINT AT EPOCH {}. Updating 'checkpoint.json' file...".format(epoch + 1))
-                ## Save model to disk
-                self.save_model()
+                ### Checkpoint time!!! (save model and checkpoint file)
+                print_positive("CHECKPOINT AT EPOCH {}. Updating 'checkpoint.json' file and saving model...".format(epoch + 1))
+                self.generator = generator
+                self.discriminator = critic
+                self.epochs_completed = epoch
+
                 # Create checkpoint
                 self.create_checkpoint()
+                ## Save model to disk
+                self.save_model(latest_only = True)
+
+                ### Save the model's performance to disk
+                path_model_score = os.path.join(settings.CHECKPOINTS_DIR, "score_epoch_{0:0>5}.txt".format(epoch + 1))
+                print_info("Saving performance to file '{}'".format(path_model_score))
+                with open(path_model_score, "w") as fd:
+                    fd.write("Performance statistics\n")
+                    fd.write("----------------------\n")
+                    fd.write("Model           = {}\n".format(settings.MODEL))
+                    fd.write("Experiment name = {}\n".format(settings.EXP_NAME))
+                    fd.write("Total epochs    = {0}\n".format(self.epochs_completed))
+                    fd.write("Total time      = {0:.2f} seconds\n".format(self.wall_time))
+                    fd.write("generator loss  = {}\n".format(np.mean(generator_losses)))
+                    fd.write("critic loss     = {}\n".format(np.mean(critic_losses)))
+                # Set next checkpoint epoch
                 next_epoch_checkpoint = epoch + settings.EPOCHS_PER_CHECKPOINT
 
             
