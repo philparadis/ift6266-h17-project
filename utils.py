@@ -6,20 +6,32 @@ from termcolor import cprint
 ### Utility functions to manipule numpy datasets
 
 def normalize_data(data):
+    """Transform linearly integers within [0, 255] to float32 within [-1, 1]. Data must be numpy array of type 'uint8'."""
     if data.dtype == 'float32':
         return
-    data = data.astype('float32')
-    data /= 255
-    data -= 0.5
-    return data
+    if max(data) > 255 or min(data) < 0:
+        print_error("Trying to normalize data that does not fit within the uint8 range of [0, 255].")
+    return (data.astype('float32') - 127.5)/127.5
 
 def denormalize_data(data):
+    """Transform linearly floating points within [-1, 1] to uint8 within [0, 255]. Data must be numpy array of type 'float32'."""
     if data.dtype == 'uint8':
         return
-    data += 0.5
-    data *= 255
-    data = data.astype('uint8')
-    return data
+    if max(data) > 1.0 or min(data) < -1.0:
+        print_error("Trying to normalize data that does not fit within the uint8 range of [0, 255].")
+    return (data*127.5 + 127.5).astype('uint8')
+
+def normalize_data_unit_interval(data):
+    """Transform linearly integers within [0, 255] to float32 within [0, 1]. Data must be numpy array of type 'uint8'."""
+    if data.dtype == 'float32':
+        return
+    return data.astype('float32') /= 255
+
+def denormalize_data_unit_interval(data):
+    """Transform linearly floating points within [0, 1] to uint8 within [0, 255]. Data must be numpy array of type 'float32'."""
+    if data.dtype == 'uint8':
+        return
+    return (data * 255).astype('uint8')
 
 def unflatten_to_4tensor(data, num_rows, width = 64, height = 64, is_colors_channel_first = True):
     if is_colors_channel_first:
