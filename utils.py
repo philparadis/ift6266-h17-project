@@ -104,7 +104,8 @@ def cprint_curtime(msg, fg=None, bg=None, attrs=[]):
     sys.stdout.write("[{0}] ".format(datetime.datetime.now().strftime("%H:%M:%S")))
     sys.stdout.flush()
     cprint(msg, fg, bg, attrs)
-
+    sys.stdout.flush()
+    
 def handle_exceptions(msg, e, exception_type, fg=None, bg=None, attrs=[]):
     from settings import VERBOSE, MODULE_HAVE_XTRACEBACK
 
@@ -161,12 +162,14 @@ def print_positive(msg):
 
 def logout(msg):
     with open(settings.OUTLOGFILE, 'a') as fd:
-        fd.write("[{0}] ".format(datetime.datetime.now().strftime("%H:%M:%S"))+msg+"\n")
+        fd.write("[{0}] {1}\n".format(datetime.datetime.now().strftime("%H:%M:%S")),msg)
+        fd.flush()
 
 def logerr(msg):
     with open(settings.ERRLOGFILE, 'a') as fd:
-        fd.write("[{0}] ".format(datetime.datetime.now().strftime("%H:%M:%S"))+msg+"\n")
-
+        fd.write("[{0}] {1}\n".format(datetime.datetime.now().strftime("%H:%M:%S")),msg)
+        fd.flush()
+        
 def log(msg):
     cprint_curtime(msg)
     logout(msg)

@@ -162,6 +162,12 @@ class LSGAN_Model(GAN_BaseModel):
         settings.touch_dir(settings.CHECKPOINTS_DIR)
         settings.touch_dir(settings.MODELS_DIR)
 
+        # Set variables to control training
+        epoch_eta_threshold = min(num_epochs // 10, 250)
+        num_extremely_low_critic_loss = 0
+        num_low_critic_loss = 0
+        ratio_gen_critic = 1
+
         # Finally, launch the training loop.
         log("Starting training...")
         # We create an infinite supply of batches (as an iterable generator):
@@ -170,7 +176,7 @@ class LSGAN_Model(GAN_BaseModel):
         # We iterate over epochs:
         found_stop_file = False
         generator_updates = 0
-        next_epoch_checkpoint = settings.EPOCHS_PER_CHECKPOINT        
+        next_epoch_checkpoint = settings.EPOCHS_PER_CHECKPOINT
         for epoch in range(num_epochs):
             start_time = time.time()
 
@@ -179,16 +185,53 @@ class LSGAN_Model(GAN_BaseModel):
             generator_losses = []
             for _ in range(epochsize):
                 inputs, targets = next(batches)
-                critic_losses.append(critic_train_fn(inputs))
+                num_critics_update = min(num_extremely_low_critic_loss / 10, num_low_critic_loss / 30, epochsize):
+                echo "Performing {} critics updates and {} generator updates.".format(num_critics_update, epochsize)
+                if _ < num_critics_update:
+                    critic_losses.append(critic_train_fn(inputs))
                 generator_losses.append(generator_train_fn())
+                if ratio_gen_critic > 2:
+                    extra = int(math.ceil(ratio_gen_critic
+                                          * (2*num_extremely_low_critic_loss+1)
+                                          * (num_low_critic_loss+1)))
+                    print_info("Perfoming {} extra rounds of generator training to rebalance the losses.".format(extra))
+                    for _i in range(extra):
+                        generator_losses.append(generator_train_fn())
+                elif ratio_gen_critic < 0.5:
+                    extra = int(math.ceil(1/ratio_gen_critic))
+                    print_info("Perfoming {} extra rounds of critic training to rebalance the losses.".format(extra))
+                    for _i in range(extra):
+                        critic_losses.append(critic_train_fn(inputs))
+                        
 
             # Then we print the results for this epoch:
             time_delta = time.time() - start_time
             log("Epoch {} of {} took {:.3f}s".format(
                 epoch + 1, num_epochs, time_delta))
-            log("  generator loss: {}".format(np.mean(generator_losses)))
-            log("  critic loss:    {}".format(np.mean(critic_losses)))
             self.wall_time += time_delta
+            mean_generator_loss = np.mean(generator_losses)
+            mean_critic_loss = np.mean(critic_losses)
+            log("  total time     = {.3f} seconds".format(self.wall_time))
+            log("  generator loss = {}".format(mean_generator_loss))
+            log("  critic loss    = {}".format(mean_critic_loss))
+
+            if mean_critic_loss < 0.03:
+                print_critical("The critic loss is extremely low. If the loss is below 0.03 for 10 epochs in a row, the training will be aborted")
+                print_info("Attempting to balance out generator and critic...")
+                ratio_gen_critic = mean_generator_loss / mean_critic_loss
+                num_extremely_low_critic_loss += 1
+            elif mean_critic_loss < 0.08:
+                print_warning("Critic loss is getting dangerously low!")
+                print_info("Attempting to balance out generator and critic...")
+                ratio_gen_critic = mean_generator_loss / mean_critic_loss
+                num_low_critic_loss += 1
+            else:
+                num_extremely_low_critic_loss = 0
+                num_low_critic_loss = 0
+
+            if num_extremely_low_critic_loss >= 10:
+                print_error("Extremely low critic loss obtained 10 epochs in a row. Aborting training now.")
+                self.create_stop_file()
 
             # And finally, we plot some generated data, depending on the settings
             if epoch % settings.EPOCHS_PER_SAMPLES == 0:
@@ -246,16 +289,19 @@ class LSGAN_Model(GAN_BaseModel):
                     fd.write("Experiment name = {}\n".format(settings.EXP_NAME))
                     fd.write("Total epochs    = {0}\n".format(self.epochs_completed))
                     fd.write("Total time      = {0:.2f} seconds\n".format(self.wall_time))
-                    fd.write("generator loss  = {}\n".format(np.mean(generator_losses)))
-                    fd.write("critic loss     = {}\n".format(np.mean(critic_losses)))
+                    fd.write("generator loss  = {}\n".format(mean_generator_loss))
+                    fd.write("critic loss     = {}\n".format(mean_critic_loss))
                 # Set next checkpoint epoch
                 next_epoch_checkpoint = epoch + settings.EPOCHS_PER_CHECKPOINT
 
             
             # After half the epochs, we start decaying the learn rate towards zero
-            if epoch >= num_epochs // 2:
-                progress = float(epoch) / float(num_epochs)
-                eta.set_value(lasagne.utils.floatX(initial_eta*2*(1 - progress)))
+            if epoch >= epoch_eta_threshold:
+                progress = float(epoch - epoch_eta_threshold) / float(num_epochs)
+                eta.set_value(lasagne.utils.floatX(initial_eta*math.pow(1 - progress, 1.5)))
+            #if epoch >= min(num_epochs // 10, 500):
+            #    progress = float(epoch) / float(num_epochs)
+            #    eta.set_value(lasagne.utils.floatX(initial_eta*2*(1 - progress)))
 
 
         ### We are done training here!
@@ -286,8 +332,8 @@ class LSGAN_Model(GAN_BaseModel):
             fd.write("Experiment name = {}\n".format(settings.EXP_NAME))
             fd.write("Total epochs    = {0}\n".format(self.epochs_completed))
             fd.write("Total time      = {0:.2f} seconds\n".format(self.wall_time))
-            fd.write("generator loss  = {}\n".format(np.mean(generator_losses)))
-            fd.write("critic loss     = {}\n".format(np.mean(critic_losses)))
+            fd.write("generator loss  = {}\n".format(mean_generator_loss))
+            fd.write("critic loss     = {}\n".format(mean_critic_loss))
 
 
         ### Save model to class variables
