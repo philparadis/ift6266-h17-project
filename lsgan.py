@@ -110,26 +110,23 @@ class LSGAN_Model(GAN_BaseModel):
         critic, critic_layers = self.build_critic(input_var, architecture = architecture)
 
         if settings.FEATURE_MATCHING > 1:
-            inter_out_crit = lasagne.layers.get_output(critic_layers[-settings.FEATURE_MATCHING],
-                                                        deterministic=False)
-            inter_out_gen = lasagne.layers.get_output(critic_layers[-settings.FEATURE_MATCHING],
-                                                       lasagne.layers.get_output(generator),
-                                                       deterministic=False)
-            m1 = T.mean(inter_out_crit, axis=0)
-            m2 = T.mean(inter_out_gen, axis=0)
-            generator_loss = T.mean(abs(m1-m2)) # Feature Matching loss
+            # Create expression for passing real data through the critic
+            real_out = lasagne.layers.get_output(critic_layers[-settings.FEATURE_MATCHING])
+            # Create expression for passing fake data through the critic
+            fake_out = lasagne.layers.get_output(critic_layers[-settings.FEATURE_MATCHING],
+                                                 lasagne.layers.get_output(generator))
         else:
             # Create expression for passing real data through the critic
             real_out = lasagne.layers.get_output(critic)
             # Create expression for passing fake data through the critic
             fake_out = lasagne.layers.get_output(critic, lasagne.layers.get_output(generator))
 
-            # Create loss expressions to be minimized
-            # a, b, c = -1, 1, 0  # Equation (8) in the paper
-            a, b, c = 0, 1, 1  # Equation (9) in the paper
-            generator_loss = lasagne.objectives.squared_error(fake_out, c).mean()
-            critic_loss = (lasagne.objectives.squared_error(real_out, b).mean() +
-                           lasagne.objectives.squared_error(fake_out, a).mean())
+        # Create loss expressions to be minimized
+        # a, b, c = -1, 1, 0  # Equation (8) in the paper
+        a, b, c = 0, 1, 1  # Equation (9) in the paper
+        generator_loss = lasagne.objectives.squared_error(fake_out, c).mean()
+        critic_loss = (lasagne.objectives.squared_error(real_out, b).mean() +
+                       lasagne.objectives.squared_error(fake_out, a).mean())
 
         # Create update expressions for training
         from theano import shared
