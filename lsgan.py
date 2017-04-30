@@ -38,7 +38,7 @@ class LSGAN_Model(GAN_BaseModel):
         self.train_fn = None
         self.gen_fn = None
         self.generator_train_fn = None
-        self,critic_train_fn = None
+        self.critic_train_fn = None
         
         # TODO: Turn this into a hyperparameters
         self.optimizer = "rmsprop"
@@ -292,8 +292,8 @@ class LSGAN_Model(GAN_BaseModel):
         ### Save model to class variables
         self.train_fn = train_fn
         self.gen_fn = gen_fn
-        self.critic_train_fn = critic_train_fn
         self.generator_train_fn = generator_train_fn
+        self.critic_train_fn = critic_train_fn
 
         return generator, critic, train_fn, gen_fn
 
