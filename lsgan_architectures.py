@@ -96,7 +96,8 @@ def build_generator_architecture(input_var=None, architecture=1):
         layer = app(DropoutLayer(layer, p=0.5))
         layer = app(batch_norm(Deconv2DLayer(layer, 64, 5, stride=2, crop='same', output_size=32, nonlinearity=a_fn)))
         layer = app(DropoutLayer(layer, p=0.5))
-        layer = app(GAN.weight_norm(Deconv2DLayer(layer, 3, 5, stride=2, crop='same', output_size=64, nonlinearity=T.tanh), train_g=True, init_stdv=0.1))
+#        layer = app(GAN.weight_norm(Deconv2DLayer(layer, 3, 5, stride=2, crop='same', output_size=64, nonlinearity=T.tanh), train_g=True, init_stdv=0.1))
+        layer = app(Deconv2DLayer(layer, 3, 5, stride=2, crop='same', output_size=64, nonlinearity=T.tanh))
         print ("Generator output:", layer.output_shape)
         return layer, layers
 
@@ -365,7 +366,7 @@ def build_critic_architecture(input_var=None, architecture=1):
         # input: (None, 3, 64, 64)
         layer = app(InputLayer(shape=(None, 3, 64, 64), input_var=input_var))
         # Injecting some noise after input layer
-        layer = app(GAN.GaussianNoiseLayer(layer, sigma=0.5))
+        #layer = app(GAN.GaussianNoiseLayer(layer, sigma=0.5))
         # four convolutions
         layer = app(batch_norm(Conv2DLayer(layer, 96, 3, stride=2, pad='same', nonlinearity=a_fn)))
         layer = app(DropoutLayer(layer, p=0.5))
@@ -379,10 +380,10 @@ def build_critic_architecture(input_var=None, architecture=1):
         layer = app(batch_norm(DenseLayer(layer, 256, nonlinearity=a_fn)))
         layer = app(DropoutLayer(layer, p=0.5))
         # Apply Gaussian noise to output
-        layer = app(GAN.GaussianNoiseLayer(layer, sigma=0.5))
+        #layer = app(GAN.GaussianNoiseLayer(layer, sigma=0.5))
         # output layer (linear)
         #layer = app(ll.GlobalPoolLayer(layer))
-        layer = app(DenseLayer(layer, 1, nonlinearity=None))
+        layer = app(DenseLayer(layer, 1, nonlinearity=T.sigmoid))
         print ("critic output:", layer.output_shape)
         return layer, layers
     elif architecture == 2:
