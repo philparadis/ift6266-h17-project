@@ -181,7 +181,7 @@ class LSGAN_Model(GAN_BaseModel):
         for epoch in range(num_epochs):
             start_time = time.time()
 
-            log_info("Epoch {}:".format(epoch))
+            print_info("Epoch {}:".format(epoch))
             
             # In each epoch, we do `epochsize` generator and critic updates.
             num_critics_update = int(min(float(max_successive_extremely_low_critic_loss - num_extremely_low_critic_loss)
@@ -193,7 +193,7 @@ class LSGAN_Model(GAN_BaseModel):
             for _ in range(epochsize):
                 inputs, targets = next(batches)
                 if num_critics_update != epochsize:
-                    log_warning("   Rebalancing losses: {} critics updates VS {} generator updates.".format(num_critics_update, epochsize))
+                    print_warning("   Rebalancing losses: {} critics updates VS {} generator updates.".format(num_critics_update, epochsize))
                 if _ < num_critics_update:
                     critic_losses.append(critic_train_fn(inputs))
                 generator_losses.append(generator_train_fn())
