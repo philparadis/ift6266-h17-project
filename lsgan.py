@@ -164,6 +164,7 @@ class LSGAN_Model(GAN_BaseModel):
 
         # Set variables to control training
         epoch_eta_threshold = min(num_epochs // 10, 250)
+        max_successive_extremely_low_critic_loss = 20
         num_extremely_low_critic_loss = 0
         num_low_critic_loss = 0
         ratio_gen_critic = 1
@@ -216,7 +217,7 @@ class LSGAN_Model(GAN_BaseModel):
             log("  critic loss    = {}".format(mean_critic_loss))
 
             if mean_critic_loss < 0.03:
-                print_critical("The critic loss is extremely low. If the loss is below 0.03 for 10 epochs in a row, the training will be aborted")
+                print_critical("The critic loss is extremely low. If the loss is below 0.03 for {} epochs in a row, the training will be aborted".format(max_successive_extremely_low_critic_loss))
                 print_info("Attempting to balance out generator and critic...")
                 ratio_gen_critic = mean_generator_loss / mean_critic_loss
                 num_extremely_low_critic_loss += 1
@@ -229,8 +230,8 @@ class LSGAN_Model(GAN_BaseModel):
                 num_extremely_low_critic_loss = 0
                 num_low_critic_loss = 0
 
-            if num_extremely_low_critic_loss >= 10:
-                print_error("Extremely low critic loss obtained 10 epochs in a row. Aborting training now.")
+            if num_extremely_low_critic_loss >= max_successive_extremely_low_critic_loss:
+                print_error("Extremely low critic loss obtained {} epochs in a row. Aborting training now.".format(max_successive_extremely_low_critic_loss))
                 self.create_stop_file()
 
             # And finally, we plot some generated data, depending on the settings

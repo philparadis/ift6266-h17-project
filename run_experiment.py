@@ -301,7 +301,7 @@ def run_experiment():
         Dataset.preprocess()
         Dataset.normalize()
         Dataset.preload()
-        generator, critic, generator_train_fn, critic_train_fn, gen_fn = wgan_lasagne.train(Dataset, num_epochs=settings.NUM_EPOCHS)
+        generator, critic, generator_train_fn, critic_train_fn, gen_fn = wgan.train(Dataset, num_epochs=settings.NUM_EPOCHS)
         Dataset.denormalize()
         
         settings.touch_dir(settings.SAMPLES_DIR)
