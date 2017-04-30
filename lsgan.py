@@ -182,7 +182,8 @@ class LSGAN_Model(GAN_BaseModel):
             start_time = time.time()
 
             print_info("Epoch {} out of {}:".format(epoch, num_epochs))
-            
+
+            num_critics_update = epochsize
             # In each epoch, we do `epochsize` generator and critic updates.
             if num_extremely_low_critic_loss > 0 or num_low_critic_loss > 0:
                 rebalance_ratio = min(float(max_successive_extremely_low_critic_loss - num_extremely_low_critic_loss)
