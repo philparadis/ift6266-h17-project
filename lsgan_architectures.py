@@ -85,23 +85,20 @@ def build_generator_architecture(input_var=None, architecture=1):
         a_fn = LeakyRectify(0.2)
         # input: 100dim
         layer = app(InputLayer(shape=(None, 100), input_var=input_var))
-        layer = app(ll.GaussianNoiseLayer(layer, sigma=0.5))
         # project and reshape
-        layer = app(batch_norm(DenseLayer(layer, 512*8*8)))
-        layer = app(ReshapeLayer(layer, ([0], 512, 8, 8)))
+        layer = app(batch_norm(DenseLayer(layer, 256*4*4)))
+        layer = app(ReshapeLayer(layer, ([0], 256, 4, 4)))
         ### four fractional-stride convolutions
         # Note: Apply dropouts in G. See tip #17 from "ganhacks"
-        layer = app(batch_norm(Deconv2DLayer(layer, 256, 5, stride=2, crop='same', output_size=16, nonlinearity=a_fn)))
-        layer = app(batch_norm(Deconv2DLayer(layer, 256, 5, stride=1, crop='same', output_size=16, nonlinearity=a_fn)))
+        layer = app(batch_norm(Deconv2DLayer(layer, 192, 7, stride=2, crop='same', output_size=8, nonlinearity=a_fn)))
         layer = app(DropoutLayer(layer, p=0.5))
-        layer = app(batch_norm(Deconv2DLayer(layer, 128, 5, stride=2, crop='same', output_size=32, nonlinearity=a_fn)))
-        layer = app(batch_norm(Deconv2DLayer(layer, 128, 5, stride=1, crop='same', output_size=32, nonlinearity=a_fn)))
+        layer = app(batch_norm(Deconv2DLayer(layer, 128, 7, stride=2, crop='same', output_size=16, nonlinearity=a_fn)))
         layer = app(DropoutLayer(layer, p=0.5))
-        layer = app(batch_norm(Deconv2DLayer(layer, 64, 5, stride=2, crop='same', output_size=64, nonlinearity=a_fn)))
-        layer = app(Deconv2DLayer(layer, 3, 3, stride=1, crop='same', output_size=64, nonlinearity=T.tanh))
+        layer = app(batch_norm(Deconv2DLayer(layer, 96, 5, stride=2, crop='same', output_size=32, nonlinearity=a_fn)))
+        layer = app(DropoutLayer(layer, p=0.5))
+        layer = app(Deconv2DLayer(layer, 3, 5, stride=2, crop='same',, output_size=64, nonlinearity=T.tanh))
         print ("Generator output:", layer.output_shape)
         return layer, layers
-
     elif architecture == 2:
         # Optional layers
         input_noise = True
@@ -363,28 +360,22 @@ def build_critic_architecture(input_var=None, architecture=1):
         print ("critic output:", layer.output_shape)
         return layer, layers
     elif architecture == 1:
-        a_fn = LeakyRectify(0.2)
+        alpha = 0.1 # slope of negative x axis of leaky ReLU
+        a_fn = LeakyRectify(alpha)
         # input: (None, 3, 64, 64)
         layer = app(InputLayer(shape=(None, 3, 64, 64), input_var=input_var))
         # Injecting some noise after input layer
-        #layer = app(GAN.GaussianNoiseLayer(layer, sigma=0.5))
+        layer = app(GAN.GaussianNoiseLayer(layer, sigma=0.2))
         # four convolutions
-        layer = app(batch_norm(Conv2DLayer(layer, 96, 3, stride=2, pad='same', nonlinearity=a_fn)))
-        layer = app(DropoutLayer(layer, p=0.5))
-        layer = app(batch_norm(Conv2DLayer(layer, 96, 3, stride=2, pad='same', nonlinearity=a_fn)))
-        layer = app(DropoutLayer(layer, p=0.5))
-        layer = app(batch_norm(Conv2DLayer(layer, 128, 3, stride=2, pad='same', nonlinearity=a_fn)))
-        layer = app(DropoutLayer(layer, p=0.5))
+        layer = app(batch_norm(Conv2DLayer(layer, 96, 5, stride=2, pad='same', nonlinearity=a_fn)))
         layer = app(batch_norm(Conv2DLayer(layer, 128, 5, stride=2, pad='same', nonlinearity=a_fn)))
-        layer = app(DropoutLayer(layer, p=0.5))
+        layer = app(batch_norm(Conv2DLayer(layer, 192, 7, stride=2, pad='same', nonlinearity=a_fn)))
+        layer = app(batch_norm(Conv2DLayer(layer, 256, 7, stride=2, pad='same', nonlinearity=a_fn)))
         # fully-connected layer
-        layer = app(batch_norm(DenseLayer(layer, 256, nonlinearity=a_fn)))
-        layer = app(DropoutLayer(layer, p=0.5))
-        # Apply Gaussian noise to output
-        #layer = app(GAN.GaussianNoiseLayer(layer, sigma=0.5))
+        layer = app(batch_norm(DenseLayer(layer, 512, nonlinearity=a_fn)))
+        layer = app(GAN.GaussianNoiseLayer(layer, sigma=0.2))
         # output layer (linear)
-        #layer = app(ll.GlobalPoolLayer(layer))
-        layer = app(DenseLayer(layer, 1, nonlinearity=sigmoid))
+        layer = app(DenseLayer(layer, 1, nonlinearity=None))
         print ("critic output:", layer.output_shape)
         return layer, layers
     elif architecture == 2:
