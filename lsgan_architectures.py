@@ -63,7 +63,7 @@ def build_generator_architecture(input_var=None, architecture=1):
         a_fn = LeakyRectify(0.2)
         # input: 100dim
         layer = app(InputLayer(shape=(None, 100), input_var=input_var))
-        layer = GAN.GaussianNoiseLayer(layer, sigma=0.2)
+        layer = app(GAN.GaussianNoiseLayer(layer, sigma=0.2))
         layer = app(batch_norm(DenseLayer(layer, 256*4*4)))
         layer = app(ReshapeLayer(layer, ([0], 256, 4, 4)))
         ### four fractional-stride convolutions
@@ -71,7 +71,7 @@ def build_generator_architecture(input_var=None, architecture=1):
         layer = app(batch_norm(Deconv2DLayer(layer, 192, 7, stride=2, crop='same',
                                          output_size=8, nonlinearity=a_fn)))
         layer = app(DropoutLayer(layer, p=0.5))
-        layer = GAN.GaussianNoiseLayer(layer, sigma=0.2)
+        layer = app(GAN.GaussianNoiseLayer(layer, sigma=0.2))
         layer = app(batch_norm(Deconv2DLayer(layer, 128, 7, stride=2, crop='same',
                                          output_size=16, nonlinearity=a_fn)))
         layer = app(DropoutLayer(layer, p=0.5))
@@ -79,7 +79,7 @@ def build_generator_architecture(input_var=None, architecture=1):
         layer = app(batch_norm(Deconv2DLayer(layer, 96, 5, stride=2, crop='same',
                                          output_size=32, nonlinearity=a_fn)))
         layer = app(DropoutLayer(layer, p=0.5))
-        layer = GAN.GaussianNoiseLayer(layer, sigma=0.2)
+        layer = app(GAN.GaussianNoiseLayer(layer, sigma=0.2))
         layer = app(Deconv2DLayer(layer, 3, 5, stride=2, crop='same',
                               output_size=64, nonlinearity=T.tanh))
         print ("Generator output:", layer.output_shape)
