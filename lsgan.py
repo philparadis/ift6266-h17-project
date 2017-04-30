@@ -164,16 +164,16 @@ class LSGAN_Model(GAN_BaseModel):
 
         # Set variables to control training
         epoch_eta_threshold = min(num_epochs // 10, 250)
-        max_successive_extremely_low_critic_loss = 20
-        num_extremely_low_critic_loss = 0
-        num_low_critic_loss = 0
+        max_very_low_loss = 20
+        num_very_low_loss = 0
+        num_low_loss = 0
         ratio_gen_critic = 1
 
         # Finally, launch the training loop.
         print_positive("Starting training of LSGAN model!")
         # We create an infinite supply of batches (as an iterable generator):
-        batches = self.iterate_minibatches(X_train, y_train, batchsize, shuffle=True,
-                                      forever=True)
+        batches = self.iterate_minibatches(X_train, y_train, batchsize, shuffle=True, forever=True)
+
         # We iterate over epochs:
         found_stop_file = False
         generator_updates = 0
@@ -185,18 +185,22 @@ class LSGAN_Model(GAN_BaseModel):
 
             num_critics_update = epochsize
             # In each epoch, we do `epochsize` generator and critic updates.
-            if num_extremely_low_critic_loss > 0 or num_low_critic_loss > 0:
-                rebalance_ratio = min(float(max_successive_extremely_low_critic_loss - num_extremely_low_critic_loss)
-                                      / float(max_successive_extremely_low_critic_loss),
-                                      min(1.0-float(num_low_critic_loss)/25.0, 0))
-                num_critics_update = int(max(float(epochsize)*rebalance_ratio, 2))
+            if num_very_low_loss > 0 or num_low_loss > 0:
+                rebalance_ratio = min(float(max_very_low_loss - num_very_low_loss) / float(max_very_low_loss),
+                                      max(1.0-float(num_low_loss)/10.0, 0))
+                num_critics_update = int(max(float(epochsize)*rebalance_ratio, 5))
 
+            if num_low_loss > 0:
+                print_warning("Nmber of successive low critics loss = {0}".format(num_low_loss))
+            if num_very_low_loss > 0:
+                print_critical("Number of successive *extremely low* critics loss = {0}".format(num_very_low_loss))
+            if num_critics_update != epochsize:
+                print_warning("Rebalancing losses: {} critics updates VS {} generator updates.".format(num_critics_update, epochsize))
+                                                       
             critic_losses = []
             generator_losses = []
             for u in range(epochsize):
                 inputs, targets = next(batches)
-                if num_critics_update != epochsize:
-                    print_warning("   Rebalancing losses: {} critics updates VS {} generator updates.".format(num_critics_update, epochsize))
                 if u < num_critics_update:
                     critic_losses.append(critic_train_fn(inputs))
                 generator_losses.append(generator_train_fn())
@@ -204,8 +208,8 @@ class LSGAN_Model(GAN_BaseModel):
             ### Balance out gen and critic losses if necessary
             if ratio_gen_critic > 4:
                 extra = int(math.ceil(ratio_gen_critic
-                                      * (2*num_extremely_low_critic_loss+1)
-                                      * (num_low_critic_loss+1)))
+                                      * (2*num_very_low_loss + 1)
+                                      * (num_low_loss + 1)))
                 log("   Perfoming {} extra rounds of generator training to rebalance the losses.".format(extra))
                 for _i in range(extra):
                     generator_losses.append(generator_train_fn())
@@ -222,27 +226,30 @@ class LSGAN_Model(GAN_BaseModel):
             self.wall_time += time_delta
             mean_generator_loss = np.mean(generator_losses)
             mean_critic_loss = np.mean(critic_losses)
-            log("   Epoch {0} out of {1} took {2:.3f} seconds".format(epoch + 1, num_epochs, time_delta))
-            log("     - total time     = {:.1f} seconds".format(self.wall_time))
-            log("     - generator loss = {}".format(mean_generator_loss))
-            log("     - critic loss    = {}".format(mean_critic_loss))
+            log("   epoch took {2:.3f} seconds".format(epoch + 1, num_epochs, time_delta))
+            if self.wall_time < 7200:
+                log("   total wall time is {:.2f} minutes".format(self.wall_time / 60))
+            else:
+                log("   total wall time is {:.2f} hours".format(self.wall_time / 3600))
+            log("   generator loss = {}".format(mean_generator_loss))
+            log("   critic loss    = {}".format(mean_critic_loss))
 
             if mean_critic_loss < 0.03:
-                print_critical("The critic loss is extremely low. If the loss is below 0.03 for {} epochs in a row, the training will be aborted".format(max_successive_extremely_low_critic_loss))
+                print_critical("The critic loss is extremely low. If the loss is below 0.03 for {} epochs in a row, the training will be aborted".format(max_very_low_loss))
                 print_info("Attempting to balance out generator and critic...")
                 ratio_gen_critic = mean_generator_loss / mean_critic_loss
-                num_extremely_low_critic_loss += 1
+                num_very_low_loss += 1
             elif mean_critic_loss < 0.08:
                 print_warning("Critic loss is getting dangerously low!")
                 print_info("Attempting to balance out generator and critic...")
                 ratio_gen_critic = mean_generator_loss / mean_critic_loss
-                num_low_critic_loss += 1
+                num_low_loss += 1
             else:
-                num_extremely_low_critic_loss = 0
-                num_low_critic_loss = 0
-
-            if num_extremely_low_critic_loss >= max_successive_extremely_low_critic_loss:
-                print_error("Extremely low critic loss obtained {} epochs in a row. Aborting training now.".format(max_successive_extremely_low_critic_loss))
+                num_very_low_loss = 0
+                num_low_loss = 0
+                
+            if num_very_low_loss >= max_very_low_loss:
+                print_error("Extremely low critic loss obtained {} epochs in a row. Aborting training now.".format(max_very_low_loss))
                 self.create_stop_file()
 
             # And finally, we plot some generated data, depending on the settings
