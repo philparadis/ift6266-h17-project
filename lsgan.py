@@ -228,7 +228,7 @@ class LSGAN_Model(GAN_BaseModel):
                     inputs, targets = next(batches)
                     critic_losses.append(critic_train_fn(inputs))
 
-            print_infog("Critics update = {} | Generator updates {}tor updates.".format(num_critics_update + train_critic_extra+, epochsize * num_repeat_gen_train +        =train_gen_extra)) 
+            print_info("Critic updates = {} | Generator updates = {}".format(num_critics_update + train_critic_extra, epochsize * num_repeat_gen_train + train_gen_extra))
 
             # Then we print the results for this epoch:
             time_delta = time.time() - start_time
