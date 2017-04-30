@@ -162,12 +162,12 @@ def print_positive(msg):
 
 def logout(msg):
     with open(settings.OUTLOGFILE, 'a') as fd:
-        fd.write("[{0}] {1}\n".format(datetime.datetime.now().strftime("%H:%M:%S")),msg)
+        fd.write("[{0}] {1}\n".format(datetime.datetime.now().strftime("%H:%M:%S"),msg))
         fd.flush()
 
 def logerr(msg):
     with open(settings.ERRLOGFILE, 'a') as fd:
-        fd.write("[{0}] {1}\n".format(datetime.datetime.now().strftime("%H:%M:%S")),msg)
+        fd.write("[{0}] {1}\n".format(datetime.datetime.now().strftime("%H:%M:%S"),msg))
         fd.flush()
         
 def log(msg):
