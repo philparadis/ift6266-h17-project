@@ -383,7 +383,7 @@ def build_critic_architecture(input_var=None, architecture=1):
         #layer = app(GAN.GaussianNoiseLayer(layer, sigma=0.5))
         # output layer (linear)
         #layer = app(ll.GlobalPoolLayer(layer))
-        layer = app(DenseLayer(layer, 1, nonlinearity=T.sigmoid))
+        layer = app(DenseLayer(layer, 1, nonlinearity=sigmoid))
         print ("critic output:", layer.output_shape)
         return layer, layers
     elif architecture == 2:
