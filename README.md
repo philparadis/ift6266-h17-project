@@ -2,11 +2,44 @@
 
 Experiments, code, models and notes for the final project of the IFT6266-H2017 "Deep Learning" course by Aaron Courville.
 
-# Requirements:
+# Example:
 
-* theano (bleeding edge GPU version)
-* keras
-* lasagne
+./run.py mlp SimpleModel-1 -e 50 -c 10 -k -l 0.0002 -b 128 -v 2
+./run.py lsgan MyExpName-2 -e 1000 -u 30 -c 50 -a 1 -s 10 -g 0.0005 -b 64 -v 2 -f
+./run.py conv-vgg ConvVgg-3 --feature-matching -e 200 -c 20 -k -l 0.0002 -b 128 -v 2
+./run.py lstm LSTM-4 -e 100 -c 10 -l 0.0008 -b 128 -v 2
+
+Running with default values (which may or may not be recommended), you can also try simply:
+
+./run.py mlp test1
+./run.py conv-mlp test2
+./run conv-vgg test3
+./run lstm test4
+./run.py lsgan test5
+./run.py wgan test6
+./run.py dcgan test7
+
+# Installation
+
+## Requirements:
+
+* Theano >= 0.9.0 (ideally, bleeding-edge GPU version 0.9.0.dev5)
+* Lasagne >= 0.2.dev1
+* Keras >= 2.0.0
+* h5py >= 2.6.0
+* hdf5 >= 1.8.17
+
+## Optional:
+
+* graphviz >= 0.6
+* pydot >= 1.2.3
+* pydot-ng >= 1.0.0
+* xtraceback >= 0.3.3
+* logging >= 0.4.9.6
+
+All required and optional packages can be installed within your virtual environment by typing:
+
+> python -r requirements.txt
 
 # References:
 
