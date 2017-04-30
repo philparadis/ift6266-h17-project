@@ -53,29 +53,56 @@ def build_generator_architecture(input_var=None, architecture=1):
     import lasagne.layers as ll
     import gan_lasagne as GAN
     import theano.tensor as T
+
+    layers = []
+    def app(l):
+        layers.append(l)
+        return l
     
-    if architecture == 1:
+    if architecture == 0:
         a_fn = LeakyRectify(0.2)
         # input: 100dim
-        layer = InputLayer(shape=(None, 100), input_var=input_var)
+        layer = app(InputLayer(shape=(None, 100), input_var=input_var))
         # project and reshape
-        layer = batch_norm(DenseLayer(layer, 256*4*4))
-        layer = ReshapeLayer(layer, ([0], 256, 4, 4))
+        layer = app(batch_norm(DenseLayer(layer, 256*4*4)))
+        layer = app(ReshapeLayer(layer, ([0], 256, 4, 4)))
         ### four fractional-stride convolutions
         # Note: Apply dropouts in G. See tip #17 from "ganhacks"
-        layer = batch_norm(Deconv2DLayer(layer, 192, 7, stride=2, crop='same',
-                                         output_size=8, nonlinearity=a_fn))
-        layer = DropoutLayer(layer, p=0.5)
-        layer = batch_norm(Deconv2DLayer(layer, 128, 7, stride=2, crop='same',
-                                         output_size=16, nonlinearity=a_fn))
-        layer = DropoutLayer(layer, p=0.5)
-        layer = batch_norm(Deconv2DLayer(layer, 96, 5, stride=2, crop='same',
-                                         output_size=32, nonlinearity=a_fn))
-        layer = DropoutLayer(layer, p=0.5)
-        layer = Deconv2DLayer(layer, 3, 5, stride=2, crop='same',
-                              output_size=64, nonlinearity=T.tanh)
+        layer = app(batch_norm(Deconv2DLayer(layer, 192, 7, stride=2, crop='same',
+                                         output_size=8, nonlinearity=a_fn)))
+        layer = app(DropoutLayer(layer, p=0.5))
+        layer = app(batch_norm(Deconv2DLayer(layer, 128, 7, stride=2, crop='same',
+                                         output_size=16, nonlinearity=a_fn)))
+        layer = app(DropoutLayer(layer, p=0.5))
+        layer = app(batch_norm(Deconv2DLayer(layer, 96, 5, stride=2, crop='same',
+                                         output_size=32, nonlinearity=a_fn)))
+        layer = app(DropoutLayer(layer, p=0.5))
+        layer = app(Deconv2DLayer(layer, 3, 5, stride=2, crop='same',
+                              output_size=64, nonlinearity=T.tanh))
         print ("Generator output:", layer.output_shape)
-        return layer
+        return layer, layers
+    elif architecture == 1:
+        a_fn = LeakyRectify(0.2)
+        # input: 100dim
+        layer = app(InputLayer(shape=(None, 100), input_var=input_var))
+        # project and reshape
+        layer = app(batch_norm(DenseLayer(layer, 256*4*4)))
+        layer = app(ReshapeLayer(layer, ([0], 256, 4, 4)))
+        ### four fractional-stride convolutions
+        # Note: Apply dropouts in G. See tip #17 from "ganhacks"
+        layer = app(batch_norm(Deconv2DLayer(layer, 192, 7, stride=2, crop='same',
+                                         output_size=8, nonlinearity=a_fn)))
+        layer = app(DropoutLayer(layer, p=0.5))
+        layer = app(batch_norm(Deconv2DLayer(layer, 128, 7, stride=2, crop='same',
+                                         output_size=16, nonlinearity=a_fn)))
+        layer = app(DropoutLayer(layer, p=0.5))
+        layer = app(batch_norm(Deconv2DLayer(layer, 96, 5, stride=2, crop='same',
+                                         output_size=32, nonlinearity=a_fn)))
+        layer = app(DropoutLayer(layer, p=0.5))
+        layer = app(Deconv2DLayer(layer, 3, 5, stride=2, crop='same',
+                              output_size=64, nonlinearity=T.tanh))
+        print ("Generator output:", layer.output_shape)
+        return layer, layers
 
     elif architecture == 2:
         # Optional layers
@@ -142,7 +169,7 @@ def build_generator_architecture(input_var=None, architecture=1):
         
         gen_dat = ll.get_output(layer)
         print ("Generator output:", layer.output_shape)
-        return layer
+        return layer, layers
 
     elif architecture == 3:
         # Optional layers
@@ -198,7 +225,7 @@ def build_generator_architecture(input_var=None, architecture=1):
         
         gen_dat = ll.get_output(layer)
         print ("Generator output:", layer.output_shape)
-        return layer
+        return layer, layers
     elif architecture == 4:
         a_fn = LeakyRectify(0.2)
         # input: 100dim
@@ -233,7 +260,7 @@ def build_generator_architecture(input_var=None, architecture=1):
         layer = Deconv2DLayer(layer, 3, 5, stride=2, crop='same',
                               output_size=64, nonlinearity=T.tanh)
         print ("Generator output:", layer.output_shape)
-        return layer
+        return layer, layers
 
     elif architecture == 5:
         a_fn = LeakyRectify(0.2)
@@ -258,20 +285,20 @@ def build_generator_architecture(input_var=None, architecture=1):
         layer = Deconv2DLayer(layer, 3, 5, stride=2, crop='same', W=W_init,
                               output_size=64, nonlinearity=T.tanh)
         print ("Generator output:", layer.output_shape)
-        return layer
+        return layer, layers
     elif architecture == 6 or architecture == 7:
-        layer = InputLayer(shape=(None, 100), input_var=input_var)
-        layer = GAN.batch_norm(ll.DenseLayer(layer, num_units=4*4*512, W=Normal(0.05), nonlinearity=GAN.relu), g=None)
-        layer = ll.ReshapeLayer(layer, ([0],512,4,4))
-        layer = GAN.batch_norm(GAN.Deconv2DLayer(layer, (None,256,8,8), (5,5), W=Normal(0.05), nonlinearity=GAN.relu), g=None) # 4 -> 8
-        layer = GAN.batch_norm(GAN.Deconv2DLayer(layer, (None,128,16,16), (5,5), W=Normal(0.05), nonlinearity=GAN.relu), g=None) # 8 -> 16
-        layer = GAN.batch_norm(GAN.Deconv2DLayer(layer, (None,64,32,32), (5,5), W=Normal(0.05), nonlinearity=GAN.relu), g=None) # 16 -> 32
-        layer = GAN.weight_norm(GAN.Deconv2DLayer(layer, (None,3,64,64), (5,5), W=Normal(0.05), nonlinearity=T.tanh), train_g=True, init_stdv=0.1) # 32 -> 64
+        layer = app(InputLayer(shape=(None, 100), input_var=input_var))
+        layer = app(GAN.batch_norm(ll.DenseLayer(layer, num_units=4*4*512, W=Normal(0.05), nonlinearity=GAN.relu), g=None))
+        layer = app(ll.ReshapeLayer(layer, ([0],512,4,4)))
+        layer = app(GAN.batch_norm(GAN.Deconv2DLayer(layer, (None,256,8,8), (5,5), W=Normal(0.05), nonlinearity=GAN.relu), g=None)) # 4 -> 8
+        layer = app(GAN.batch_norm(GAN.Deconv2DLayer(layer, (None,128,16,16), (5,5), W=Normal(0.05), nonlinearity=GAN.relu), g=None)) # 8 -> 16
+        layer = app(GAN.batch_norm(GAN.Deconv2DLayer(layer, (None,64,32,32), (5,5), W=Normal(0.05), nonlinearity=GAN.relu), g=None)) # 16 -> 32
+        layer = app(GAN.weight_norm(GAN.Deconv2DLayer(layer, (None,3,64,64), (5,5), W=Normal(0.05), nonlinearity=T.tanh), train_g=True, init_stdv=0.1)) # 32 -> 64
 
         gen_dat = ll.get_output(layer)
 
         print ("Generator output:", layer.output_shape)
-        return layer
+        return layer, layers
 
     raise Exception("Invalid argument to LSGAN's build_generator: architecture = {}".format(architecture))
     
@@ -300,6 +327,11 @@ def build_critic_architecture(input_var=None, architecture=1):
     import gan_lasagne as GAN
     import theano.tensor as T
 
+    layers = []
+    def app(l):
+        layers.append(l)
+        return l
+
     if architecture == 1:
         # Optional layers
         input_noise = True
@@ -316,31 +348,31 @@ def build_critic_architecture(input_var=None, architecture=1):
         W_init = Normal(normal_std)
 
         # input: (None, 3, 64, 64)
-        layer = InputLayer(shape=(None, 3, 64, 64), input_var=input_var)
+        layer = app(InputLayer(shape=(None, 3, 64, 64), input_var=input_var))
         # Injecting some noise after input layer
         if input_noise:
-            layer = GAN.GaussianNoiseLayer(layer, sigma=0.2)
+            layer = app(GAN.GaussianNoiseLayer(layer, sigma=0.2))
 
         # four convolutions
-        layer = batch_norm(Conv2DLayer(layer, 96, 5, stride=2, pad='same',
-                                       nonlinearity=a_fn))
-        layer = batch_norm(Conv2DLayer(layer, 128, 5, stride=2, pad='same',
-                                       nonlinearity=a_fn))
-        layer = batch_norm(Conv2DLayer(layer, 192, 7, stride=2, pad='same',
-                                       nonlinearity=a_fn))
-        layer = batch_norm(Conv2DLayer(layer, 256, 7, stride=2, pad='same',
-                                       nonlinearity=a_fn))
+        layer = app(batch_norm(Conv2DLayer(layer, 96, 5, stride=2, pad='same',
+                                       nonlinearity=a_fn)))
+        layer = app(batch_norm(Conv2DLayer(layer, 128, 5, stride=2, pad='same',
+                                       nonlinearity=a_fn)))
+        layer = app(batch_norm(Conv2DLayer(layer, 192, 7, stride=2, pad='same',
+                                       nonlinearity=a_fn)))
+        layer = app(batch_norm(Conv2DLayer(layer, 256, 7, stride=2, pad='same',
+                                       nonlinearity=a_fn)))
         # fully-connected layer
-        layer = batch_norm(DenseLayer(layer, 512, nonlinearity=a_fn))
+        layer = app(batch_norm(DenseLayer(layer, 512, nonlinearity=a_fn)))
 
         # Apply Gaussian noise to output
         if output_noise:
-            layer = GAN.GaussianNoiseLayer(layer, sigma=output_sigma)
+            layer = app(GAN.GaussianNoiseLayer(layer, sigma=output_sigma))
 
         # output layer (linear)
-        layer = DenseLayer(layer, 1, nonlinearity=None)
+        layer = app(DenseLayer(layer, 1, nonlinearity=None))
         print ("critic output:", layer.output_shape)
-        return layer
+        return layer, layers
     elif architecture == 2:
         # Optional layers
         input_noise = True
@@ -357,7 +389,7 @@ def build_critic_architecture(input_var=None, architecture=1):
         W_init = Normal(normal_std)
 
         # input: (None, 3, 64, 64)
-        layer = InputLayer(shape=(None, 3, 64, 64), input_var=input_var)
+        layer = app(InputLayer(shape=(None, 3, 64, 64), input_var=input_var))
         # new layer: What is it for???
         # ganhacks says:
         # * Add some artificial noise to inputs to D (Arjovsky et. al., Huszar, 2016)
@@ -367,63 +399,63 @@ def build_critic_architecture(input_var=None, architecture=1):
         #    - (Zhao et. al. EBGAN)
         #    - "Improved GANs" by OpenAI. Their code also has it, but is commented out
         if input_noise:
-            layer = GAN.GaussianNoiseLayer(layer, sigma=input_sigma)
-        layer = DropoutLayer(layer, p=0.1) if dropout else layer
+            layer = app(GAN.GaussianNoiseLayer(layer, sigma=input_sigma))
+        layer = app(DropoutLayer(layer, p=0.1) if dropout else layer)
 
         # 3x convolutions with 96 filters each and 3x3 receptive field
         # 1st, 2nd conv preserve dimension
         # 3rd conv has stride 2, so it downsamples dimension by a factor of 2
-        layer = GAN.weight_norm(Conv2DLayer(layer, 96, (3, 3), pad=1, W=W_init, nonlinearity=a_fn))
-        layer = DropoutLayer(layer, p=0.5) if dropout else layer
-        layer = GAN.weight_norm(Conv2DLayer(layer, 96, (3, 3), pad=1, W=W_init, nonlinearity=a_fn))
-        layer = DropoutLayer(layer, p=0.5) if dropout else layer
+        layer = app(GAN.weight_norm(Conv2DLayer(layer, 96, (3, 3), pad=1, W=W_init, nonlinearity=a_fn)))
+        layer = app(DropoutLayer(layer, p=0.5) if dropout else layer)
+        layer = app(GAN.weight_norm(Conv2DLayer(layer, 96, (3, 3), pad=1, W=W_init, nonlinearity=a_fn)))
+        layer = app(DropoutLayer(layer, p=0.5) if dropout else layer)
         # This layer turns the feature maps into tensors: (None, 96, 32, 32)
-        layer = GAN.weight_norm(Conv2DLayer(layer, 96, (3, 3), pad=1, stride=2, W=W_init, nonlinearity=a_fn))
+        layer = app(GAN.weight_norm(Conv2DLayer(layer, 96, (3, 3), pad=1, stride=2, W=W_init, nonlinearity=a_fn)))
             
         # 3x convolutions with 192 filters each and 3x3 receptive field
         # 1st, 2nd conv preserve dimension
         # 3rd conv has stride 2, so it downsamples dimension by a factor of 2
-        layer = GAN.weight_norm(Conv2DLayer(layer, 192, (3, 3), pad=1, W=W_init, nonlinearity=a_fn))
-        layer = DropoutLayer(layer, p=0.5) if dropout else layer
-        layer = GAN.weight_norm(Conv2DLayer(layer, 192, (3, 3), pad=1, W=W_init, nonlinearity=a_fn))
-        layer = DropoutLayer(layer, p=0.5) if dropout else layer
+        layer = app(GAN.weight_norm(Conv2DLayer(layer, 192, (3, 3), pad=1, W=W_init, nonlinearity=a_fn)))
+        layer = app(DropoutLayer(layer, p=0.5) if dropout else layer)
+        layer = app(GAN.weight_norm(Conv2DLayer(layer, 192, (3, 3), pad=1, W=W_init, nonlinearity=a_fn)))
+        layer = app(DropoutLayer(layer, p=0.5) if dropout else layer)
         # This layer turns the feature maps into tensors: (None, 192, 16, 16)
-        layer = GAN.weight_norm(Conv2DLayer(layer, 192, (3, 3), pad=1, stride=2, W=W_init, nonlinearity=a_fn))
+        layer = app(GAN.weight_norm(Conv2DLayer(layer, 192, (3, 3), pad=1, stride=2, W=W_init, nonlinearity=a_fn)))
 
-        layer = GAN.weight_norm(Conv2DLayer(layer, 256, (3, 3), pad=1, W=W_init, nonlinearity=a_fn))
-        layer = DropoutLayer(layer, p=0.5) if dropout else layer
-        layer = GAN.weight_norm(Conv2DLayer(layer, 256, (3, 3), pad=1, W=W_init, nonlinearity=a_fn))
-        layer = DropoutLayer(layer, p=0.5) if dropout else layer
+        layer = app(GAN.weight_norm(Conv2DLayer(layer, 256, (3, 3), pad=1, W=W_init, nonlinearity=a_fn)))
+        layer = app(DropoutLayer(layer, p=0.5) if dropout else layer)
+        layer = app(GAN.weight_norm(Conv2DLayer(layer, 256, (3, 3), pad=1, W=W_init, nonlinearity=a_fn)))
+        layer = app(DropoutLayer(layer, p=0.5) if dropout else layer)
         # This layer turns the feature maps into tensors: (None, 256, 8, 8)
-        layer = GAN.weight_norm(Conv2DLayer(layer, 256, (3, 3), pad=1, stride=2, W=W_init, nonlinearity=a_fn))
-        layer = DropoutLayer(layer, p=0.5) if dropout else layer
+        layer = app(GAN.weight_norm(Conv2DLayer(layer, 256, (3, 3), pad=1, stride=2, W=W_init, nonlinearity=a_fn)))
+        layer = app(DropoutLayer(layer, p=0.5) if dropout else layer)
         
-        layer = GAN.weight_norm(Conv2DLayer(layer, 256, (3, 3), pad=0, W=W_init, nonlinearity=a_fn))
+        layer = app(GAN.weight_norm(Conv2DLayer(layer, 256, (3, 3), pad=0, W=W_init, nonlinearity=a_fn)))
         # 2x Networks-in-Networks layers with 192 units and lrelu a_fns
         # We will skip those for now
-        layer = GAN.weight_norm(NINLayer(layer, num_units=256, W=W_init, nonlinearity=a_fn))
-        layer = GAN.weight_norm(NINLayer(layer, num_units=256, W=W_init, nonlinearity=a_fn))
+        layer = app(GAN.weight_norm(NINLayer(layer, num_units=256, W=W_init, nonlinearity=a_fn)))
+        layer = app(GAN.weight_norm(NINLayer(layer, num_units=256, W=W_init, nonlinearity=a_fn)))
 
         # fully-connected layer
-        #layer = weight_norm(DenseLayer(layer, 512, nonlinearity=a_fn))
+        #layer = app(weight_norm(DenseLayer(layer, 512, nonlinearity=a_fn)))
 
         # 1x Global Pooling Layer
-        layer = ll.GlobalPoolLayer(layer)
+        layer = app(ll.GlobalPoolLayer(layer))
 
         # 1x Minibatch Discrimination Layer, with 250 kernels
-        layer = GAN.MinibatchLayer(layer, num_kernels = 250, dim_per_kernel=5, theta=W_init)
+        layer = app(GAN.MinibatchLayer(layer, num_kernels = 250, dim_per_kernel=5, theta=W_init))
 
         # Apply Gaussian noise to output
         if output_noise:
-            layer = GAN.GaussianNoiseLayer(layer, sigma=output_sigma)
+            layer = app(GAN.GaussianNoiseLayer(layer, sigma=output_sigma))
 
         # 1x Dense layer with 1 units, linear activation, followed by 1x Weight normalization (batch norm) layer
-        layer = GAN.weight_norm(DenseLayer(layer, num_units = 1, W=W_init, nonlinearity=None),
-                                train_g=True, init_stdv=0.1)
+        layer = app(GAN.weight_norm(DenseLayer(layer, num_units = 1, W=W_init, nonlinearity=None),
+                                train_g=True, init_stdv=0.1))
 
         disc_params = ll.get_all_params(layer, trainable=True)
         print ("critic output:", layer.output_shape)
-        return layer
+        return layer, layers
 
     elif architecture == 3:
         # Optional layers
@@ -506,7 +538,7 @@ def build_critic_architecture(input_var=None, architecture=1):
 
         disc_params = ll.get_all_params(layer, trainable=True)
         print ("critic output:", layer.output_shape)
-        return layer
+        return layer, layers
 
     elif architecture == 4:
         # Optional layers
@@ -562,7 +594,7 @@ def build_critic_architecture(input_var=None, architecture=1):
         # output layer (linear)
         layer = DenseLayer(layer, 1, nonlinearity=None)
         print ("critic output:", layer.output_shape)
-        return layer
+        return layer, layers
     elif architecture == 5:
         a_fn = LeakyRectify(0.2)
         W_init = Normal(0.05)
@@ -588,7 +620,7 @@ def build_critic_architecture(input_var=None, architecture=1):
         layer = DenseLayer(layer, 1, nonlinearity=None)
 
         print ("critic output:", layer.output_shape)
-        return layer
+        return layer, layers
     elif architecture == 6:
         try:
             from lasagne.layers import dnn
@@ -596,27 +628,27 @@ def build_critic_architecture(input_var=None, architecture=1):
             raise ImportError("Architecture #6 of LSGAN requires lasagne.layers.dnn (which requires "
                               "a functional cuDNN installation).")
 
-        layer = InputLayer(shape=(None, 3, 64, 64), input_var=input_var)
-        layer = DropoutLayer(layer, p=0.2)
-        layer = GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 96, (3,3), pad=1, W=Normal(0.05), nonlinearity=GAN.lrelu))
-        layer = GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 96, (3,3), pad=1, W=Normal(0.05), nonlinearity=GAN.lrelu))
-        layer = GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 96, (3,3), pad=1, stride=2, W=Normal(0.05), nonlinearity=GAN.lrelu))
-        layer = ll.DropoutLayer(layer, p=0.5)
-        layer = GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 192, (3,3), pad=1, W=Normal(0.05), nonlinearity=GAN.lrelu))
-        layer = GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 192, (3,3), pad=1, stride=2, W=Normal(0.05), nonlinearity=GAN.lrelu))
-        layer = ll.DropoutLayer(layer, p=0.5)
-        layer = GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 256, (3,3), pad=1, W=Normal(0.05), nonlinearity=GAN.lrelu))
-        layer = GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 256, (3,3), pad=1, stride=2, W=Normal(0.05), nonlinearity=GAN.lrelu))
-        layer = ll.DropoutLayer(layer, p=0.5)
-        layer = GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 256, (3,3), pad=1, W=Normal(0.05), nonlinearity=GAN.lrelu))
-        layer = GAN.weight_norm(ll.NINLayer(layer, num_units=192, W=Normal(0.05), nonlinearity=GAN.lrelu))
-        layer = GAN.weight_norm(ll.NINLayer(layer, num_units=192, W=Normal(0.05), nonlinearity=GAN.lrelu))
-        layer = ll.GlobalPoolLayer(layer)
-        layer = GAN.weight_norm(ll.DenseLayer(layer, num_units=1, W=Normal(0.05), nonlinearity=None), train_g=True, init_stdv=0.1)
+        layer = (InputLayer(shape=(None, 3, 64, 64), input_var=input_var))
+        layer = (DropoutLayer(layer, p=0.2))
+        layer = (GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 96, (3,3), pad=1, W=Normal(0.05), nonlinearity=GAN.lrelu)))
+        layer = (GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 96, (3,3), pad=1, W=Normal(0.05), nonlinearity=GAN.lrelu)))
+        layer = (GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 96, (3,3), pad=1, stride=2, W=Normal(0.05), nonlinearity=GAN.lrelu)))
+        layer = (ll.DropoutLayer(layer, p=0.5))
+        layer = (GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 192, (3,3), pad=1, W=Normal(0.05), nonlinearity=GAN.lrelu)))
+        layer = (GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 192, (3,3), pad=1, stride=2, W=Normal(0.05), nonlinearity=GAN.lrelu)))
+        layer = (ll.DropoutLayer(layer, p=0.5))
+        layer = (GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 256, (3,3), pad=1, W=Normal(0.05), nonlinearity=GAN.lrelu)))
+        layer = (GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 256, (3,3), pad=1, stride=2, W=Normal(0.05), nonlinearity=GAN.lrelu)))
+        layer = (ll.DropoutLayer(layer, p=0.5))
+        layer = (GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 256, (3,3), pad=1, W=Normal(0.05), nonlinearity=GAN.lrelu)))
+        layer = (GAN.weight_norm(ll.NINLayer(layer, num_units=192, W=Normal(0.05), nonlinearity=GAN.lrelu)))
+        layer = (GAN.weight_norm(ll.NINLayer(layer, num_units=192, W=Normal(0.05), nonlinearity=GAN.lrelu)))
+        layer = (ll.GlobalPoolLayer(layer))
+        layer = (GAN.weight_norm(ll.DenseLayer(layer, num_units=1, W=Normal(0.05), nonlinearity=None), train_g=True, init_stdv=0.1))
         disc_params = ll.get_all_params(layer, trainable=True)
 
         print ("critic output:", layer.output_shape)
-        return layer
+        return layer, layers
     elif architecture == 7:
         try:
             from lasagne.layers import dnn
@@ -624,29 +656,29 @@ def build_critic_architecture(input_var=None, architecture=1):
             raise ImportError("Architecture #6 of LSGAN requires lasagne.layers.dnn (which requires "
                               "a functional cuDNN installation).")
 
-        layer = InputLayer(shape=(None, 3, 64, 64), input_var=input_var)
-        layer = GAN.GaussianNoiseLayer(layer, sigma=0.2)
-        layer = GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 96, (3,3), pad=1, W=Normal(0.05), nonlinearity=GAN.lrelu))
-        layer = GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 96, (3,3), pad=1, W=Normal(0.05), nonlinearity=GAN.lrelu))
-        layer = GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 96, (3,3), pad=1, stride=2, W=Normal(0.05), nonlinearity=GAN.lrelu))
-        layer = ll.DropoutLayer(layer, p=0.5)
-        layer = GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 192, (3,3), pad=1, W=Normal(0.05), nonlinearity=GAN.lrelu))
-        layer = GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 192, (3,3), pad=1, stride=2, W=Normal(0.05), nonlinearity=GAN.lrelu))
-        layer = ll.DropoutLayer(layer, p=0.5)
-        layer = GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 256, (3,3), pad=1, W=Normal(0.05), nonlinearity=GAN.lrelu))
-        layer = GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 256, (3,3), pad=1, stride=2, W=Normal(0.05), nonlinearity=GAN.lrelu))
-        layer = ll.DropoutLayer(layer, p=0.5)
-        layer = GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 256, (3,3), pad=1, W=Normal(0.05), nonlinearity=GAN.lrelu))
-        layer = GAN.weight_norm(ll.NINLayer(layer, num_units=192, W=Normal(0.05), nonlinearity=GAN.lrelu))
-        layer = GAN.weight_norm(ll.NINLayer(layer, num_units=192, W=Normal(0.05), nonlinearity=GAN.lrelu))
-        layer = ll.GlobalPoolLayer(layer)
-        layer = GAN.MinibatchLayer(layer, num_kernels=100)
-        layer = GAN.weight_norm(ll.DenseLayer(layer, num_units=1, W=Normal(0.05), nonlinearity=None), train_g=True, init_stdv=0.1)
+        layer = (InputLayer(shape=(None, 3, 64, 64), input_var=input_var))
+        layer = (GAN.GaussianNoiseLayer(layer, sigma=0.2))
+        layer = (GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 96, (3,3), pad=1, W=Normal(0.05), nonlinearity=GAN.lrelu)))
+        layer = (GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 96, (3,3), pad=1, W=Normal(0.05), nonlinearity=GAN.lrelu)))
+        layer = (GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 96, (3,3), pad=1, stride=2, W=Normal(0.05), nonlinearity=GAN.lrelu)))
+        layer = (ll.DropoutLayer(layer, p=0.5))
+        layer = (GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 192, (3,3), pad=1, W=Normal(0.05), nonlinearity=GAN.lrelu)))
+        layer = (GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 192, (3,3), pad=1, stride=2, W=Normal(0.05), nonlinearity=GAN.lrelu)))
+        layer = (ll.DropoutLayer(layer, p=0.5))
+        layer = (GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 256, (3,3), pad=1, W=Normal(0.05), nonlinearity=GAN.lrelu)))
+        layer = (GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 256, (3,3), pad=1, stride=2, W=Normal(0.05), nonlinearity=GAN.lrelu)))
+        layer = (ll.DropoutLayer(layer, p=0.5))
+        layer = (GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 256, (3,3), pad=1, W=Normal(0.05), nonlinearity=GAN.lrelu)))
+        layer = (GAN.weight_norm(ll.NINLayer(layer, num_units=192, W=Normal(0.05), nonlinearity=GAN.lrelu)))
+        layer = (GAN.weight_norm(ll.NINLayer(layer, num_units=192, W=Normal(0.05), nonlinearity=GAN.lrelu)))
+        layer = (ll.GlobalPoolLayer(layer))
+        layer = (GAN.MinibatchLayer(layer, num_kernels=100))
+        layer = (GAN.weight_norm(ll.DenseLayer(layer, num_units=1, W=Normal(0.05), nonlinearity=None), train_g=True, init_stdv=0.1))
 
         disc_params = ll.get_all_params(layer, trainable=True)
 
         print ("critic output:", layer.output_shape)
-        return layer
+        return layer, layers
     
     raise Exception("Invalid argument to LSGAN's build_critic: architecture = {}".format(architecture))
 

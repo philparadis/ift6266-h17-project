@@ -28,7 +28,7 @@ LOSS_FUNCTION = "mse"
 OPTIMIZER = "adam"
 LSGAN_ARCHITECTURE = 1
 UPDATES_PER_EPOCH = 10
-FEATURE_MATCHING = 0
+FEATURE_MATCHING = 1
 TRAINING_BATCH_SIZE = 0 # Total number of training examples (i.e. size of first dimension of training tensor)
 
 THEANO_CONFIG_FLOATX = 'float32'

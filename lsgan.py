@@ -106,21 +106,30 @@ class LSGAN_Model(GAN_BaseModel):
 
         # Create neural network model
         log("Building model and compiling functions...")
-        generator = self.build_generator(noise_var, architecture = architecture)
-        critic = self.build_critic(input_var, architecture = architecture)
+        generator, gen_layers = self.build_generator(noise_var, architecture = architecture)
+        critic, critic_layers = self.build_critic(input_var, architecture = architecture)
 
-        # Create expression for passing real data through the critic
-        real_out = lasagne.layers.get_output(critic)
-        # Create expression for passing fake data through the critic
-        fake_out = lasagne.layers.get_output(critic,
-                                             lasagne.layers.get_output(generator))
+        if settings.FEATURE_MATCHING > 1:
+            inter_out_crit = lasagner.layers.get_output(critic_layers[-settings.FEATURE_MATCHING],
+                                                        deterministic=False)
+            inter_out_gen = lasagner.layers.get_output(critic_layers[-settings.FEATURE_MATCHING],
+                                                       lasagne.layers.get_output(generator),
+                                                       deterministic=False)
+            m1 = T.mean(inter_out_crit, axis=0)
+            m2 = T.mean(inter_out_gen, axis=0)
+            generator_loss = T.mean(abs(m1-m2)) # Feature Matching loss
+        else:
+            # Create expression for passing real data through the critic
+            real_out = lasagne.layers.get_output(critic)
+            # Create expression for passing fake data through the critic
+            fake_out = lasagne.layers.get_output(critic, lasagne.layers.get_output(generator))
 
-        # Create loss expressions to be minimized
-        # a, b, c = -1, 1, 0  # Equation (8) in the paper
-        a, b, c = 0, 1, 1  # Equation (9) in the paper
-        generator_loss = lasagne.objectives.squared_error(fake_out, c).mean()
-        critic_loss = (lasagne.objectives.squared_error(real_out, b).mean() +
-                       lasagne.objectives.squared_error(fake_out, a).mean())
+            # Create loss expressions to be minimized
+            # a, b, c = -1, 1, 0  # Equation (8) in the paper
+            a, b, c = 0, 1, 1  # Equation (9) in the paper
+            generator_loss = lasagne.objectives.squared_error(fake_out, c).mean()
+            critic_loss = (lasagne.objectives.squared_error(real_out, b).mean() +
+                           lasagne.objectives.squared_error(fake_out, a).mean())
 
         # Create update expressions for training
         from theano import shared
@@ -128,15 +137,11 @@ class LSGAN_Model(GAN_BaseModel):
         critic_params = lasagne.layers.get_all_params(critic, trainable=True)
         eta = shared(lasagne.utils.floatX(initial_eta))
         if self.optimizer == "rmsprop":
-            generator_updates = lasagne.updates.rmsprop(
-                generator_loss, generator_params, learning_rate=eta)
-            critic_updates = lasagne.updates.rmsprop(
-                critic_loss, critic_params, learning_rate=eta)
+            generator_updates = lasagne.updates.rmsprop(generator_loss, generator_params, learning_rate=eta)
+            critic_updates = lasagne.updates.rmsprop(critic_loss, critic_params, learning_rate=eta)
         else: #adam
-            generator_updates = lasagne.updates.adam(
-                generator_loss, generator_params, learning_rate=eta, beta1=0.5)
-            critic_updates = lasagne.updates.adam(
-                critic_loss, critic_params, learning_rate=eta, beta1=0.5)
+            generator_updates = lasagne.updates.adam(generator_loss, generator_params, learning_rate=eta, beta1=0.5)
+            critic_updates = lasagne.updates.adam(critic_loss, critic_params, learning_rate=eta, beta1=0.5)
 
         # Instantiate a symbolic noise generator to use for training
         from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
