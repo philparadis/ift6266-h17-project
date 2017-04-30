@@ -342,7 +342,7 @@ def build_critic_architecture(input_var=None, architecture=1):
         # input: (None, 3, 64, 64)
         layer = app(InputLayer(shape=(None, 3, 64, 64), input_var=input_var))
         # Injecting some noise after input layer
-        layer = app(GAN.GaussianNoiseLayer(layer, sigma=0.2))
+        layer = app(GAN.GaussianNoiseLayer(layer, sigma=0.5))
         # four convolutions
         layer = app(batch_norm(Conv2DLayer(layer, 64, 3, stride=2, pad='same', nonlinearity=a_fn)))
         layer = app(batch_norm(Conv2DLayer(layer, 96, 3, stride=2, pad='same', nonlinearity=a_fn)))
@@ -353,7 +353,6 @@ def build_critic_architecture(input_var=None, architecture=1):
         layer = app(batch_norm(DenseLayer(layer, 196, nonlinearity=a_fn)))
         layer = app(DropoutLayer(layer, p=0.5))
         # Apply Gaussian noise to output
-        layer = app(GAN.GaussianNoiseLayer(layer, sigma=output_sigma))
         # output layer (linear)
         layer = app(DenseLayer(layer, 1, nonlinearity=None))
         print ("critic output:", layer.output_shape)
