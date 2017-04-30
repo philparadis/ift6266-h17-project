@@ -60,28 +60,25 @@ def build_generator_architecture(input_var=None, architecture=1):
         return l
     
     if architecture == 0:
+        W_init = Normal(0.05)
         a_fn = LeakyRectify(0.2)
         # input: 100dim
         layer = app(InputLayer(shape=(None, 100), input_var=input_var))
-        layer = app(GAN.GaussianNoiseLayer(layer, sigma=0.2))
-        layer = app(batch_norm(DenseLayer(layer, 256*4*4)))
-        layer = app(ReshapeLayer(layer, ([0], 256, 4, 4)))
+        layer = app(GAN.GaussianNoiseLayer(layer, sigma=0.5))
+        layer = app(batch_norm(DenseLayer(layer, 1024*4*4)))
+        layer = app(ReshapeLayer(layer, ([0], 1024, 4, 4)))
         ### four fractional-stride convolutions
         # Note: Apply dropouts in G. See tip #17 from "ganhacks"
-        layer = app(batch_norm(Deconv2DLayer(layer, 192, 7, stride=2, crop='same',
-                                         output_size=8, nonlinearity=a_fn)))
+        layer = app(batch_norm(Deconv2DLayer(layer,  (None, 256, 8, 8), (5, 5), W=W_init, nonlinearity=a_fn)))
         layer = app(DropoutLayer(layer, p=0.5))
         layer = app(GAN.GaussianNoiseLayer(layer, sigma=0.2))
-        layer = app(batch_norm(Deconv2DLayer(layer, 128, 7, stride=2, crop='same',
-                                         output_size=16, nonlinearity=a_fn)))
+        layer = app(batch_norm(Deconv2DLayer(layer, (None, 128, 16, 16), (5, 5), W=W_init, nonlinearity=a_fn)))
         layer = app(DropoutLayer(layer, p=0.5))
         layer = GAN.GaussianNoiseLayer(layer, sigma=0.2)
-        layer = app(batch_norm(Deconv2DLayer(layer, 96, 5, stride=2, crop='same',
-                                         output_size=32, nonlinearity=a_fn)))
+        layer = app(batch_norm(Deconv2DLayer(layer, (None, 64, 32, 32), (5, 5), W=W_init, nonlinearity=a_fn)))
         layer = app(DropoutLayer(layer, p=0.5))
-        layer = app(GAN.GaussianNoiseLayer(layer, sigma=0.2))
-        layer = app(Deconv2DLayer(layer, 3, 5, stride=2, crop='same',
-                              output_size=64, nonlinearity=T.tanh))
+        layer = app(GAN.GaussianNoiseLayer(layer, sigma=0.5))
+        layer = app(GAN.weight_norm(Deconv2DLayer(layer, (None, 3, 64, 64), (5, 5), W=W_init, nonlinearity=T.tanh), train_g=True, init_stdv=0.1))
         print ("Generator output:", layer.output_shape)
         return layer, layers
     elif architecture == 1:
@@ -93,17 +90,13 @@ def build_generator_architecture(input_var=None, architecture=1):
         layer = app(ReshapeLayer(layer, ([0], 256, 4, 4)))
         ### four fractional-stride convolutions
         # Note: Apply dropouts in G. See tip #17 from "ganhacks"
-        layer = app(batch_norm(Deconv2DLayer(layer, 192, 7, stride=2, crop='same',
-                                         output_size=8, nonlinearity=a_fn)))
+        layer = app(batch_norm(Deconv2DLayer(layer, 192, 7, stride=2, crop='same', output_size=8, nonlinearity=a_fn)))
         layer = app(DropoutLayer(layer, p=0.5))
-        layer = app(batch_norm(Deconv2DLayer(layer, 128, 7, stride=2, crop='same',
-                                         output_size=16, nonlinearity=a_fn)))
+        layer = app(batch_norm(Deconv2DLayer(layer, 128, 7, stride=2, crop='same', output_size=16, nonlinearity=a_fn)))
         layer = app(DropoutLayer(layer, p=0.5))
-        layer = app(batch_norm(Deconv2DLayer(layer, 96, 5, stride=2, crop='same',
-                                         output_size=32, nonlinearity=a_fn)))
+        layer = app(batch_norm(Deconv2DLayer(layer, 96, 5, stride=2, crop='same', output_size=32, nonlinearity=a_fn)))
         layer = app(DropoutLayer(layer, p=0.5))
-        layer = app(Deconv2DLayer(layer, 3, 5, stride=2, crop='same',
-                              output_size=64, nonlinearity=T.tanh))
+        layer = app(Deconv2DLayer(layer, 3, 5, stride=2, crop='same', output_size=64, nonlinearity=T.tanh))
         print ("Generator output:", layer.output_shape)
         return layer, layers
 
@@ -336,6 +329,12 @@ def build_critic_architecture(input_var=None, architecture=1):
         return l
 
     if architecture == 0:
+        try:
+            from lasagne.layers import dnn
+        except ImportError as e:
+            raise ImportError("Architecture #0 of LSGAN requires lasagne.layers.dnn (which requires "
+                              "a functional cuDNN installation).")
+
         a_fn = LeakyRectify(0.2)
         W_init = Normal(0.05)
 
@@ -344,17 +343,21 @@ def build_critic_architecture(input_var=None, architecture=1):
         # Injecting some noise after input layer
         layer = app(GAN.GaussianNoiseLayer(layer, sigma=0.5))
         # four convolutions
-        layer = app(batch_norm(Conv2DLayer(layer, 64, 3, stride=2, pad='same', nonlinearity=a_fn)))
-        layer = app(batch_norm(Conv2DLayer(layer, 96, 3, stride=2, pad='same', nonlinearity=a_fn)))
-        layer = app(batch_norm(Conv2DLayer(layer, 128, 5, stride=2, pad='same', nonlinearity=a_fn)))
-        layer = app(batch_norm(Conv2DLayer(layer, 128, 5, stride=2, pad='same', nonlinearity=a_fn)))
+        layer = app(GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 64, (3, 3), stride=2, pad='same', W=W_init, nonlinearity=a_fn)))
+        layer = app(GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 96, (3, 3), stride=2, pad='same', W=W_init, nonlinearity=a_fn)))
+        layer = app(GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 96, (3, 3), stride=2, pad='same', W=W_init, nonlinearity=a_fn)))
         layer = app(DropoutLayer(layer, p=0.5))
         # fully-connected layer
-        layer = app(batch_norm(DenseLayer(layer, 196, nonlinearity=a_fn)))
         layer = app(DropoutLayer(layer, p=0.5))
-        # Apply Gaussian noise to output
-        # output layer (linear)
-        layer = app(DenseLayer(layer, 1, nonlinearity=None))
+        layer = app(GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 128, (3, 3), pad=0, W=W_init, nonlinearity=a_fn)))
+        # 2x NiN layers
+        layer = app(GAN.weight_norm(ll.NINLayer(layer, num_units=128, W=W_init, nonlinearity=a_fn)))
+        layer = app(GAN.weight_norm(ll.NINLayer(layer, num_units=128, W=W_init, nonlinearity=a_fn)))
+        # 1x Minibatch Discrimination Layer, with 100 kernels
+        #layer = app(GAN.MinibatchLayer(layer, num_kernels = 100, dim_per_kernel=5, theta=W_init))
+        # 1x Global Pooling Layer
+        layer = app(ll.GlobalPoolLayer(layer))
+        layer = app(GAN.weight_norm(DenseLayer(layer, 1, W=W_init, nonlinearity=sigmoid)))
         print ("critic output:", layer.output_shape)
         return layer, layers
     elif architecture == 1:
