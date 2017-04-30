@@ -357,7 +357,7 @@ def build_critic_architecture(input_var=None, architecture=1):
         #layer = app(GAN.MinibatchLayer(layer, num_kernels = 100, dim_per_kernel=5, theta=W_init))
         # 1x Global Pooling Layer
         layer = app(ll.GlobalPoolLayer(layer))
-        layer = app(GAN.weight_norm(DenseLayer(layer, 1, nonlinearity=sigmoid)))
+        layer = app(GAN.weight_norm(DenseLayer(layer, 1, nonlinearity=None)))
         print ("critic output:", layer.output_shape)
         return layer, layers
     elif architecture == 1:
@@ -398,6 +398,7 @@ def build_critic_architecture(input_var=None, architecture=1):
             layer = app(GAN.GaussianNoiseLayer(layer, sigma=output_sigma))
 
         # output layer (linear)
+        layer = app(ll.GlobalPoolLayer(layer))
         layer = app(DenseLayer(layer, 1, nonlinearity=None))
         print ("critic output:", layer.output_shape)
         return layer, layers
