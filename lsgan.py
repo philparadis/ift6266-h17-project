@@ -223,7 +223,7 @@ class LSGAN_Model(GAN_BaseModel):
             mean_generator_loss = np.mean(generator_losses)
             mean_critic_loss = np.mean(critic_losses)
             log("   Epoch {0} out of {1} took {2:.3f} seconds".format(epoch + 1, num_epochs, time_delta))
-            log("     - total time     = {.3f} seconds".format(self.wall_time))
+            log("     - total time     = {:.1f} seconds".format(self.wall_time))
             log("     - generator loss = {}".format(mean_generator_loss))
             log("     - critic loss    = {}".format(mean_critic_loss))
 
