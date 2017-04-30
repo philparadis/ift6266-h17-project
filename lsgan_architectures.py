@@ -82,31 +82,10 @@ def build_generator_architecture(input_var=None, architecture=1):
         print ("Generator output:", layer.output_shape)
         return layer, layers
     elif architecture == 1:
-        W_init = Normal(0.05)
         a_fn = LeakyRectify(0.2)
         # input: 100dim
         layer = app(InputLayer(shape=(None, 100), input_var=input_var))
-        layer = app(GAN.GaussianNoiseLayer(layer, sigma=0.5))
-        layer = app(GAN.batch_norm(DenseLayer(layer, 512*4*4, nonlinearity=a_fn), g=True))
-        layer = app(ReshapeLayer(layer, ([0], 512, 4, 4)))
-        ### four fractional-stride convolutions
-        # Note: Apply dropouts in G. See tip #17 from "ganhacks"
-        layer = app(GAN.batch_norm(GAN.Deconv2DLayer(layer, 256, (5, 5), stride=(2, 2), output_size=8, nonlinearity=a_fn), g=None))
-        layer = app(DropoutLayer(layer, p=0.5))
-        layer = app(GAN.GaussianNoiseLayer(layer, sigma=0.2))
-        layer = app(GAN.batch_norm(GAN.Deconv2DLayer(layer, 128, (5, 5), stride=(2, 2), output_size=16, nonlinearity=a_fn), g=None))
-        layer = app(DropoutLayer(layer, p=0.5))
-        layer = GAN.GaussianNoiseLayer(layer, sigma=0.2)
-        layer = app(GAN.batch_norm(GAN.Deconv2DLayer(layer, 64, (5, 5), stride=(2, 2), output_size=32, nonlinearity=a_fn), g=None))
-        layer = app(DropoutLayer(layer, p=0.5))
-        layer = app(GAN.GaussianNoiseLayer(layer, sigma=0.5))
-        layer = app(GAN.weight_norm(GAN.Deconv2DLayer(layer, 3, (5, 5), stride=(2, 2), output_size=64, nonlinearity=T.tanh), train_g=True, init_stdv=0.1))
-        print ("Generator output:", layer.output_shape)
-        return layer, layers
-    elif architecture == 111:
-        a_fn = LeakyRectify(0.2)
-        # input: 100dim
-        layer = app(InputLayer(shape=(None, 100), input_var=input_var))
+        layer = app(ll.GaussianNoiseLayer(layer, sigma=0.5))
         # project and reshape
         layer = app(batch_norm(DenseLayer(layer, 512*4*4)))
         layer = app(ReshapeLayer(layer, ([0], 512, 4, 4)))
@@ -114,12 +93,22 @@ def build_generator_architecture(input_var=None, architecture=1):
         # Note: Apply dropouts in G. See tip #17 from "ganhacks"
         layer = app(batch_norm(Deconv2DLayer(layer, 256, 5, stride=2, crop='same', output_size=8, nonlinearity=a_fn)))
         layer = app(DropoutLayer(layer, p=0.5))
+        layer = app(batch_norm(Deconv2DLayer(layer, 256, 5, stride=1, crop='same', output_size=8, nonlinearity=a_fn)))
+        layer = app(DropoutLayer(layer, p=0.5))
+        layer = app(batch_norm(Deconv2DLayer(layer, 128, 5, stride=1, crop='same', output_size=8, nonlinearity=a_fn)))
+        layer = app(DropoutLayer(layer, p=0.5))
         layer = app(batch_norm(Deconv2DLayer(layer, 128, 5, stride=2, crop='same', output_size=16, nonlinearity=a_fn)))
         layer = app(DropoutLayer(layer, p=0.5))
-        layer = app(batch_norm(Deconv2DLayer(layer, 64, 5, stride=2, crop='same', output_size=32, nonlinearity=a_fn)))
+        layer = app(batch_norm(Deconv2DLayer(layer, 64, 5, stride=1, crop='same', output_size=16, nonlinearity=a_fn)))
+        layer = app(DropoutLayer(layer, p=0.5))
+        layer = app(batch_norm(Deconv2DLayer(layer, 64, 3, stride=2, crop='same', output_size=32, nonlinearity=a_fn)))
+        layer = app(DropoutLayer(layer, p=0.5))
+        layer = app(batch_norm(Deconv2DLayer(layer, 64, 3, stride=1, crop='same', output_size=32, nonlinearity=a_fn)))
+        layer = app(DropoutLayer(layer, p=0.5))
+        layer = app(batch_norm(Deconv2DLayer(layer, 64, 3, stride=1, crop='same', output_size=32, nonlinearity=a_fn)))
         layer = app(DropoutLayer(layer, p=0.5))
 #        layer = app(GAN.weight_norm(Deconv2DLayer(layer, 3, 5, stride=2, crop='same', output_size=64, nonlinearity=T.tanh), train_g=True, init_stdv=0.1))
-        layer = app(Deconv2DLayer(layer, 3, 5, stride=2, crop='same', output_size=64, nonlinearity=T.tanh))
+        layer = app(Deconv2DLayer(layer, 3, 3, stride=2, crop='same', output_size=64, nonlinearity=T.tanh))
         print ("Generator output:", layer.output_shape)
         return layer, layers
 
