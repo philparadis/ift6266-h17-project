@@ -110,9 +110,9 @@ class LSGAN_Model(GAN_BaseModel):
         critic, critic_layers = self.build_critic(input_var, architecture = architecture)
 
         if settings.FEATURE_MATCHING > 1:
-            inter_out_crit = lasagner.layers.get_output(critic_layers[-settings.FEATURE_MATCHING],
+            inter_out_crit = lasagne.layers.get_output(critic_layers[-settings.FEATURE_MATCHING],
                                                         deterministic=False)
-            inter_out_gen = lasagner.layers.get_output(critic_layers[-settings.FEATURE_MATCHING],
+            inter_out_gen = lasagne.layers.get_output(critic_layers[-settings.FEATURE_MATCHING],
                                                        lasagne.layers.get_output(generator),
                                                        deterministic=False)
             m1 = T.mean(inter_out_crit, axis=0)
