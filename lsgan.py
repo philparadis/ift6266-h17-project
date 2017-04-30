@@ -182,28 +182,33 @@ class LSGAN_Model(GAN_BaseModel):
             start_time = time.time()
 
             # In each epoch, we do `epochsize` generator and critic updates.
+            num_critics_update = min(int(float(num_extremely_low_critic_loss) / 10),
+                                     int(float(num_low_critic_loss) / 30.0),
+                                     epochsize)
             critic_losses = []
             generator_losses = []
             for _ in range(epochsize):
                 inputs, targets = next(batches)
-                num_critics_update = min(num_extremely_low_critic_loss / 10, num_low_critic_loss / 30, epochsize):
                 echo "Performing {} critics updates and {} generator updates.".format(num_critics_update, epochsize)
                 if _ < num_critics_update:
                     critic_losses.append(critic_train_fn(inputs))
                 generator_losses.append(generator_train_fn())
-                if ratio_gen_critic > 2:
-                    extra = int(math.ceil(ratio_gen_critic
-                                          * (2*num_extremely_low_critic_loss+1)
-                                          * (num_low_critic_loss+1)))
-                    print_info("Perfoming {} extra rounds of generator training to rebalance the losses.".format(extra))
-                    for _i in range(extra):
-                        generator_losses.append(generator_train_fn())
-                elif ratio_gen_critic < 0.5:
-                    extra = int(math.ceil(1/ratio_gen_critic))
-                    print_info("Perfoming {} extra rounds of critic training to rebalance the losses.".format(extra))
-                    for _i in range(extra):
-                        critic_losses.append(critic_train_fn(inputs))
-                        
+
+            ### Balance out gen and critic losses if necessary
+            if ratio_gen_critic > 4:
+                extra = int(math.ceil(ratio_gen_critic
+                                      * (2*num_extremely_low_critic_loss+1)
+                                      * (num_low_critic_loss+1)))
+                print_info("Perfoming {} extra rounds of generator training to rebalance the losses.".format(extra))
+                for _i in range(extra):
+                    generator_losses.append(generator_train_fn())
+            elif ratio_gen_critic < 0.25:
+                extra = int(math.ceil(1/ratio_gen_critic))
+                print_info("Perfoming {} extra rounds of critic training to rebalance the losses.".format(extra))
+                for _i in range(extra):
+                    inputs, targets = next(batches)
+                    critic_losses.append(critic_train_fn(inputs))
+
 
             # Then we print the results for this epoch:
             time_delta = time.time() - start_time
