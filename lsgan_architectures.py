@@ -96,7 +96,7 @@ def build_generator_architecture(input_var=None, architecture=1):
         layer = app(DropoutLayer(layer, p=0.5))
         layer = app(batch_norm(Deconv2DLayer(layer, 96, 5, stride=2, crop='same', output_size=32, nonlinearity=a_fn)))
         layer = app(DropoutLayer(layer, p=0.5))
-        layer = app(Deconv2DLayer(layer, 3, 5, stride=2, crop='same',, output_size=64, nonlinearity=T.tanh))
+        layer = app(Deconv2DLayer(layer, 3, 5, stride=2, crop='same', output_size=64, nonlinearity=T.tanh))
         print ("Generator output:", layer.output_shape)
         return layer, layers
     elif architecture == 2:
