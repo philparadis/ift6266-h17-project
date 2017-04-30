@@ -87,7 +87,7 @@ def build_generator_architecture(input_var=None, architecture=1):
         # input: 100dim
         layer = app(InputLayer(shape=(None, 100), input_var=input_var))
         layer = app(GAN.GaussianNoiseLayer(layer, sigma=0.5))
-        layer = app(GAN.batch_norm(DenseLayer(layer, 512*4*4, linearity=a_fn), g=True))
+        layer = app(GAN.batch_norm(DenseLayer(layer, 512*4*4, nonlinearity=a_fn), g=True))
         layer = app(ReshapeLayer(layer, ([0], 512, 4, 4)))
         ### four fractional-stride convolutions
         # Note: Apply dropouts in G. See tip #17 from "ganhacks"
