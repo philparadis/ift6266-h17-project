@@ -291,18 +291,7 @@ class KerasModel(BaseModel):
                            "(i.e. training an extra {0} epochs)".format(settings.NUM_EPOCHS) if self.epochs_completed == 0 else "",
                            settings.EPOCHS_PER_CHECKPOINT))
 
-        print_info("Ready to start training! For convenience, here are the most important parameters we shall be using again.")
-        print_positive("TRAINING PARAMETERS:")
-        log(" * num_epochs            = {}".format(settings.NUM_EPOCHS))
-        log(" * initial_epoch         = {}".format(self.epochs_completed + 1))
-        log(" * final_epoch           = {}".format(self.epochs_completed + settings.NUM_EPOCHS))
-        log(" * epochs_per_checkpoint = {}".format(settings.EPOCHS_PER_CHECKPOINT))
-        log(" * batch_size            = {}".format(self.hyper['batch_size']))
-        log(" * optimizer             = {}".format(self.hyper['optimizer']))
-        log(" * loss_function         = {}".format(self.hyper['loss_function']))
-        log(" * learning_rate         = {}".format(self.hyper['learning_rate']))
-
-        print_positive("Starting to train model...")
+        print_positive("Starting to train model!...")
         epoch = 0
         next_epoch_checkpoint = settings.EPOCHS_PER_CHECKPOINT
         while epoch < settings.NUM_EPOCHS:

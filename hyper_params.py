@@ -36,7 +36,7 @@ default_gan_basemodel_hyper_params  = {
     "output_dim" : (None, 3, 64, 64),
     "loss_function" : "non_saturating_heuristic",
     "optimizer" : "adam",
-    "learning_rate" : 1e-4,
+    "gan_learning_rate" : 1e-4,
     "batch_size" : 64
     }
 
@@ -55,7 +55,7 @@ default_wgan_hyper_params = {
     "output_dim" : (None, 3, 64, 64),
     "loss_function" : "non_saturating_heuristic",
     "optimizer" : "adam",
-    "learning_rate" : 5e-5,
+    "gan_learning_rate" : 5e-5,
     "batch_size" : 64
     }
 
@@ -64,7 +64,7 @@ default_lsgan_hyper_params = {
     "output_dim" : (None, 3, 64, 64),
     "loss_function" : "non_saturating_heuristic",
     "optimizer" : "adam",
-    "learning_rate" : 0.0008,
+    "gan_learning_rate" : 0.0004,
     "beta_1" : 0.5,
     "batch_size" : 64
     }
