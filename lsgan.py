@@ -181,20 +181,22 @@ class LSGAN_Model(GAN_BaseModel):
         for epoch in range(num_epochs):
             start_time = time.time()
 
-            print_info("Epoch {}:".format(epoch))
+            print_info("Epoch {} out of {}:".format(epoch, num_epochs))
             
             # In each epoch, we do `epochsize` generator and critic updates.
-            num_critics_update = int(min(float(max_successive_extremely_low_critic_loss - num_extremely_low_critic_loss)
-                                         / float(max_successive_extremely_low_critic_loss),
-                                         epochsize * (1-float(min(num_low_critic_loss*2,50))/50.0),
-                                         epochsize))
+            if num_extremely_low_critic_loss > 0 or num_low_critic_loss > 0:
+                rebalance_ratio = min(float(max_successive_extremely_low_critic_loss - num_extremely_low_critic_loss)
+                                      / float(max_successive_extremely_low_critic_loss),
+                                      min(1.0-float(num_low_critic_loss)/25.0, 0))
+                num_critics_update = int(max(float(epochsize)*rebalance_ratio, 2))
+
             critic_losses = []
             generator_losses = []
-            for _ in range(epochsize):
+            for u in range(epochsize):
                 inputs, targets = next(batches)
                 if num_critics_update != epochsize:
                     print_warning("   Rebalancing losses: {} critics updates VS {} generator updates.".format(num_critics_update, epochsize))
-                if _ < num_critics_update:
+                if u < num_critics_update:
                     critic_losses.append(critic_train_fn(inputs))
                 generator_losses.append(generator_train_fn())
 
@@ -245,7 +247,6 @@ class LSGAN_Model(GAN_BaseModel):
             # And finally, we plot some generated data, depending on the settings
             if epoch % settings.EPOCHS_PER_SAMPLES == 0:
                 from utils import normalize_data, denormalize_data
-                from utils import print_warning
                 # And finally, we plot some generated data
                 # Generate 100 images, which we will output in a 10x10 grid
                 samples = np.array(gen_fn(lasagne.utils.floatX(np.random.rand(10*10, 100))))
