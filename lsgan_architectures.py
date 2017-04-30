@@ -444,17 +444,17 @@ def build_critic_architecture(input_var=None, architecture=1):
         layer = app(GAN.weight_norm(Conv2DLayer(layer, 192, (3, 3), pad=1, W=W_init, nonlinearity=a_fn)))
         layer = app(DropoutLayer(layer, p=0.5)) if dropout else layer
         layer = app(GAN.weight_norm(Conv2DLayer(layer, 192, (3, 3), pad=1, W=W_init, nonlinearity=a_fn)))
-        layer = app(DropoutLayer(layer, p=0.5) if dropout else layer
+        layer = app(DropoutLayer(layer, p=0.5)) if dropout else layer
         # This layer turns the feature maps into tensors: (None, 192, 16, 16)
         layer = app(GAN.weight_norm(Conv2DLayer(layer, 192, (3, 3), pad=1, stride=2, W=W_init, nonlinearity=a_fn)))
 
         layer = app(GAN.weight_norm(Conv2DLayer(layer, 256, (3, 3), pad=1, W=W_init, nonlinearity=a_fn)))
-        layer = app(DropoutLayer(layer, p=0.5) if dropout else layer
+        layer = app(DropoutLayer(layer, p=0.5)) if dropout else layer
         layer = app(GAN.weight_norm(Conv2DLayer(layer, 256, (3, 3), pad=1, W=W_init, nonlinearity=a_fn)))
-        layer = app(DropoutLayer(layer, p=0.5) if dropout else layer
+        layer = app(DropoutLayer(layer, p=0.5)) if dropout else layer
         # This layer turns the feature maps into tensors: (None, 256, 8, 8)
         layer = app(GAN.weight_norm(Conv2DLayer(layer, 256, (3, 3), pad=1, stride=2, W=W_init, nonlinearity=a_fn)))
-        layer = app(DropoutLayer(layer, p=0.5) if dropout else layer
+        layer = app(DropoutLayer(layer, p=0.5)) if dropout else layer
         
         layer = app(GAN.weight_norm(Conv2DLayer(layer, 256, (3, 3), pad=0, W=W_init, nonlinearity=a_fn)))
         # 2x Networks-in-Networks layers with 192 units and lrelu a_fns
