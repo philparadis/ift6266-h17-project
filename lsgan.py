@@ -170,7 +170,7 @@ class LSGAN_Model(GAN_BaseModel):
         ratio_gen_critic = 1
 
         # Finally, launch the training loop.
-        log_positive("Starting training of LSGAN model!")
+        print_positive("Starting training of LSGAN model!")
         # We create an infinite supply of batches (as an iterable generator):
         batches = self.iterate_minibatches(X_train, y_train, batchsize, shuffle=True,
                                       forever=True)
