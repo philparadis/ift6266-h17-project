@@ -196,9 +196,9 @@ class LSGAN_Model(GAN_BaseModel):
                 num_critics_update = int(max(float(epochsize)*rebalance_ratio, 5))
 
             if num_low_loss > 0:
-                print_warning("Nmber of successive low critics loss = {0}".format(num_low_loss))
+                print_warning("Nmber of successive low critics loss is now: {0}".format(num_low_loss))
             if num_very_low_loss > 0:
-                print_critical("Number of successive *extremely low* critics loss = {0}".format(num_very_low_loss))
+                print_critical("Number of successive *extremely low* critics loss is now: {0}.".format(num_very_low_loss))
             if num_critics_update != epochsize:
                 print_warning("Rebalancing losses: {} critics updates VS {} generator updates.".format(num_critics_update, epochsize))
                                                        
@@ -215,11 +215,13 @@ class LSGAN_Model(GAN_BaseModel):
                 extra = int(math.ceil(ratio_gen_critic
                                       * (2*num_very_low_loss + 1)
                                       * (num_low_loss + 1)))
+                extra = min(extra, epochsize)
                 log("   Perfoming {} extra rounds of generator training to rebalance the losses.".format(extra))
                 for _i in range(extra):
                     generator_losses.append(generator_train_fn())
             elif ratio_gen_critic < 0.25:
                 extra = int(math.ceil(1/ratio_gen_critic))
+                extra = min(extra, epochsize)
                 log("   Perfoming {} extra rounds of critic training to rebalance the losses.".format(extra))
                 for _i in range(extra):
                     inputs, targets = next(batches)
@@ -244,7 +246,7 @@ class LSGAN_Model(GAN_BaseModel):
                 print_info("Attempting to balance out generator and critic...")
                 ratio_gen_critic = mean_generator_loss / mean_critic_loss
                 num_very_low_loss += 1
-            elif mean_critic_loss < 0.08:
+            elif mean_critic_loss < 0.07:
                 print_warning("Critic loss is getting dangerously low!")
                 print_info("Attempting to balance out generator and critic...")
                 ratio_gen_critic = mean_generator_loss / mean_critic_loss
