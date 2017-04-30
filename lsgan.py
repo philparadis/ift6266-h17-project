@@ -180,7 +180,7 @@ class LSGAN_Model(GAN_BaseModel):
         found_stop_file = False
         generator_updates = 0
         next_epoch_checkpoint = settings.EPOCHS_PER_CHECKPOINT
-        num_repeat_gen_train = 3
+        num_repeat_gen_train = 2
         
         for epoch in range(num_epochs):
             start_time = time.time()
