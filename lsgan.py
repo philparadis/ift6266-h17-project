@@ -255,7 +255,6 @@ class LSGAN_Model(GAN_BaseModel):
             if epoch >= num_epochs // 2:
                 progress = float(epoch) / float(num_epochs)
                 eta.set_value(lasagne.utils.floatX(initial_eta*2*(1 - progress)))
-                lr = np.cast[th.config.floatX](args.learning_rate * np.minimum(3. - epoch/400., 1.))
 
 
         ### We are done training here!
