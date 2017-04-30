@@ -103,7 +103,7 @@ def build_generator_architecture(input_var=None, architecture=1):
         layer = app(GAN.weight_norm(GAN.Deconv2DLayer(layer, 3, (5, 5), stride=(2, 2), output_size=64, nonlinearity=T.tanh), train_g=True, init_stdv=0.1))
         print ("Generator output:", layer.output_shape)
         return layer, layers
-    elif architecture = 111:
+    elif architecture == 111:
         a_fn = LeakyRectify(0.2)
         # input: 100dim
         layer = app(InputLayer(shape=(None, 100), input_var=input_var))
