@@ -190,31 +190,32 @@ class LSGAN_Model(GAN_BaseModel):
             log("  critic loss:    {}".format(np.mean(critic_losses)))
             self.wall_time += time_delta
 
-            # And finally, we plot some generated data
-            from utils import normalize_data, denormalize_data
-            from utils import print_warning
-            # And finally, we plot some generated data
-            # Generate 100 images, which we will output in a 10x10 grid
-            samples = np.array(gen_fn(lasagne.utils.floatX(np.random.rand(10*10, 100))))
-            samples = denormalize_data(samples)
-            samples_path = os.path.join(settings.EPOCHS_DIR, 'samples_epoch_{0:0>5}.png'.format(epoch + 1))
-            try:
-                import PIL.Image as Image
-            except ImportError as e:
-                print_warning("Cannot import module 'PIL.Image', which is necessary for the LSGAN to output its sample images. You should really install it!")
-            else:
-                Image.fromarray(samples.reshape(10, 10, 3, 64, 64)
-                                .transpose(0, 3, 1, 4, 2)
-                                .reshape(10*64, 10*64, 3)).save(samples_path)
-                # for ind in range(10):
-                #     # Generate a single image
-                #     sample = np.array(gen_fn(lasagne.utils.floatX(np.random.rand(1, 100))))
-                #     sample = denormalize_data(sample)
-                #     sample_path = os.path.join(settings.EPOCHS_DIR,
-                #                                'one_sample_epoch_{0:0>5}_num{1}.png'.format(epoch + 1, ind))
-                #     Image.fromarray(sample.reshape(3, 64, 64)
-                #                     .transpose(1, 2, 0)
-                #                     .reshape(64, 64, 3)).save(sample_path)
+            # And finally, we plot some generated data, depending on the settings
+            if epoch % settings.EPOCHS_PER_SAMPLES == 0:
+                from utils import normalize_data, denormalize_data
+                from utils import print_warning
+                # And finally, we plot some generated data
+                # Generate 100 images, which we will output in a 10x10 grid
+                samples = np.array(gen_fn(lasagne.utils.floatX(np.random.rand(10*10, 100))))
+                samples = denormalize_data(samples)
+                samples_path = os.path.join(settings.EPOCHS_DIR, 'samples_epoch_{0:0>5}.png'.format(epoch + 1))
+                try:
+                    import PIL.Image as Image
+                except ImportError as e:
+                    print_warning("Cannot import module 'PIL.Image', which is necessary for the LSGAN to output its sample images. You should really install it!")
+                else:
+                    Image.fromarray(samples.reshape(10, 10, 3, 64, 64)
+                                    .transpose(0, 3, 1, 4, 2)
+                                    .reshape(10*64, 10*64, 3)).save(samples_path)
+                    # for ind in range(10):
+                    #     # Generate a single image
+                    #     sample = np.array(gen_fn(lasagne.utils.floatX(np.random.rand(1, 100))))
+                    #     sample = denormalize_data(sample)
+                    #     sample_path = os.path.join(settings.EPOCHS_DIR,
+                    #                                'one_sample_epoch_{0:0>5}_num{1}.png'.format(epoch + 1, ind))
+                    #     Image.fromarray(sample.reshape(3, 64, 64)
+                    #                     .transpose(1, 2, 0)
+                    #                     .reshape(64, 64, 3)).save(sample_path)
 
 
             # Check for STOP file

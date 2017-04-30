@@ -163,6 +163,7 @@ def run_experiment():
     log(" * Batch size            = " + str(settings.BATCH_SIZE))
     log(" * Learning rate         = " + str(settings.LEARNING_RATE))
     log(" * Epochs per checkpoint = " + str(settings.EPOCHS_PER_CHECKPOINT))
+    log(" * Epochs per samples    = " + str(settings.EPOCHS_PER_SAMPLES))
     log(" * Feature Matching Loss = " + str(settings.FEATURE_MATCHING))
     log(" * Keep model's data for every checkpoint  = " + str(settings.KEEP_ALL_CHECKPOINTS))
     log(" * Verbosity             = " + str(settings.VERBOSE) + " ({})".format(verbosity_level))

@@ -64,6 +64,8 @@ if __name__ == "__main__":
 #                        default=settings.OPTIMIZER, help="Optimizer (available: adam, sgd, rmsprop, adamax, nadam)")
     parser.add_argument("-c", "--epochs_per_checkpoint", type=int, default=settings.EPOCHS_PER_CHECKPOINT,
                         help="Amount of epochs to perform during training between every checkpoint.")
+    parser.add_argument("-s", "--epochs_per_samples", type=int, default=settings.EPOCHS_PER_SAMPLES,
+                        help="Amount of epochs to perform during training between every generation of image samples (typically 100 images in a 10x10 grid). If your epochs are rather short, you might want to increase this value, as generating images and saving them to disk can be relatively costly.")
     parser.add_argument("-k", "--keep_all_checkpoints", action="store_true", default=settings.KEEP_ALL_CHECKPOINTS, help="By default, only the model saved during the last checkpoint is saved. Pass this flag if you want to keep a models on disk with its associated epoch in the filename at every checkpoint.")
     parser.add_argument("-a", "--architecture", type=int, default=settings.LSGAN_ARCHITECTURE,
                         help="Architecture type, only applies to the LSGAN model (values: 1, 2, 3 or 4).")
@@ -85,6 +87,7 @@ if __name__ == "__main__":
     settings.GAN_LEARNING_RATE = args.gan_learning_rate
     settings.FORCE_RUN = args.force
     settings.EPOCHS_PER_CHECKPOINT = args.epochs_per_checkpoint
+    settings.EPOCHS_PER_SAMPLES = args.epochs_per_samples
     settings.KEEP_ALL_CHECKPOINTS = args.keep_all_checkpoints
     settings.LSGAN_ARCHITECTURE = args.architecture
     settings.UPDATES_PER_EPOCH = args.updates_per_epoch
