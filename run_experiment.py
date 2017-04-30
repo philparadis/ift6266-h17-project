@@ -320,13 +320,11 @@ def run_experiment():
         Dataset.normalize()
         Dataset.preload()
         
-        generator, critic,\
-        generator_train_fn,\
-        critic_train_fn, gen_fn = model.train(Dataset, num_epochs = settings.NUM_EPOCHS,
-                                              epochsize = settings.UPDATES_PER_EPOCH,
-                                              batchsize = settings.BATCH_SIZE,
-                                              architecture = settings.LSGAN_ARCHITECTURE,
-                                              initial_eta = settings.GAN_LEARNING_RATE)
+        generator, critic, train_fn, gen_fn = model.train(Dataset, num_epochs = settings.NUM_EPOCHS,
+                                                          epochsize = settings.UPDATES_PER_EPOCH,
+                                                          batchsize = settings.BATCH_SIZE,
+                                                          architecture = settings.LSGAN_ARCHITECTURE,
+                                                          initial_eta = settings.GAN_LEARNING_RATE)
 
         Dataset.denormalize()
         
