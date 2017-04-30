@@ -343,21 +343,21 @@ def build_critic_architecture(input_var=None, architecture=1):
         # Injecting some noise after input layer
         layer = app(GAN.GaussianNoiseLayer(layer, sigma=0.5))
         # four convolutions
-        layer = app(GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 64, (3, 3), stride=2, pad='same', W=W_init, nonlinearity=a_fn)))
-        layer = app(GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 96, (3, 3), stride=2, pad='same', W=W_init, nonlinearity=a_fn)))
-        layer = app(GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 96, (3, 3), stride=2, pad='same', W=W_init, nonlinearity=a_fn)))
+        layer = app(GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 64, (3, 3), stride=2, pad='same', nonlinearity=a_fn)))
+        layer = app(GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 96, (3, 3), stride=2, pad='same', nonlinearity=a_fn)))
+        layer = app(GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 96, (3, 3), stride=2, pad='same', nonlinearity=a_fn)))
         layer = app(DropoutLayer(layer, p=0.5))
         # fully-connected layer
         layer = app(DropoutLayer(layer, p=0.5))
-        layer = app(GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 128, (3, 3), pad=0, W=W_init, nonlinearity=a_fn)))
+        layer = app(GAN.weight_norm(dnn.Conv2DDNNLayer(layer, 128, (3, 3), pad=0, nonlinearity=a_fn)))
         # 2x NiN layers
-        layer = app(GAN.weight_norm(ll.NINLayer(layer, num_units=128, W=W_init, nonlinearity=a_fn)))
-        layer = app(GAN.weight_norm(ll.NINLayer(layer, num_units=128, W=W_init, nonlinearity=a_fn)))
+        layer = app(GAN.weight_norm(ll.NINLayer(layer, num_units=128, nonlinearity=a_fn)))
+        layer = app(GAN.weight_norm(ll.NINLayer(layer, num_units=128, nonlinearity=a_fn)))
         # 1x Minibatch Discrimination Layer, with 100 kernels
         #layer = app(GAN.MinibatchLayer(layer, num_kernels = 100, dim_per_kernel=5, theta=W_init))
         # 1x Global Pooling Layer
         layer = app(ll.GlobalPoolLayer(layer))
-        layer = app(GAN.weight_norm(DenseLayer(layer, 1, W=W_init, nonlinearity=sigmoid)))
+        layer = app(GAN.weight_norm(DenseLayer(layer, 1, nonlinearity=sigmoid)))
         print ("critic output:", layer.output_shape)
         return layer, layers
     elif architecture == 1:
