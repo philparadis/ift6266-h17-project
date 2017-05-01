@@ -416,9 +416,9 @@ class Conv_MLP(KerasModel):
     
         self.keras_model.add(Dense(units=model_params.output_dim))
         
-class ConvDeconv(KerasModel):
+class Conv_Deconv(KerasModel):
     def __init__(self, model_name, hyperparams = hyper_params.default_convdeconv_hyper_params):
-        super(ConvDeconv, self).__init__(model_name = model_name, hyperparams = hyperparams)
+        super(Conv_Deconv, self).__init__(model_name = model_name, hyperparams = hyperparams)
 
     def build(self):
 

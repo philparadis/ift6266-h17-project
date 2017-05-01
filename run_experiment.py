@@ -73,6 +73,10 @@ def run_experiment():
         model = models.Test_Model(settings.MODEL)
     elif settings.MODEL == "mlp":
         model = models.MLP_Model(settings.MODEL)
+    elif settings.MODEL == "conv_mlp":
+        model = models.Conv_MLP(settings.MODEL)
+    elif settings.MODEL == "conv_deconv":
+        model = models.Conv_Deconv(settings.MODEL)
     elif settings.MODEL == "dcgan":
         model = models.DCGAN_Model(settings.MODEL)
     elif settings.MODEL == "wgan":
