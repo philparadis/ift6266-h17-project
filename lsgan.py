@@ -206,7 +206,7 @@ class LSGAN_Model(GAN_BaseModel):
             critic_losses = []
             generator_losses = []
             for _ in range(epochsize+train_critic_extra):
-                 inputs, targets = next(batches)
+                inputs, targets = next(batches)
                 critic_losses.append(critic_train_fn(inputs))
             for _ in range(int(num_repeat_gen_train*float(epochsize)+float(train_gen_extra))):
                 generator_losses.append(generator_train_fn())
