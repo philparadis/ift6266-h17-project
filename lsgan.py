@@ -197,18 +197,18 @@ class LSGAN_Model(GAN_BaseModel):
             train_critic_extra = 0
             train_gen_extra = 0
             if epoch >= 49: # Do not balance out the losses for the first 50 epochs
-                if mean_critic_loss < 0.25:
-                    train_critic_extra = -int(random.uniform(0, (0.25 - mean_critic_loss)/0.5)*epochsize)
+                if mean_critic_loss < 0.3:
+                    train_critic_extra = int(random.uniform(-0.25, (0.3 - max(0, mean_critic_loss))/0.2)*epochsize)
                 if  mean_generator_loss > 0.7:
-                    train_gen_extra = int(random.uniform(0, (min(1.0, mean_generator_loss) - 0.7)/0.3)*epochsize)
+                    train_gen_extra = int(random.uniform(-0.25, (min(1.0, mean_generator_loss) - 0.7)/0.2)*epochsize)
 
             ## Actual training
             critic_losses = []
             generator_losses = []
             for _ in range(epochsize+train_critic_extra):
-                inputs, targets = next(batches)
+                 inputs, targets = next(batches)
                 critic_losses.append(critic_train_fn(inputs))
-            for _ in range(int(num_repeat_gen_train*epochsize+train_gen_extra)):
+            for _ in range(int(num_repeat_gen_train*float(epochsize)+float(train_gen_extra))):
                 generator_losses.append(generator_train_fn())
 
             ## Compute mean losses
@@ -217,7 +217,7 @@ class LSGAN_Model(GAN_BaseModel):
 
             print_info("Critic updates = {} | Generator updates = {}"
                        .format(epochsize + train_critic_extra,
-                               int(epochsize * num_repeat_gen_train + train_gen_extra)))
+                               int(num_repeat_gen_train*float(epochsize)+float(train_gen_extra))))
 
             # Then we print the results for this epoch:
             time_delta = time.time() - start_time
