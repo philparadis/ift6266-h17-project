@@ -110,11 +110,16 @@ class LSGAN_Model(GAN_BaseModel):
         critic, critic_layers = self.build_critic(input_var, architecture = architecture)
 
         if settings.FEATURE_MATCHING > 1:
+            print_info("Feature matching enabled, with M = -{}".format(settings.FEATURE_MATCHING)))
+            print_info("List of critic layers:")
+            c_layers = lasagne.layers.get_all_layers(critic)
+            print_info(str(c_layers))
+            c_feature = c_layers[-settings.FEATURE_MATCHING]
+            print_info("Matching features of this critic layer: {}".format(str(c_feature)))
             # Create expression for passing real data through the critic
-            real_out = lasagne.layers.get_output(critic_layers[-settings.FEATURE_MATCHING])
+            real_out = lasagne.layers.get_output(c_feature)
             # Create expression for passing fake data through the critic
-            fake_out = lasagne.layers.get_output(critic_layers[-settings.FEATURE_MATCHING],
-                                                 lasagne.layers.get_output(generator))
+            fake_out = lasagne.layers.get_output(c_feature, lasagne.layers.get_output(generator))
         else:
             # Create expression for passing real data through the critic
             real_out = lasagne.layers.get_output(critic)
