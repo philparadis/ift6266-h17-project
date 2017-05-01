@@ -53,6 +53,7 @@ W-GAN code was tweaked from:
 https://gist.github.com/f0k/f3190ebba6c53887d598d03119ca2066
 
 # Usage:
+~~~~
 usage: run.py [-h] [-v VERBOSE] [-e EPOCHS] [-b BATCH_SIZE] [-l LEARNING_RATE]                                       
               [-g GAN_LEARNING_RATE] [-f] [-c EPOCHS_PER_CHECKPOINT]                                                 
               [-s EPOCHS_PER_SAMPLES] [-k] [-a ARCHITECTURE]                                                         
@@ -131,4 +132,4 @@ optional arguments:
                         some cases. Note that it is not currently implemented
                         in all models and you will receive a message
                         indicating if feature matching is used for your model.
-
+~~~~
