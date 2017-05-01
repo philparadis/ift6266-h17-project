@@ -360,7 +360,7 @@ def build_critic_architecture(input_var=None, architecture=1):
         print ("critic output:", layer.output_shape)
         return layer, layers
     elif architecture == 1:
-        alpha = 0.1 # slope of negative x axis of leaky ReLU
+        alpha = 0.2 # slope of negative x axis of leaky ReLU
         a_fn = LeakyRectify(alpha)
         # input: (None, 3, 64, 64)
         layer = app(InputLayer(shape=(None, 3, 64, 64), input_var=input_var))
