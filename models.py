@@ -3,6 +3,7 @@
 import os, sys, errno
 import json
 import time
+import abc, six
 
 import utils
 import hyper_params
@@ -10,6 +11,48 @@ import settings
 from utils import handle_critical, handle_error, handle_warning
 from utils import print_critical, print_error, print_warning, print_info, print_positive, log
 from utils import force_symlink, get_json_pretty_print
+
+# @six.add_metaclass(abc.ABCMeta)
+# class LearningModel(object):
+#     def __init__(self):
+#         pass
+
+#     @abc.abstractmethod
+#     def load_model(self):
+#         pass
+    
+#     @abc.abstractmethod
+#     def save_model(self, keep_all_checkpoints=False):
+#         pass    
+
+#     @abc.abstractmethod
+#     def build(self):
+#         pass
+
+#     @abc.abstractmethod
+#     def train(self):
+#         pass
+
+#     @abc.abstractmethod
+#     def predict(self, test_batch):
+#         pass
+
+# class Checkpoint(object):
+#     def __init__(self):
+#         self.file_path = "checkpoint.json"
+
+#     def exists(self):
+#         """Check if 'checkpoint.json' exists within the base directory."""
+#         return os.path.isfile(self.file_path)
+
+#     def read(self):
+#         pass
+
+#     def write(self):
+#         pass
+
+# class HyperParams(object):
+#     def __init__(self):
 
 class BaseModel(object):
     def __init__(self, model_name, hyperparams):
@@ -32,14 +75,6 @@ class BaseModel(object):
         self.hyperparams_filename = "hyperparams.json"
         self.path_hyperparams_file = os.path.join(settings.BASE_DIR, self.hyperparams_filename)
 
-    def initialize(self):
-        pass
-
-    def load_model(self):
-        return None
-    
-    def save_model(self, keep_all_checkpoints=False):
-        return None
 
     def is_there_hyperparams_file(self):
         return os.path.isfile(self.path_hyperparams_file)
@@ -173,9 +208,7 @@ class BaseModel(object):
         if os.path.isfile(self.path_stop_file):
             os.remove(self.path_stop_file)
 
-    def build(self):
-        raise NotImplemented()
-
+    @abc.abstractmethod
     def train(self):
         raise NotImplemented()
 
@@ -186,6 +219,9 @@ class BaseModel(object):
         raise NotImplemented()
 
     def save_stats(self):
+        raise NotImplemented()
+
+    def plot_layers():
         raise NotImplemented()
 
 class KerasModel(BaseModel):
@@ -358,6 +394,7 @@ class MLP_Model(KerasModel):
         self.keras_model.add(Activation('relu'))
         self.keras_model.add(Dense(units=self.hyper['output_dim']))
 
+    def plot_architecture(self):
         ### Plot a graph of the model's architecture
         try:
             import pydot
@@ -396,6 +433,9 @@ class Conv_MLP(KerasModel):
         super(Conv_MLP, self).__init__(model_name = model_name, hyperparams = hyperparams)
 
     def build(self):
+        from keras.layers.core import Dense, Activation
+        from keras.models import Sequential
+
         input_shape = (3, 64, 64)
         self.keras_model = Sequential()
         self.keras_model.add(Conv2D(32, (3, 3), input_shape=input_shape))

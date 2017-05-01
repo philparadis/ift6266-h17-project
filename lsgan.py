@@ -143,7 +143,8 @@ class LSGAN_Model(GAN_BaseModel):
         # Instantiate a symbolic noise generator to use for training
         from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
         srng = RandomStreams(seed=np.random.randint(2147462579, size=6))
-        noise = srng.uniform((batchsize, 100))
+        #noise = srng.uniform((batchsize, 100))
+        noise = srng.uniform((batchsize, 100), low = -1.0, high = 1.0)
 
         # Compile functions performing a training step on a mini-batch (according
         # to the updates dictionary) and returning the corresponding score:
@@ -180,54 +181,38 @@ class LSGAN_Model(GAN_BaseModel):
         found_stop_file = False
         generator_updates = 0
         next_epoch_checkpoint = settings.EPOCHS_PER_CHECKPOINT
-        num_repeat_gen_train = 2
+        num_repeat_gen_train = 1.5
         
         for epoch in range(num_epochs):
             start_time = time.time()
 
             print_info("Epoch {} out of {}:".format(epoch, num_epochs))
 
-            num_critics_update = epochsize
-            # In each epoch, we do `epochsize` generator and critic updates.
-            if num_very_low_loss > 0 or num_low_loss > 0:
-                rebalance_ratio = min(float(max_very_low_loss - num_very_low_loss) / float(max_very_low_loss),
-                                      max(1.0-float(num_low_loss)/10.0, 0))
-                num_critics_update = int(max(float(epochsize)*rebalance_ratio, 5))
-
-            if num_low_loss > 0:
-                print_warning("Nmber of successive low critics loss is now: {0}".format(num_low_loss))
-            if num_very_low_loss > 0:
-                print_critical("Number of successive *extremely low* critics loss is now: {0}.".format(num_very_low_loss))
+            ## Extra training (if necessary)
+            train_critic_extra = 0
+            train_gen_extra = 0
+            if epoch >= 49: # Do not balance out the losses for the first 50 epochs
+                if mean_critic_loss < 0.25:
+                    train_critic_extra = -int(random.uniform(0, (0.25 - mean_critic_loss)/0.5)*epochsize)
+                if  mean_generator_loss > 0.7:
+                    train_gen_extra = int(random.uniform(0, (min(1.0, mean_generator_loss) - 0.7)/0.3)*epochsize)
 
             ## Actual training
             critic_losses = []
             generator_losses = []
-            for u in range(epochsize):
+            for _ in range(epochsize+train_critic_extra):
                 inputs, targets = next(batches)
-                if u < num_critics_update:
-                    critic_losses.append(critic_train_fn(inputs))
-
-                for rep in range(num_repeat_gen_train):
-                    generator_losses.append(generator_train_fn())
+                critic_losses.append(critic_train_fn(inputs))
+            for _ in range(int(num_repeat_gen_train*epochsize+train_gen_extra)):
+                generator_losses.append(generator_train_fn())
 
             ## Compute mean losses
             mean_generator_loss = np.mean(generator_losses)
             mean_critic_loss = np.mean(critic_losses)
 
-            ## Extra training (if necessary)
-            train_critic_extra = 0
-            train_gen_extra = 0
-            if mean_critic_loss < 0.3:
-                train_critic_extra = int(random.uniform(0, (0.3 - mean_critic_loss)/0.3)*epochsize)
-                for _i in range(train_critic_extra):
-                    inputs, targets = next(batches)
-                    critic_losses.append(critic_train_fn(inputs))
-            if  mean_generator_loss > 0.7:
-                train_gen_extra = int(random.uniform(0, (min(1.0, mean_generator_loss) - 0.7)/0.3)*epochsize)
-                for _i in range(train_gen_extra):
-                    generator_losses.append(generator_train_fn())
-
-            print_info("Critic updates = {} | Generator updates = {}".format(num_critics_update + train_critic_extra, epochsize * num_repeat_gen_train + train_gen_extra))
+            print_info("Critic updates = {} | Generator updates = {}"
+                       .format(epochsize + train_critic_extra,
+                               int(epochsize * num_repeat_gen_train + train_gen_extra)))
 
             # Then we print the results for this epoch:
             time_delta = time.time() - start_time
@@ -241,21 +226,17 @@ class LSGAN_Model(GAN_BaseModel):
             log("   critic loss    = {}".format(mean_critic_loss))
 
             if mean_critic_loss < 0.03:
-                print_critical("The critic loss is extremely low. If the loss is below 0.03 for {} epochs in a row, the training will be aborted".format(max_very_low_loss))
-                print_info("Attempting to balance out generator and critic...")
-                ratio_gen_critic = mean_generator_loss / mean_critic_loss
+                print_critical("The critic loss is extremely low: {} / {} epochs before aborting."
+                               .format(num_very_low_loss, max_very_low_loss))
                 num_very_low_loss += 1
             elif mean_critic_loss < 0.07:
-                print_warning("Critic loss is getting dangerously low!")
-                print_info("Attempting to balance out generator and critic...")
-                ratio_gen_critic = mean_generator_loss / mean_critic_loss
                 num_low_loss += 1
             else:
                 num_very_low_loss = 0
                 num_low_loss = 0
                 
             if num_very_low_loss >= max_very_low_loss:
-                print_error("Extremely low critic loss obtained {} epochs in a row. Aborting training now.".format(max_very_low_loss))
+                print_error("Critic loss has been extremely low for {} subsequent epochs. Aborting training now.".format(max_very_low_loss))
                 self.create_stop_file()
 
             # And finally, we plot some generated data, depending on the settings
