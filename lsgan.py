@@ -110,7 +110,7 @@ class LSGAN_Model(GAN_BaseModel):
         critic, critic_layers = self.build_critic(input_var, architecture = architecture)
 
         if settings.FEATURE_MATCHING > 1:
-            print_info("Feature matching enabled, with M = -{}".format(settings.FEATURE_MATCHING)))
+            print_info("Feature matching enabled, with M = -{}".format(settings.FEATURE_MATCHING))
             print_info("List of critic layers:")
             c_layers = lasagne.layers.get_all_layers(critic)
             print_info(str(c_layers))
