@@ -20,8 +20,35 @@ default_mlp_hyper_params = {
     }
 
 default_conv_mlp_hyper_params = {
-    "input_dim" : (None, 3, 64, 64),
+    "input_dim" : 64*64*3 - 32*32*3,
     "output_dim" : 32*32*3,
+    "input_shape" : (None, 3, 64, 64),
+    "output_shape" : (None, 32*32*3),
+    "loss_function" : "mse",
+    "optimizer" : "adam",
+    "learning_rate" : 1e-4,
+    "batch_size" : 128,
+    "convolution" : { "receptive_field_size" : 5, "stride" : 1, "padding" : "same" }
+    }
+
+default_convdeconv_hyper_params = {
+    "input_dim" : 64*64*3,
+    "output_dim" : 32*32*3,
+    "input_shape" : (None, 3, 64, 64),
+    "output_shape" : (None, 3, 32, 32),
+    "loss_function" : "mse",
+    "optimizer" : "adam",
+    "learning_rate" : 1e-4,
+    "batch_size" : 128,
+    "convolution" : { "receptive_field_size" : 5, "stride" : 1, "padding" : "same" }
+    }
+
+
+default_autoencoder_hyper_params = {
+    "input_dim" : 64*64*3 - 32*32*3,
+    "output_dim" : 32*32*3,
+    "input_shape" : (None, 3, 64, 64),
+    "output_shape" : (None, 3, 32, 32),
     "loss_function" : "mse",
     "optimizer" : "adam",
     "learning_rate" : 1e-5,

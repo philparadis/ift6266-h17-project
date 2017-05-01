@@ -112,10 +112,7 @@ def run_experiment():
     else:
         ### Build model's architecture
         print_info("No valid checkpoint found for this experiment. Building and training model from scratch.")
-        if settings.MODEL == "mlp" or settings.MODEL == "test":
-            model.initialize()
-            model.build()
-        elif settings.MODEL == "conv_mlp":
+        if settings.MODEL == "mlp" or settings.MODEL == "test" or settings.MODEL == "conv_mlp" or settings.MODEL == "conv_deconv":
             model.initialize()
             model.build()
         elif settings.MODEL == "dcgan":
@@ -217,7 +214,7 @@ def run_experiment():
     log("")
 
    ### Train the model (computation intensive)
-    if settings.MODEL == "mlp" or settings.MODEL == "test":
+    if settings.MODEL == "mlp" or settings.MODEL == "test" or settings.MODEL == "conv_mlp":
         Dataset.preprocess()
         Dataset.normalize()
         Dataset.preload()
@@ -242,7 +239,7 @@ def run_experiment():
         ### Save predictions to disk
         save_keras_predictions(Y_test_pred_2d, Dataset.id_test, NewDataset, num_images=50)
         print_results_as_html(Y_test_pred_2d, num_images=50)
-    elif settings.MODEL == "conv_mlp":
+    elif settings.MODEL == "conv_deconv":
         Dataset.preprocess()
         Dataset.normalize()
         Dataset.preload()
@@ -250,31 +247,19 @@ def run_experiment():
         Dataset.denormalize()
 
         ### Produce predictions
-        Y_test_pred = model.predict(Dataset.get_data(X=True, Test=True), batch_size = model.hyper['batch_size'])
+        Y_test_pred_2d = model.predict(Dataset.get_data(X=True, Test=True), batch_size = model.hyper['batch_size'])
 
         ### Reshape predictions
-        Y_test_pred = dataset.denormalize_data(Y_test_pred)
-        num_rows = Y_test_pred.shape[0]
-        Y_test_pred_2d = unflatten_to_4tensor(Y_test_pred, num_rows, 32, 32, is_colors_channel_first = True)
-        Y_test_pred_2d = transpose_colors_channel(Y_test_pred_2d, from_first_to_last = True)
+        Y_test_pred_2d = dataset.denormalize_data(Y_test_pred_2d)
 
-        ### Save predictions to disk
-
-        ### Create a new dataset based on original images
-        ### We need 'outer2d' and 'inner2d' images even if we did not use them in the model, in order to produce our results.
-        print_positive("We finished training the model and obtained predictions for the image inpainting tasks.")
-        print_positive("However, we need to go back to the original images with the colors channel last.")
-        print_positive("To do so, we create a new class ColorsLastDataset that will take care of loading the data in the right format.")
+        ### Create dataset with colors channel last
         NewDataset = dataset.ColorsLastDataset(settings.IMAGE_WIDTH, settings.IMAGE_HEIGHT)
         NewDataset.load_dataset()
-        log("Summary of data within ColorsLastDataset:")
-        log(" * images.shape            = " + str(NewDataset.images.shape))
-        log(" * captions_ids.shape      = " + str(NewDataset.captions_ids.shape))
-        log(" * captions_dict.shape     = " + str(NewDataset.captions_dict.shape))
-        NewDataset.preprocess()
+        NewDataset.preprocess(model = "conv_mlp")
         NewDataset.preload(model = "conv_mlp")
 
-        save_keras_predictions(Y_test_pred_2d, Dataset.test.id, NewDataset, num_images=50)
+        ### Save predictions to disk
+        save_keras_predictions(Y_test_pred_2d, Dataset.id_test, NewDataset, num_images=50)
         print_results_as_html(Y_test_pred_2d, num_images=50)
     elif settings.MODEL == "dcgan":
         Dataset.preprocess()

@@ -196,6 +196,14 @@ class KerasModel(BaseModel):
         # Constants
         self.model_path = os.path.join(settings.MODELS_DIR, "model.hdf5")
 
+    def get_intermediate_activations(model, k, X_batch):
+        """Get the (intermediate) activations at the k-th layer in 'model' from input X_batch"""
+        get_activations = theano.function([model.layers[0].input],
+                                          model.layers[k].get_output(train=False),
+                                          allow_input_downcast=True)
+        activations = get_activations(X_batch) # same result as above
+        return activations
+        
     def load_model(self):
         """Return True if a valid model was found and correctly loaded. Return False if no model was loaded."""
         from shutil import copyfile
@@ -388,28 +396,48 @@ class Conv_MLP(KerasModel):
         super(Conv_MLP, self).__init__(model_name = model_name, hyperparams = hyperparams)
 
     def build(self):
-        if K.image_data_format() == 'channels_first':
-            input_shape = (3, 64, 64)
-        else:
-            input_shape = (64, 64, 3)
+        input_shape = (3, 64, 64)
         self.keras_model = Sequential()
         self.keras_model.add(Conv2D(32, (3, 3), input_shape=input_shape))
         self.keras_model.add(Activation('relu'))
-        self.keras_model.add(MaxPooling2D(pool_size=(2, 2)))
+        self.keras_model.add(MaxPooling2D(pool_size=(2, 2))) # out: 32x32
 
         self.keras_model.add(Conv2D(32, (3, 3)))
         self.keras_model.add(Activation('relu'))
-        self.keras_model.add(MaxPooling2D(pool_size=(2, 2)))
+        self.keras_model.add(MaxPooling2D(pool_size=(2, 2))) # out: 16x16
 
         self.keras_model.add(Conv2D(64, (3, 3)))
         self.keras_model.add(Activation('relu'))
-        self.keras_model.add(MaxPooling2D(pool_size=(2, 2)))
+        self.keras_model.add(MaxPooling2D(pool_size=(2, 2))) # out: 8x8
 
         self.keras_model.add(Flatten())
-        self.keras_model.add(Dense(512))
-        self.keras_model.add(Activation('relu'))
+        self.keras_model.add(Dense(128))
+        self.keras_model.add(Activation('lrelu'))
     
         self.keras_model.add(Dense(units=model_params.output_dim))
+        
+class ConvDeconv(KerasModel):
+    def __init__(self, model_name, hyperparams = hyper_params.default_convdeconv_hyper_params):
+        super(ConvDeconv, self).__init__(model_name = model_name, hyperparams = hyperparams)
+
+    def build(self):
+
+        y = []
+
+        input_img = Input(shape=(3, 64, 64))
+        # Conv
+        x = input_img
+        x = Convolution2D(32, 3, 3, subsample=(2, 2), border_mode='same', activation='relu')(x) # out: 32x32
+        x = Convolution2D(32, 3, 3, subsample=(2, 2), border_mode='same', activation='relu')(x) # out: 16x16
+        x = Convolution2D(64, 5, 5, subsample=(2, 2), border_mode='same', activation='relu')(x) # out: 8x8
+        # Deconv
+        x = Deconvolution2D(64, 5, 5, border_mode='same', activation='relu')(x) #out: 8x8
+        x = Deconvolution2D(64, 5, 5, subsample=(2, 2), border_mode='same', activation='relu')(x) #out: 16x16
+        x = Deconvolution2D(32, 3, 3, subsample=(2, 2), border_mode='same', activation='relu')(x) #out: 32x32
+        x = Deconvolution2D(32, 3, 3, border_mode='same', activation='relu')(x) #out: 32x32
+        x = Deconvolution2D(3, 3, 3, border_mode='same', activation='relu')(x) #out: 32x32
+
+        self.keras_model = Model(input=[input_img], output=x)
 
 class GAN_BaseModel(BaseModel):
     def __init__(self, model_name, hyperparams = hyper_params.default_gan_basemodel_hyper_params):

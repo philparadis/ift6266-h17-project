@@ -299,6 +299,16 @@ class ColorsFirstDataset(BaseDataset):
             elif model == "conv_mlp":
                 outer_2d = np.copy(img_array)
                 outer_2d[:, center[0]-16:center[0]+16, center[1]-16:center[1]+16] = 0
+
+                inner = np.copy(img_array)
+                inner = inner[:, center[0]-16:center[0]+16, center[1] - 16:center[1]+16]
+                inner_flat = inner.flatten()
+
+                images_outer2d.append(outer_2d)
+                images_inner_flat.append(inner_flat)
+            elif model == "conv_deconv":
+                outer_2d = np.copy(img_array)
+                outer_2d[:, center[0]-16:center[0]+16, center[1]-16:center[1]+16] = 0
                 inner2d = np.copy(img_array)
                 inner2d = inner2d[:, center[0]-16:center[0]+16, center[1] - 16:center[1]+16]
                 images_outer2d.append(outer_2d)
@@ -312,6 +322,9 @@ class ColorsFirstDataset(BaseDataset):
             self.images_inner_flat = np.array(images_inner_flat)
             self.images_outer_flat = np.array(images_outer_flat)
         elif model == "conv_mlp":
+            self.images_outer2d = np.array(images_outer2d)
+            self.images_inner_flat = np.array(images_inner_flat)
+        elif model == "conv_deconv":
             self.images_outer2d = np.array(images_outer2d)
             self.images_inner2d = np.array(images_inner2d)
         elif model == "dcgan" or model == "wgan" or model == "lsgan":
@@ -372,6 +385,16 @@ class ColorsLastDataset(BaseDataset):
             elif model == "conv_mlp":
                 outer_2d = np.copy(img_array)
                 outer_2d[center[0]-16:center[0]+16, center[1]-16:center[1]+16, :] = 0
+
+                inner = np.copy(img_array)
+                inner = inner[center[0]-16:center[0]+16, center[1] - 16:center[1]+16, :]
+                inner_flat = inner.flatten()
+
+                images_outer2d.append(outer_2d)
+                images_inner_flat.append(inner_flat)
+            elif model == "conv_deconv":
+                outer_2d = np.copy(img_array)
+                outer_2d[center[0]-16:center[0]+16, center[1]-16:center[1]+16, :] = 0
                 inner2d = np.copy(img_array)
                 inner2d = inner2d[center[0]-16:center[0]+16, center[1] - 16:center[1]+16, :]
                 images_outer2d.append(outer_2d)
@@ -385,6 +408,9 @@ class ColorsLastDataset(BaseDataset):
             self.images_inner_flat = np.array(images_inner_flat)
             self.images_outer_flat = np.array(images_outer_flat)
         elif model == "conv_mlp":
+            self.images_outer2d = np.array(images_outer2d)
+            self.images_inner_flat = np.array(images_inner_flat)
+        elif model == "conv_deconv":
             self.images_outer2d = np.array(images_outer2d)
             self.images_inner2d = np.array(images_inner2d)
         elif model == "dcgan" or model == "wgan" or model == "lsgan":

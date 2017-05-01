@@ -41,7 +41,7 @@ if __name__ == "__main__":
     ### Parse arguments
     parser = argparse.ArgumentParser()
     parser.add_argument("model",
-                        help="Model choice (current options: test, mlp, conv_mlp*, conv_vgg*, conv_lstm*, lstm*, vae*, conv_autoencoder*, dcgan, wgan, lsgan (*: Models with * may not be fully implemented yet).)")
+                        help="Model choice (current options: test, mlp, conv_mlp, conv_deconv, vgg16*, conv_lstm*, lstm*, vae*, conv_autoencoder*, dcgan, wgan, lsgan (*: Models with * may not be fully implemented yet).)")
     parser.add_argument("exp_name_prefix", help="Prefix used at the beginning of the name of the experiment. Your results will be stored in various subfolders and files which start with this prefix. The exact name of the experiment depends on the model used and various hyperparameters.")
     parser.add_argument("-v", "--verbose", type=int,
                         default=settings.VERBOSE, help="0 means quiet, 1 means verbose and 2 means limited verbosity.")
@@ -94,7 +94,7 @@ if __name__ == "__main__":
     settings.FEATURE_MATCHING = args.feature_matching
 #    settings.USE_CPU = args.cpu
 
-    if not settings.MODEL in ["test", "mlp", "conv_mlp", "dcgan", "wgan", "lsgan"]:
+    if not settings.MODEL in ["test", "mlp", "conv_mlp", "conv_deconv", "dcgan", "wgan", "lsgan"]:
         raise NotImplementedError("The model '{}' is not yet implemented yet, sorry!".format(settings.MODEL))
 
     from utils import print_warning, handle_error, log
