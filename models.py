@@ -269,7 +269,7 @@ class KerasModel(BaseModel):
 
         #### Print model summary
         print_info("Model summary:")
-        log(self.keras_model.summary())
+        self.keras_model.summary()
 
         #### Compile the model (if necessary)
         self._compile()

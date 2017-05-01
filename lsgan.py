@@ -24,6 +24,7 @@ from __future__ import print_function
 import sys, os, time
 import numpy as np
 import math
+import random
 
 import lsgan_architectures
 import hyper_params
@@ -35,7 +36,6 @@ from utils import print_critical, print_error, print_warning, print_info, print_
 class LSGAN_Model(GAN_BaseModel):
     def __init__(self, model_name, hyperparams = hyper_params.default_lsgan_hyper_params):
         super(LSGAN_Model, self).__init__(model_name = model_name, hyperparams = hyperparams)
-        self.train_fn = None
         self.gen_fn = None
         self.generator_train_fn = None
         self.critic_train_fn = None
@@ -199,6 +199,7 @@ class LSGAN_Model(GAN_BaseModel):
             if num_very_low_loss > 0:
                 print_critical("Number of successive *extremely low* critics loss is now: {0}.".format(num_very_low_loss))
 
+            ## Actual training
             critic_losses = []
             generator_losses = []
             for u in range(epochsize):
@@ -208,33 +209,29 @@ class LSGAN_Model(GAN_BaseModel):
 
                 for rep in range(num_repeat_gen_train):
                     generator_losses.append(generator_train_fn())
-                    
-            ### Balance out gen and critic losses if necessary
-            train_gen_extra = 0
+
+            ## Compute mean losses
+            mean_generator_loss = np.mean(generator_losses)
+            mean_critic_loss = np.mean(critic_losses)
+
+            ## Extra training (if necessary)
             train_critic_extra = 0
-            if ratio_gen_critic > 4:
-                train_gen_extra = int(math.ceil(ratio_gen_critic
-                                      * (2*num_very_low_loss + 1)
-                                      * (num_low_loss + 1)))
-                train_gen_extra = min(train_gen_extra, epochsize)
-                log("   Perfoming {} extra rounds of generator training to rebalance the losses.".format(train_gen_extra))
-                for _i in range(train_gen_extra):
-                    generator_losses.append(generator_train_fn())
-            elif ratio_gen_critic < 0.25:
-                train_critic_extra = int(math.ceil(1/ratio_gen_critic))
-                train_critic_extra = min(train_critic_extra, epochsize)
-                log("   Perfoming {} extra rounds of critic training to rebalance the losses.".format(train_critic_extra))
+            train_gen_extra = 0
+            if mean_critic_loss < 0.3:
+                train_critic_extra = int(random.uniform(0, (0.3 - mean_critic_loss)/0.3)*epochsize)
                 for _i in range(train_critic_extra):
                     inputs, targets = next(batches)
                     critic_losses.append(critic_train_fn(inputs))
+            if  mean_generator_loss > 0.7:
+                train_gen_extra = int(random.uniform(0, (min(1.0, mean_generator_loss) - 0.7)/0.3)*epochsize)
+                for _i in range(train_gen_extra):
+                    generator_losses.append(generator_train_fn())
 
             print_info("Critic updates = {} | Generator updates = {}".format(num_critics_update + train_critic_extra, epochsize * num_repeat_gen_train + train_gen_extra))
 
             # Then we print the results for this epoch:
             time_delta = time.time() - start_time
             self.wall_time += time_delta
-            mean_generator_loss = np.mean(generator_losses)
-            mean_critic_loss = np.mean(critic_losses)
             log("   epoch took {2:.3f} seconds".format(epoch + 1, num_epochs, time_delta))
             if self.wall_time < 7200:
                 log("   total wall time is {:.2f} minutes".format(self.wall_time / 60))
@@ -364,7 +361,6 @@ class LSGAN_Model(GAN_BaseModel):
 
 
         ### Save model to class variables
-        self.train_fn = train_fn
         self.gen_fn = gen_fn
         self.generator_train_fn = generator_train_fn
         self.critic_train_fn = critic_train_fn
