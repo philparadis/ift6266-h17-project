@@ -59,7 +59,7 @@ def build_generator_architecture(input_var=None, architecture=1):
         layers.append(l)
         return l
     
-    if architecture == 0:
+    if architecture == -1:
         W_init = Normal(0.05)
         a_fn = LeakyRectify(0.2)
         # input: 100dim
@@ -79,6 +79,28 @@ def build_generator_architecture(input_var=None, architecture=1):
         layer = app(DropoutLayer(layer, p=0.5))
         layer = app(GAN.GaussianNoiseLayer(layer, sigma=0.5))
         layer = app(GAN.weight_norm(Deconv2DLayer(layer, 3, (5, 5), stride=(2, 2), output_size=64, nonlinearity=T.tanh), train_g=True, init_stdv=0.1))
+        print ("Generator output:", layer.output_shape)
+        return layer, layers
+    elif architecture == 0:
+        a_fn = LeakyRectify(0.2)
+        # input: 100dim
+        layer = InputLayer(shape=(None, 100), input_var=input_var)
+        # project and reshape
+        layer = batch_norm(DenseLayer(layer, 256*4*4))
+        layer = ReshapeLayer(layer, ([0], 256, 4, 4))
+        ### four fractional-stride convolutions
+        # Note: Apply dropouts in G. See tip #17 from "ganhacks"
+        layer = batch_norm(Deconv2DLayer(layer, 256, 7, stride=2, crop='same', output_size=8, nonlinearity=a_fn))
+        layer = batch_norm(Deconv2DLayer(layer, 256, 7, stride=1, crop='same', output_size=8, nonlinearity=a_fn))
+        layer = DropoutLayer(layer, p=0.5)
+        layer = batch_norm(Deconv2DLayer(layer, 192, 5, stride=2, crop='same', output_size=16, nonlinearity=a_fn))
+        layer = batch_norm(Deconv2DLayer(layer, 192, 5, stride=1, crop='same', output_size=16, nonlinearity=a_fn))
+        layer = DropoutLayer(layer, p=0.5)
+        layer = batch_norm(Deconv2DLayer(layer, 128, 3, stride=2, crop='same', output_size=32, nonlinearity=a_fn))
+        layer = batch_norm(Deconv2DLayer(layer, 128, 3, stride=1, crop='same', output_size=32, nonlinearity=a_fn))
+        layer = DropoutLayer(layer, p=0.5)
+        layer = Deconv2DLayer(layer, 96, 5, stride=2, crop='same', output_size=64, nonlinearity=a_fn)
+        layer = Deconv2DLayer(layer, 3, 5, stride=1, crop='same', output_size=64, nonlinearity=T.tanh)
         print ("Generator output:", layer.output_shape)
         return layer, layers
     elif architecture == 1:
@@ -327,7 +349,7 @@ def build_critic_architecture(input_var=None, architecture=1):
         layers.append(l)
         return l
 
-    if architecture == 0:
+    if architecture == -1:
         try:
             from lasagne.layers import dnn
         except ImportError as e:
@@ -357,6 +379,29 @@ def build_critic_architecture(input_var=None, architecture=1):
         # 1x Global Pooling Layer
         layer = app(ll.GlobalPoolLayer(layer))
         layer = app(GAN.weight_norm(DenseLayer(layer, 1, nonlinearity=None)))
+        print ("critic output:", layer.output_shape)
+        return layer, layers
+    elif architecture == 0:
+        a_fn = LeakyRectify(0.2)
+        # input: (None, 3, 64, 64)
+        layer = InputLayer(shape=(None, 3, 64, 64), input_var=input_var)
+        # Injecting some noise after input layer
+        layer = GAN.GaussianNoiseLayer(layer, sigma=1)
+        # four convolutions
+        layer = batch_norm(Conv2DLayer(layer, 64,  3, stride=1, pad='same', nonlinearity=a_fn))
+        layer = batch_norm(Conv2DLayer(layer, 64,  3, stride=1, pad='same', nonlinearity=a_fn))
+        layer = batch_norm(Conv2DLayer(layer, 64,  3, stride=2, pad='same', nonlinearity=a_fn))
+        layer = batch_norm(Conv2DLayer(layer, 96,  5, stride=1, pad='same', nonlinearity=a_fn))
+        layer = batch_norm(Conv2DLayer(layer, 96,  5, stride=1, pad='same', nonlinearity=a_fn))
+        layer = batch_norm(Conv2DLayer(layer, 96,  5, stride=2, pad='same', nonlinearity=a_fn))
+        layer = batch_norm(Conv2DLayer(layer, 128, 7, stride=1, pad='same', nonlinearity=a_fn))
+        layer = batch_norm(Conv2DLayer(layer, 128, 7, stride=1, pad='same', nonlinearity=a_fn))
+        layer = batch_norm(Conv2DLayer(layer, 128, 7, stride=2, pad='same', nonlinearity=a_fn))
+        # fully-connected layer
+        layer = GAN.GaussianNoiseLayer(layer, sigma=1)
+        layer = batch_norm(DenseLayer(layer, 256, nonlinearity=a_fn))
+        # output layer (linear)
+        layer = DenseLayer(layer, 1, nonlinearity=None)
         print ("critic output:", layer.output_shape)
         return layer, layers
     elif architecture == 1:
