@@ -9,7 +9,7 @@ import utils
 import hyper_params
 import settings
 from utils import handle_critical, handle_error, handle_warning
-from utils import print_critical, print_error, print_warning, print_info, print_positive, log
+from utils import print_critical, print_error, print_warning, print_info, print_positive, log, logout
 from utils import force_symlink, get_json_pretty_print
 
 # @six.add_metaclass(abc.ABCMeta)
