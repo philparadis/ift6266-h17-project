@@ -224,19 +224,20 @@ class BaseModel(object):
     def plot_layers():
         raise NotImplemented()
 
+from keras.callbacks import Callback
+class LossHistory(Callback):
+    def on_train_begin(self, logs={}):
+        self.losses = []
+
+    def on_batch_end(self, batch, logs={}):
+        self.losses.append(logs.get('loss'))
+
+    def __str__(self):
+        for epoch, loss in enumerate(self.losses):
+            print("Epoch {0:>4}/{1:<4} loss = {2:.5f}".format(epoch, settings.NUM_EPOCHS, loss))
+
+
 class KerasModel(BaseModel):
-    from keras import callbacks
-    class LossHistory(callbacks.Callback):
-        def on_train_begin(self, logs={}):
-            self.losses = []
-
-        def on_batch_end(self, batch, logs={}):
-            self.losses.append(logs.get('loss'))
-
-        def __str__(self):
-            for epoch, loss in enumerate(self.losses):
-                print("Epoch {0:>4}/{1:<4} loss = {2:.5f}".format(epoch, settings.NUM_EPOCHS, loss))
-    
     def __init__(self, model_name, hyperparams = hyper_params.default_mlp_hyper_params): 
         super(KerasModel, self).__init__(model_name = model_name, hyperparams = hyperparams)
         self.keras_model = None
