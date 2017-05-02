@@ -226,8 +226,8 @@ def run_experiment():
         ### Create dataset with colors channel last
         NewDataset = dataset.ColorsLastDataset(settings.IMAGE_WIDTH, settings.IMAGE_HEIGHT)
         NewDataset.load_dataset()
-        NewDataset.preprocess(model = "conv_mlp")
-        NewDataset.preload(model = "conv_mlp")
+        NewDataset.preprocess(model = "conv_deconv")
+        NewDataset.preload(model = "conv_deconv")
 
         ### Save predictions to disk
         save_keras_predictions(Y_test_pred_2d, Dataset.id_test, NewDataset, num_images=50)
@@ -248,8 +248,8 @@ def run_experiment():
         ### Create dataset with colors channel last
         NewDataset = dataset.ColorsLastDataset(settings.IMAGE_WIDTH, settings.IMAGE_HEIGHT)
         NewDataset.load_dataset()
-        NewDataset.preprocess(model = "conv_mlp")
-        NewDataset.preload(model = "conv_mlp")
+        NewDataset.preprocess(model = "conv_deconv")
+        NewDataset.preload(model = "conv_deconv")
 
         ### Save predictions to disk
         save_keras_predictions(Y_test_pred_2d, Dataset.id_test, NewDataset, num_images=50)

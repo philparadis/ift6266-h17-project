@@ -54,21 +54,37 @@ while (( iter++ >= 0 )); do
     mkdir -p logs/lsgan
     mkdir -p logs/wgan
     mkdir -p logs/dcgan
-    
+
     
     for ARCH in ${ARCH_LIST}; do
+
+	THIS_NUM_EPOCHS=$NUM_EPOCHS
+	THIS_EPOCHSIZE=$EPOCHSIZE
+	
+	if [[ $ARCH == 1 || $ARCH == 6 || $ARCH == 7 ]]; then
+	    THIS_NUM_EPOCHS=$((2*NUM_EPOCHS))
+	fi
+    
+	if [[ $ARCH == 4 ]]; then
+	    THIS_NUM_EPOCHS=$((NUM_EPOCHS/4))
+	    THIS_EPOCHSIZE=$((EPOCHSIZE/2))
+	fi
+	
 	EXP_NAME="arch-${ARCH}-test-${TESTSERIES}-${TESTNUM}"
+
 	echo "Launching LSGAN model with Architecture #${ARCH}..."
-	echo "./run.py ${MODEL} ${EXP_NAME} -a ${ARCH} -e ${NUM_EPOCHS} -u ${EPOCHSIZE} -c ${EPOCHS_PER_CHECKPOINT} -b ${BATCH_SIZE} -v ${VERBOSITY} ${EXTRA_ARGS} | tee logs/${MODEL}/${EXP_NAME}"
-	./run.py ${MODEL} ${EXP_NAME} -a ${ARCH} -e ${NUM_EPOCHS} -u ${EPOCHSIZE} -c ${EPOCHS_PER_CHECKPOINT} -b ${BATCH_SIZE} -v ${VERBOSITY} ${EXTRA_ARGS} | tee logs/${MODEL}/${EXP_NAME}
+	echo "./run.py ${MODEL} ${EXP_NAME} -a ${ARCH} -e ${THIS_NUM_EPOCHS} -u ${THIS_EPOCHSIZE} -c ${EPOCHS_PER_CHECKPOINT} -b ${BATCH_SIZE} -v ${VERBOSITY} ${EXTRA_ARGS} | tee logs/${MODEL}/${EXP_NAME}"
+	./run.py ${MODEL} ${EXP_NAME} -a ${ARCH} -e ${THIS_NUM_EPOCHS} -u ${THIS_EPOCHSIZE} -c ${EPOCHS_PER_CHECKPOINT} -b ${BATCH_SIZE} -v ${VERBOSITY} ${EXTRA_ARGS} | tee logs/${MODEL}/${EXP_NAME}
     done
 
 
     MODEL=wgan
     EXP_NAME="WGAN-test-${TESTSERIES}-${TESTNUM}"
+    TOTAL_EPOCHS=$((100 + 200*iter))
+
     echo "Launching WGAN model..."
-    echo "./run.py ${MODEL} ${EXP_NAME} -e 300 -b 128 -v 2 --force -c 100 | tee logs/${MODEL}/${EXP_NAME}"
-    ./run.py ${MODEL} ${EXP_NAME} -e 300 -b 128 -v 2 --force -c 100 | tee logs/${MODEL}/${EXP_NAME}
+    echo "./run.py ${MODEL} ${EXP_NAME} -e ${TOTAL_EPOCHS} -b 128 -v 2 --force -c 100 | tee logs/${MODEL}/${EXP_NAME}"
+    ./run.py ${MODEL} ${EXP_NAME} -e ${TOTAL_EPOCHS} -b 128 -v 2 --force -c 100 | tee logs/${MODEL}/${EXP_NAME}
 								     
 
     TESTNUM=$((TESTNUM+1))
@@ -78,5 +94,6 @@ while (( iter++ >= 0 )); do
 done
 
 echo "============================================================"
-echo "        ALL EXPERIMENTS ARE COMPLETED    !!!!!!!!"
+echo "               ALL EXPERIMENTS ARE COMPLETED                "
 echo "============================================================"
+
