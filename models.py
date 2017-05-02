@@ -268,7 +268,7 @@ class KerasModel(BaseModel):
         except Exception as e:
             handle_error("Unfortunately, the model did not parse as a valid HDF5 Keras model and cannot be loaded for an unkown reason. A backup of the model will be created, after which training will restart from scratch.".format(latest_model_path), e)
             try:
-                copyfile(latest_model_file, "{}.backup".format(latest_model_path))
+                copyfile(latest_model_path, "{}.backup".format(latest_model_path))
             except Exception as e:
                 handle_error("Looks like you're having a bad day. The copy operation failed for an unknown reason. We will exit before causing some serious damage ;). Better luck next time. Please verify your directory permissions and your default umask!.", e)
                 sys.exit(-3)
