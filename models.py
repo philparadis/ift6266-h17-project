@@ -452,7 +452,7 @@ class Conv_MLP(KerasModel):
 
         self.keras_model.add(Flatten())
         self.keras_model.add(Dense(128))
-        self.keras_model.add(Activation(LeakyReLU()))
+        self.keras_model.add(LeakyReLU())
     
         self.keras_model.add(Dense(units=self.hyper['output_dim']))
         
