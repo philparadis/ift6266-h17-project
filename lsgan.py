@@ -148,8 +148,8 @@ class LSGAN_Model(GAN_BaseModel):
             # critic is updated 5 times before every generator update. For the
             # first 25 generator updates and every 500 generator updates, the
             # critic is updated 100 times instead, following the authors' code.
-            critic_scores = []
-            generator_scores = []
+            critic_losses = []
+            generator_losses = []
             for _ in range(epochsize):
                 if (generator_updates < 25) or (generator_updates % 500 == 0):
                     critic_runs = 100
@@ -158,15 +158,15 @@ class LSGAN_Model(GAN_BaseModel):
                 for _ in range(critic_runs):
                     batch = next(batches)
                     inputs, targets = batch
-                    critic_scores.append(critic_train_fn(inputs))
-                generator_scores.append(generator_train_fn())
+                    critic_losses.append(critic_train_fn(inputs))
+                generator_losses.append(generator_train_fn())
                 generator_updates += 1
 
             # Then we print the results for this epoch:
             log("Epoch {} of {} took {:.3f}s".format(
                 epoch + 1, num_epochs, time.time() - start_time))
-            log("  generator score:\t\t{}".format(np.mean(generator_scores)))
-            log("  Wasserstein distance:\t\t{}".format(np.mean(critic_scores)))
+            log("  generator loss = {}".format(np.mean(generator_losses)))
+            log("  critic loss    =:{}".format(np.mean(critic_losses)))
 
             # And finally, we plot some generated data
             # And finally, we plot some generated data, depending on the settings
@@ -207,7 +207,7 @@ class LSGAN_Model(GAN_BaseModel):
         self.critic_train_fn = critic_train_fn
         self.gen_fn = gen_fn
 
-        return True
+        return generator, critic, gen_fn
 
 
     def old_train(self, dataset, num_epochs = 1000, epochsize = 50, batchsize = 64, initial_eta = 0.0001, architecture = 7):

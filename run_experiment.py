@@ -302,12 +302,9 @@ def run_experiment():
         generator, critic, gen_fn = model.train(Dataset, num_epochs = settings.NUM_EPOCHS,
                                                 epochsize = settings.UPDATES_PER_EPOCH,
                                                 batchsize = settings.BATCH_SIZE,
-                                                architecture = settings.LSGAN_ARCHITECTURE,
-                                                initial_eta = settings.GAN_LEARNING_RATE)
-
+                                                initial_eta = settings.GAN_LEARNING_RATE,
+                                                clip=0.02)
         Dataset.denormalize()
-        
-        settings.touch_dir(settings.SAMPLES_DIR)
         for i in range(100):
             samples = gen_fn(lasagne.utils.floatX(np.random.rand(10*10, 100)))
             path = os.path.join(settings.EPOCHS_DIR, 'samples_%i.png' % i)
@@ -319,9 +316,6 @@ def run_experiment():
             sample = dataset.denormalize_data(sample)
             path = os.path.join(settings.SAMPLES_DIR, 'one_sample_%i.png' % i)
             Image.fromarray(sample.reshape(3, 64, 64).transpose(1, 2, 0).reshape(64, 64, 3)).save(path)
-    elif settings.MODEL == "conv_deconv":
-        pass
-    
 
     ### Success...? Well, at least we didn't crash :P
     log("Exiting normally. That's typically a good sign :-)")
