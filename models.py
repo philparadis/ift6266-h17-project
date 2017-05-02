@@ -407,8 +407,10 @@ class MLP_Model(KerasModel):
         from keras.models import Sequential
 
         self.keras_model = Sequential()
-        self.keras_model.add(Dense(units=1024, activation='relu', input_shape=(self.hyper['input_dim'], )))
-        self.keras_model.add(Dense(units=512, activation='tanh'))
+        self.keras_model.add(Dense(units=1024, input_shape=(self.hyper['input_dim'], )))
+        self.keras_model.add(Activation('relu'))
+        self.keras_model.add(Dense(units=512))
+        self.keras_model.add(Activation('tanh'))
         self.keras_model.add(Dense(units=self.hyper['output_dim']))
 
     def plot_architecture(self):
@@ -438,10 +440,9 @@ class Test_Model(KerasModel):
     def build(self):
         from keras.layers.core import Dense, Activation
         from keras.models import Sequential
-
         self.keras_model = Sequential()
         self.keras_model.add(Dense(units=128, input_shape=(self.hyper['input_dim'], )))
-        self.keras_model.add(Activation('relu'))
+        self.keras_model.add(Activation('tanh'))
         self.keras_model.add(Dense(units=self.hyper['output_dim']))
     
 
@@ -452,10 +453,9 @@ class Conv_MLP(KerasModel):
     def build(self):
         from keras.models import Sequential
         from keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Activation
-        from keras.layers.advanced_activations import LeakyReLU
 
         input_shape = (3, 64, 64)
-        self.keras_model = Sequential()a
+        self.keras_model = Sequential()
         self.keras_model.add(Conv2D(64, (5, 5), input_shape=input_shape, activation='relu'))  # num_units: 32*64*64
         self.keras_model.add(Dropout(0.2))
         self.keras_model.add(MaxPooling2D(pool_size=(2, 2))) # out: 32x32
