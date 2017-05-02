@@ -365,7 +365,7 @@ class KerasModel(BaseModel):
                                      verbose = settings.VERBOSE,
                                      initial_epoch = self.epochs_completed,
                                      callbacks=[self.history])
-                logout(str(history))
+                logout(str(self.history))
                 epoch += epochs_for_this_fit
                 self.epochs_completed += epochs_for_this_fit
             # Checkpoint time (save hyper parameters, model and checkpoint file)
