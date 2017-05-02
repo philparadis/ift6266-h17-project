@@ -33,7 +33,12 @@ def initialize_directories():
     # Set some file paths
     settings.OUTLOGFILE = os.path.join(settings.LOGS_DIR, "output.log")
     settings.ERRLOGFILE = os.path.join(settings.LOGS_DIR, "errors.log")
-   
+
+    # Clean up the log files if they already are present (rather than append to them, 
+    if os.path.isfile(settings.OUTLOGFILE):
+        os.remove(settings.OUTLOGFILE)
+    if os.path.isfile(settings.ERRLOGFILE):
+        os.remove(settings.ERRLOGFILE)
 
 if __name__ == "__main__":
     import settings
