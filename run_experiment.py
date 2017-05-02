@@ -114,20 +114,9 @@ def run_experiment():
             log(" * {0: <20} = {1}".format(str(key), str(checkpoint[key])))
         log("")
     else:
-        ### Build model's architecture
         print_info("No valid checkpoint found for this experiment. Building and training model from scratch.")
-        if settings.MODEL == "mlp" or settings.MODEL == "test" or settings.MODEL == "conv_mlp" or settings.MODEL == "conv_deconv":
-            model.initialize()
-            model.build()
-        elif settings.MODEL == "dcgan":
-            model.initialize()
-        elif settings.MODEL == "wgan":
-            model.initialize()
-        elif settings.MODEL == "lsgan":
-            model.initialize()
-        else:
-            raise NotImplementedError()
-        
+        ### Build model's architecture
+        model.build()
         ### Save hyperparameters to a file
         model.save_hyperparams()
 
@@ -310,11 +299,11 @@ def run_experiment():
         Dataset.normalize()
         Dataset.preload()
         
-        generator, critic, train_fn, gen_fn = model.train(Dataset, num_epochs = settings.NUM_EPOCHS,
-                                                          epochsize = settings.UPDATES_PER_EPOCH,
-                                                          batchsize = settings.BATCH_SIZE,
-                                                          architecture = settings.LSGAN_ARCHITECTURE,
-                                                          initial_eta = settings.GAN_LEARNING_RATE)
+        generator, critic, gen_fn = model.train(Dataset, num_epochs = settings.NUM_EPOCHS,
+                                                epochsize = settings.UPDATES_PER_EPOCH,
+                                                batchsize = settings.BATCH_SIZE,
+                                                architecture = settings.LSGAN_ARCHITECTURE,
+                                                initial_eta = settings.GAN_LEARNING_RATE)
 
         Dataset.denormalize()
         

@@ -180,103 +180,120 @@ def iterate_minibatches(inputs, targets, batchsize, shuffle=False):
 # more functions to better separate the code, but it wouldn't make it any
 # easier to read.
 
-def train(Dataset, num_epochs=200, batchsize=128, initial_eta=2e-4):
-    # Load the dataset
-    log("Loading data...")
-    X_train, X_test, y_train, y_test, ind_train, ind_test = Dataset.return_data()
 
-    # Prepare Theano variables for inputs and targets
-    noise_var = T.matrix('noise')
-    input_var = T.tensor4('inputs')
-#    target_var = T.ivector('targets')
+class DCGAN_Model(BaseModel):
+    def __init__(self, model_name, hyperparams = hyper_params.default_dcgan_hyper_params):
+        super(DCGAN_Model, self).__init__(model_name = model_name, hyperparams = hyperparams)
+        self.generator = None
+        self.discriminator = None
+        self.train_fn = None
+        self.gen_fn = None
 
-    # Create neural network model
-    log("Building model and compiling functions...")
-    generator = build_generator(noise_var)
-    discriminator = build_discriminator(input_var)
+    def build(self):
+        pass
+    
+    def train(self, Dataset, num_epochs=200, batchsize=128, initial_eta=2e-4):
+        # Load the dataset
+        log("Loading data...")
+        X_train, X_test, y_train, y_test, ind_train, ind_test = Dataset.return_data()
 
-    # Create expression for passing real data through the discriminator
-    real_out = lasagne.layers.get_output(discriminator)
-    # Create expression for passing fake data through the discriminator
-    fake_out = lasagne.layers.get_output(discriminator,
-                                         lasagne.layers.get_output(generator))
+        # Prepare Theano variables for inputs and targets
+        noise_var = T.matrix('noise')
+        input_var = T.tensor4('inputs')
+    #    target_var = T.ivector('targets')
 
-    # Create loss expressions
-    generator_loss = lasagne.objectives.binary_crossentropy(fake_out, 1).mean()
-    discriminator_loss = (lasagne.objectives.binary_crossentropy(real_out, 1)
-            + lasagne.objectives.binary_crossentropy(fake_out, 0)).mean()
+        # Create neural network model
+        log("Building model and compiling functions...")
+        generator = build_generator(noise_var)
+        discriminator = build_discriminator(input_var)
 
-    # Create update expressions for training
-    generator_params = lasagne.layers.get_all_params(generator, trainable=True)
-    discriminator_params = lasagne.layers.get_all_params(discriminator, trainable=True)
-    eta = theano.shared(lasagne.utils.floatX(initial_eta))
-    updates = lasagne.updates.adam(
-            generator_loss, generator_params, learning_rate=eta, beta1=0.5)
-    updates.update(lasagne.updates.adam(
-            discriminator_loss, discriminator_params, learning_rate=eta, beta1=0.5))
+        # Create expression for passing real data through the discriminator
+        real_out = lasagne.layers.get_output(discriminator)
+        # Create expression for passing fake data through the discriminator
+        fake_out = lasagne.layers.get_output(discriminator,
+                                             lasagne.layers.get_output(generator))
 
-    # Compile a function performing a training step on a mini-batch (by giving
-    # the updates dictionary) and returning the corresponding training loss:
-    train_fn = theano.function([noise_var, input_var],
-                               [(real_out > .5).mean(),
-                                (fake_out < .5).mean()],
-                               updates=updates)
+        # Create loss expressions
+        generator_loss = lasagne.objectives.binary_crossentropy(fake_out, 1).mean()
+        discriminator_loss = (lasagne.objectives.binary_crossentropy(real_out, 1)
+                + lasagne.objectives.binary_crossentropy(fake_out, 0)).mean()
 
-    # Compile another function generating some data
-    gen_fn = theano.function([noise_var],
-                             lasagne.layers.get_output(generator,
-                                                       deterministic=True))
+        # Create update expressions for training
+        generator_params = lasagne.layers.get_all_params(generator, trainable=True)
+        discriminator_params = lasagne.layers.get_all_params(discriminator, trainable=True)
+        eta = theano.shared(lasagne.utils.floatX(initial_eta))
+        updates = lasagne.updates.adam(
+                generator_loss, generator_params, learning_rate=eta, beta1=0.5)
+        updates.update(lasagne.updates.adam(
+                discriminator_loss, discriminator_params, learning_rate=eta, beta1=0.5))
 
-    # Create experiment's results directories
-    settings.touch_dir(settings.MODELS_DIR)
-    settings.touch_dir(settings.EPOCHS_DIR)
+        # Compile a function performing a training step on a mini-batch (by giving
+        # the updates dictionary) and returning the corresponding training loss:
+        train_fn = theano.function([noise_var, input_var],
+                                   [(real_out > .5).mean(),
+                                    (fake_out < .5).mean()],
+                                   updates=updates)
 
-    # Finally, launch the training loop.
-    log("Starting training...")
-    # We iterate over epochs:
-    for epoch in range(num_epochs):
-        # In each epoch, we do a full pass over the training data:
-        train_err = 0
-        train_batches = 0
-        start_time = time.time()
-        for batch in iterate_minibatches(X_train, y_train, batchsize, shuffle=True):
-            inputs, targets = batch
-            noise = lasagne.utils.floatX(np.random.rand(len(inputs), 100))
-            train_err += np.array(train_fn(noise, inputs))
-            train_batches += 1
+        # Compile another function generating some data
+        gen_fn = theano.function([noise_var],
+                                 lasagne.layers.get_output(generator,
+                                                           deterministic=True))
 
-        # Then we print the results for this epoch:
-        log("Epoch {} of {} took {:.3f}s".format(
-            epoch + 1, num_epochs, time.time() - start_time))
-        log("  training loss:\t\t{}".format(train_err / train_batches))
+        # Create experiment's results directories
+        settings.touch_dir(settings.MODELS_DIR)
+        settings.touch_dir(settings.EPOCHS_DIR)
 
-        # And finally, we plot some generated data
-        samples = np.array(gen_fn(lasagne.utils.floatX(np.random.rand(10*10, 100))))
-        sample = np.array(gen_fn(lasagne.utils.floatX(np.random.rand(1, 100))))
+        # Finally, launch the training loop.
+        log("Starting training...")
+        # We iterate over epochs:
+        for epoch in range(num_epochs):
+            # In each epoch, we do a full pass over the training data:
+            train_err = 0
+            train_batches = 0
+            start_time = time.time()
+            for batch in iterate_minibatches(X_train, y_train, batchsize, shuffle=True):
+                inputs, targets = batch
+                noise = lasagne.utils.floatX(np.random.rand(len(inputs), 100))
+                train_err += np.array(train_fn(noise, inputs))
+                train_batches += 1
 
-        samples = dataset.denormalize_data(samples)
-        sample = dataset.denormalize_data(sample)
+            # Then we print the results for this epoch:
+            log("Epoch {} of {} took {:.3f}s".format(
+                epoch + 1, num_epochs, time.time() - start_time))
+            log("  training loss:\t\t{}".format(train_err / train_batches))
 
-        samples_path = os.path.join(settings.EPOCHS_DIR, 'samples_epoch{0:<5}.png'.format(epoch + 1))
-        Image.fromarray(samples.reshape(10, 10, 3, 64, 64)
-                        .transpose(0, 3, 1, 4, 2)
-                        .reshape(10*64, 10*64, 3)).save(samples_path)
-        sample_path = os.path.join(settings.EPOCHS_DIR, 'one_sample_epoch{0:<5}.png'.format(epoch + 1))
-        Image.fromarray(sample.reshape(3, 64, 64).transpose(1, 2, 0).reshape(64, 64, 3)).save(sample_path)
+            # And finally, we plot some generated data
+            samples = np.array(gen_fn(lasagne.utils.floatX(np.random.rand(10*10, 100))))
+            sample = np.array(gen_fn(lasagne.utils.floatX(np.random.rand(1, 100))))
 
-        # After half the epochs, we start decaying the learn rate towards zero
-        if epoch >= num_epochs // 2:
-            progress = float(epoch) / num_epochs
-            eta.set_value(lasagne.utils.floatX(initial_eta*2*(1 - progress)))
+            samples = dataset.denormalize_data(samples)
+            sample = dataset.denormalize_data(sample)
 
-    # Optionally, you could now dump the network weights to a file like this:
-    np.savez(os.path.join(settings.MODELS_DIR, 'dcgan_gen.npz'), *lasagne.layers.get_all_param_values(generator))
-    np.savez(os.path.join(settings.MODELS_DIR, 'dcgan_disc.npz'), *lasagne.layers.get_all_param_values(discriminator))
+            samples_path = os.path.join(settings.EPOCHS_DIR, 'samples_epoch{0:<5}.png'.format(epoch + 1))
+            Image.fromarray(samples.reshape(10, 10, 3, 64, 64)
+                            .transpose(0, 3, 1, 4, 2)
+                            .reshape(10*64, 10*64, 3)).save(samples_path)
+            sample_path = os.path.join(settings.EPOCHS_DIR, 'one_sample_epoch{0:<5}.png'.format(epoch + 1))
+            Image.fromarray(sample.reshape(3, 64, 64).transpose(1, 2, 0).reshape(64, 64, 3)).save(sample_path)
 
-    # And load them again later on like this:
-    # with np.load('model.npz') as f:
-    #     param_values = [f['arr_%d' % i] for i in range(len(f.files))]
-    # lasagne.layers.set_all_param_values(network, param_values)
+            # After half the epochs, we start decaying the learn rate towards zero
+            if epoch >= num_epochs // 2:
+                progress = float(epoch) / num_epochs
+                eta.set_value(lasagne.utils.floatX(initial_eta*2*(1 - progress)))
 
-    return generator, discriminator, train_fn, gen_fn
+        # Optionally, you could now dump the network weights to a file like this:
+        np.savez(os.path.join(settings.MODELS_DIR, 'dcgan_gen.npz'), *lasagne.layers.get_all_param_values(generator))
+        np.savez(os.path.join(settings.MODELS_DIR, 'dcgan_disc.npz'), *lasagne.layers.get_all_param_values(discriminator))
+
+        # And load them again later on like this:
+        # with np.load('model.npz') as f:
+        #     param_values = [f['arr_%d' % i] for i in range(len(f.files))]
+        # lasagne.layers.set_all_param_values(network, param_values)
+
+        self.generator = generator
+        self.discriminator = discriminator
+        self.train_fn = train_fn
+        self.gen_fn = gen_fn
+
+        return True
 

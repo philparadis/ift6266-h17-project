@@ -165,8 +165,11 @@ class BaseDataset(object):
             self.images_outer_flat = normalize_data(self.images_outer_flat)
             self.images_inner_flat = normalize_data(self.images_inner_flat)
         elif model == "conv_mlp":
-            self.images_inner2d = normalize_data(self.images_inner2d)
             self.images_outer2d = normalize_data(self.images_outer2d)
+            self.images_inner_flat = normalize_data(self.images_inner_flat)
+        elif model == "conv_deconv":
+            self.images_outer2d = normalize_data(self.images_outer2d)
+            self.images_inner2d = normalize_data(self.images_inner2d)
         elif model == "dcgan" or model == "wgan" or model == "lsgan":
             self.images = normalize_data(self.images)
             self.images_inner2d = normalize_data(self.images_inner2d)
@@ -178,6 +181,10 @@ class BaseDataset(object):
             y = self.images_inner_flat
             rand_seed = 1000 + seed
         elif model == "conv_mlp":
+            x = self.images_outer2d
+            y = self.images_inner_flat
+            rand_seed = 1001 + seed
+        elif model == "conv_deconv":
             x = self.images_outer2d
             y = self.images_inner2d
             rand_seed = 1001 + seed
@@ -217,8 +224,11 @@ class BaseDataset(object):
             self.images_outer_flat = denormalize_data(self.images_outer_flat)
             self.images_inner_flat = denormalize_data(self.images_inner_flat)
         elif model == "conv_mlp":
-            self.images_inner2d = denormalize_data(self.images_inner2d)
             self.images_outer2d = denormalize_data(self.images_outer2d)
+            self.images_inner_flat = denormalize_data(self.images_inner_flat)
+        elif model == "conv_deconv":
+            self.images_outer2d = denormalize_data(self.images_outer2d)
+            self.images_inner2d = denormalize_data(self.images_inner2d)
         elif model == "dcgan" or model == "wgan" or model == "lsgan":
             self.images = denormalize_data(self.images)
             self.images_inner2d = denormalize_data(self.images_inner2d)

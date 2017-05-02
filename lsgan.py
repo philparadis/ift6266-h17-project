@@ -50,11 +50,6 @@ class LSGAN_Model(GAN_BaseModel):
         self.full_gen_path = os.path.join(settings.MODELS_DIR, self.gen_filename)
         self.full_disc_path = os.path.join(settings.MODELS_DIR, self.disc_filename)
 
-        
-    def initialize(self):
-        pass
-        
-
     # ##################### Build the neural network model #######################
     # We create two models: The generator and the critic network.
     # The models are the same as in the Lasagne DCGAN example, except that the
@@ -65,7 +60,6 @@ class LSGAN_Model(GAN_BaseModel):
 
     def build_critic(self, input_var=None, architecture=1):
         return lsgan_architectures.build_critic_architecture(input_var, architecture)
-   
 
     def iterate_minibatches(self, inputs, targets, batchsize, shuffle=False,
                             forever=False):
@@ -83,7 +77,6 @@ class LSGAN_Model(GAN_BaseModel):
                 yield inputs[excerpt], targets[excerpt]
             if not forever:
                 break
-
 
     # ############################## Main program ################################
     # Everything else will be handled in our main program now. We could pull out
@@ -351,5 +344,5 @@ class LSGAN_Model(GAN_BaseModel):
         self.generator_train_fn = generator_train_fn
         self.critic_train_fn = critic_train_fn
 
-        return generator, critic, train_fn, gen_fn
+        return generator, critic, gen_fn
 

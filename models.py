@@ -312,8 +312,8 @@ class KerasModel(BaseModel):
         X_train, X_test, Y_train, Y_test, id_train, id_test = Dataset.return_data()
 
         #### Print model summary
-        print_info("Model summary:")
-        self.keras_model.summary()
+        #print_info("Model summary:")
+        #self.keras_model.summary()
 
         #### Compile the model (if necessary)
         self._compile()
@@ -433,9 +433,9 @@ class Conv_MLP(KerasModel):
         super(Conv_MLP, self).__init__(model_name = model_name, hyperparams = hyperparams)
 
     def build(self):
-        from keras.layers.core import Dense, Activation
         from keras.models import Sequential
-
+        from keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Activation
+        from keras.layers.advanced_activations import LeakyReLU
         input_shape = (3, 64, 64)
         self.keras_model = Sequential()
         self.keras_model.add(Conv2D(32, (3, 3), input_shape=input_shape))
@@ -452,30 +452,31 @@ class Conv_MLP(KerasModel):
 
         self.keras_model.add(Flatten())
         self.keras_model.add(Dense(128))
-        self.keras_model.add(Activation('lrelu'))
+        self.keras_model.add(Activation(LeakyReLU()))
     
-        self.keras_model.add(Dense(units=model_params.output_dim))
+        self.keras_model.add(Dense(units=self.hyper['output_dim']))
         
 class Conv_Deconv(KerasModel):
-    def __init__(self, model_name, hyperparams = hyper_params.default_convdeconv_hyper_params):
+    def __init__(self, model_name, hyperparams = hyper_params.default_conv_deconv_hyper_params):
         super(Conv_Deconv, self).__init__(model_name = model_name, hyperparams = hyperparams)
 
     def build(self):
-
-        y = []
-
+        from keras.models import Model
+        from keras.layers import Input
+        from keras.layers import Conv2D as Convolution2D
+        from keras.layers import Conv2DTranspose as Deconvolution2D
         input_img = Input(shape=(3, 64, 64))
         # Conv
         x = input_img
-        x = Convolution2D(32, 3, 3, subsample=(2, 2), border_mode='same', activation='relu')(x) # out: 32x32
-        x = Convolution2D(32, 3, 3, subsample=(2, 2), border_mode='same', activation='relu')(x) # out: 16x16
-        x = Convolution2D(64, 5, 5, subsample=(2, 2), border_mode='same', activation='relu')(x) # out: 8x8
+        x = Convolution2D(32, 3, 3, strides=(2, 2), padding='same', activation='relu')(x) # out: 32x32
+        x = Convolution2D(32, 3, 3, strides=(2, 2), padding='same', activation='relu')(x) # out: 16x16
+        x = Convolution2D(64, 5, 5, strides=(2, 2), padding='same', activation='relu')(x) # out: 8x8
         # Deconv
-        x = Deconvolution2D(64, 5, 5, border_mode='same', activation='relu')(x) #out: 8x8
-        x = Deconvolution2D(64, 5, 5, subsample=(2, 2), border_mode='same', activation='relu')(x) #out: 16x16
-        x = Deconvolution2D(32, 3, 3, subsample=(2, 2), border_mode='same', activation='relu')(x) #out: 32x32
-        x = Deconvolution2D(32, 3, 3, border_mode='same', activation='relu')(x) #out: 32x32
-        x = Deconvolution2D(3, 3, 3, border_mode='same', activation='relu')(x) #out: 32x32
+        x = Deconvolution2D(64, 5, 5, padding='same', activation='relu')(x) #out: 8x8
+        x = Deconvolution2D(64, 5, 5, strides=(2, 2), padding='same', activation='relu')(x) #out: 16x16
+        x = Deconvolution2D(32, 3, 3, strides=(2, 2), padding='same', activation='relu')(x) #out: 32x32
+        x = Deconvolution2D(32, 3, 3, padding='same', activation='relu')(x) #out: 32x32
+        x = Deconvolution2D(3, 3, 3, padding='same', activation='relu')(x) #out: 32x32
 
         self.keras_model = Model(input=[input_img], output=x)
 
@@ -492,6 +493,9 @@ class GAN_BaseModel(BaseModel):
         self.disc_filename = "model_discriminator.npz"
         self.full_gen_path = os.path.join(settings.MODELS_DIR, self.gen_filename)
         self.full_disc_path = os.path.join(settings.MODELS_DIR, self.disc_filename)
+
+    def build(self):
+        pass
 
     def load_model(self):
         """Return True if a valid model was found and correctly loaded. Return False if no model was loaded."""
@@ -540,16 +544,3 @@ class GAN_BaseModel(BaseModel):
             np.savez(self.full_gen_path, *get_all_param_values(self.generator))
             np.savez(self.full_disc_path, *get_all_param_values(self.discriminator))
 
-class DCGAN_Model(BaseModel):
-    def __init__(self, model_name, hyperparams = hyper_params.default_dcgan_hyper_params):
-        super(DCGAN_Model, self).__init__(model_name = model_name, hyperparams = hyperparams)
-
-    def train(self, dataset):
-        pass
-
-class WGAN_Model(BaseModel):
-    def __init__(self, model_name, hyperparams = hyper_params.default_dcgan_hyper_params):
-        super(WGAN_Model, self).__init__(model_name = model_name, hyperparams = hyperparams)
-
-    def train(self, dataset):
-        pass

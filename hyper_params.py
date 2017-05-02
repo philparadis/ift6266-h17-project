@@ -31,7 +31,7 @@ default_conv_mlp_hyper_params = {
     "convolution" : { "receptive_field_size" : 5, "stride" : 1, "padding" : "same" }
     }
 
-default_convdeconv_hyper_params = {
+default_conv_deconv_hyper_params = {
     "input_dim" : 64*64*3,
     "output_dim" : 32*32*3,
     "input_shape" : (None, 3, 64, 64),
