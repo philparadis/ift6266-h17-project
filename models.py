@@ -225,13 +225,28 @@ class BaseModel(object):
         raise NotImplemented()
 
 class KerasModel(BaseModel):
+
+    class LossHistory(keras.callbacks.Callback):
+        def on_train_begin(self, logs={}):
+            self.losses = []
+
+        def on_batch_end(self, batch, logs={}):
+            self.losses.append(logs.get('loss'))
+
+        def __repr__(self):
+            for epoch, loss in enumerate(self.losses):
+                print("Epoch {0:>4}/{1:<4} loss = {2:.5f}", loss)
+    
     def __init__(self, model_name, hyperparams = hyper_params.default_mlp_hyper_params): 
         super(KerasModel, self).__init__(model_name = model_name, hyperparams = hyperparams)
         self.keras_model = None
-
+        # Feature matching layers
+        self.feature_matching_layers = []
         # Constants
         self.model_path = os.path.join(settings.MODELS_DIR, "model.hdf5")
-
+        # Loss history Keras callback
+        self.history = LossHistory()
+        
     def get_intermediate_activations(model, k, X_batch):
         """Get the (intermediate) activations at the k-th layer in 'model' from input X_batch"""
         get_activations = theano.function([model.layers[0].input],
@@ -301,7 +316,8 @@ class KerasModel(BaseModel):
                 optimizer = optimizers.Adam(lr = self.hyper['learning_rate']) # Default lr = 0.001
             else:
                 optimizer = self.hyper['optimizer']
-                
+
+
             self.keras_model.compile(loss = self.hyper['loss_function'],
                                      optimizer = optimizer,
                                      metrics = [self.hyper['loss_function']])
@@ -346,7 +362,9 @@ class KerasModel(BaseModel):
                                      epochs = self.epochs_completed + epochs_for_this_fit,
                                      batch_size = self.hyper['batch_size'],
                                      verbose = settings.VERBOSE,
-                                     initial_epoch = self.epochs_completed)
+                                     initial_epoch = self.epochs_completed,
+                                     callbacks=[self.history])
+                logout(str(history))
                 epoch += epochs_for_this_fit
                 self.epochs_completed += epochs_for_this_fit
             # Checkpoint time (save hyper parameters, model and checkpoint file)
@@ -366,7 +384,7 @@ class KerasModel(BaseModel):
         print_positive("Testing score  {0: >6}: {1:.5f}".format(metric, train_scores[1]))
 
         ### Save the model's performance to disk
-        path_model_score = os.path.join(settings.MODELS_DIR, "model_score.txt")
+        path_model_score = os.path.join(settings.PERF_DIR, "score.txt")
         print_info("Saving performance to file '{}'".format(path_model_score))
         with open(path_model_score, "w") as fd:
             fd.write("Performance statistics\n")
@@ -388,10 +406,8 @@ class MLP_Model(KerasModel):
         from keras.models import Sequential
 
         self.keras_model = Sequential()
-        self.keras_model.add(Dense(units=1024, input_shape=(self.hyper['input_dim'], )))
-        self.keras_model.add(Activation('relu'))
-        self.keras_model.add(Dense(units=512))
-        self.keras_model.add(Activation('relu'))
+        self.keras_model.add(Dense(units=1024, activation='relu', input_shape=(self.hyper['input_dim'], )))
+        self.keras_model.add(Dense(units=512), activation='tanh')
         self.keras_model.add(Dense(units=self.hyper['output_dim']))
 
     def plot_architecture(self):
@@ -436,26 +452,58 @@ class Conv_MLP(KerasModel):
         from keras.models import Sequential
         from keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Activation
         from keras.layers.advanced_activations import LeakyReLU
+
         input_shape = (3, 64, 64)
         self.keras_model = Sequential()
-        self.keras_model.add(Conv2D(32, (3, 3), input_shape=input_shape))
-        self.keras_model.add(Activation('relu'))
+        self.keras_model.add(Conv2D(32, (5, 5), input_shape=input_shape, activation='relu'))  # num_units: 32*64*64
+        self.keras_model.add(Dropout(0.2))
         self.keras_model.add(MaxPooling2D(pool_size=(2, 2))) # out: 32x32
 
-        self.keras_model.add(Conv2D(32, (3, 3)))
-        self.keras_model.add(Activation('relu'))
+        self.keras_model.add(Conv2D(64, (5, 5), padding='same', activation='relu'))  # num_units: 64*32*32
+        self.keras_model.add(Dropout(0.5))
         self.keras_model.add(MaxPooling2D(pool_size=(2, 2))) # out: 16x16
 
-        self.keras_model.add(Conv2D(64, (3, 3)))
-        self.keras_model.add(Activation('relu'))
+        self.keras_model.add(Conv2D(128, (5, 5), padding='same', activation='relu')) # num_units: 128x16x16
+        self.keras_model.add(Dropout(0.5))
+        self.keras_model.add(MaxPooling2D(pool_size=(2, 2))) # out: 8x8
+
+        self.feature_matching_layers.append(Conv2D(256, (3, 3), padding='same', activation='relu'))
+        self.keras_model.add(self.feature_matching_layers[-1]) # num_units: 256*8*8
+        self.keras_model.add(Dropout(0.5))
+        self.keras_model.add(MaxPooling2D(pool_size=(2, 2))) # num_units: 256*4*4, out: 4x4
+
+        self.keras_model.add(Flatten())
+        self.keras_model.add(Dense(units=512, activation='tanh'))
+        self.keras_model.add(Dense(units=self.hyper['output_dim'])) # output_dim = 3*32*32 = 3072
+
+class Conv_MLP(KerasModel):
+    def __init__(self, model_name, hyperparams = hyper_params.default_conv_mlp_hyper_params):
+        super(Conv_MLP, self).__init__(model_name = model_name, hyperparams = hyperparams)
+
+    def build(self):
+        from keras.models import Sequential
+        from keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Activation
+        from keras.layers.advanced_activations import LeakyReLU
+
+        input_shape = (3, 64, 64)
+        self.keras_model = Sequential()
+        self.keras_model.add(Conv2D(32, (5, 5), input_shape=input_shape, activation='relu'))  # num_units: 32*64*64
+        self.keras_model.add(Dropout(0.2))
+        self.keras_model.add(MaxPooling2D(pool_size=(2, 2))) # out: 32x32
+
+        self.keras_model.add(Conv2D(64, (5, 5), padding='same', activation='relu'))  # num_units: 64*32*32
+        self.keras_model.add(Dropout(0.5))
+        self.keras_model.add(MaxPooling2D(pool_size=(2, 2))) # out: 16x16
+
+        self.feature_matching_layers.append(Conv2D(128, (5, 5), padding='same', activation='relu'))
+        self.keras_model.add(self.feature_matching_layer[-1]) # num_units: 128x16x16
+        self.keras_model.add(Dropout(0.5))
         self.keras_model.add(MaxPooling2D(pool_size=(2, 2))) # out: 8x8
 
         self.keras_model.add(Flatten())
-        self.keras_model.add(Dense(128))
-        self.keras_model.add(LeakyReLU())
-    
-        self.keras_model.add(Dense(units=self.hyper['output_dim']))
-        
+        self.keras_model.add(Dense(units=4096, activation='tanh'))
+        self.keras_model.add(Dense(units=self.hyper['output_dim'])) # output_dim = 3*32*32 = 3072
+
 class Conv_Deconv(KerasModel):
     def __init__(self, model_name, hyperparams = hyper_params.default_conv_deconv_hyper_params):
         super(Conv_Deconv, self).__init__(model_name = model_name, hyperparams = hyperparams)
@@ -465,21 +513,20 @@ class Conv_Deconv(KerasModel):
         from keras.layers import Input
         from keras.layers import Conv2D as Convolution2D
         from keras.layers import Conv2DTranspose as Deconvolution2D
-        input_img = Input(shape=(3, 64, 64))
+
         # Conv
-        x = input_img
-        x = Convolution2D(32, 3, 3, strides=(2, 2), padding='same', activation='relu')(x) # out: 32x32
-        x = Convolution2D(32, 3, 3, strides=(2, 2), padding='same', activation='relu')(x) # out: 16x16
-        x = Convolution2D(64, 5, 5, strides=(2, 2), padding='same', activation='relu')(x) # out: 8x8
+        x = Convolution2D(64, 5, strides=(2, 2), padding='same', activation='relu')(Input(shape=(3, 64, 64))) # out: 32x32
+        x = Convolution2D(64, 5, strides=(2, 2), padding='same', activation='relu')(x) # out: 16x16
+        x = Convolution2D(64, 5, strides=(2, 2), padding='same', activation='relu')(x) # out: 8x8
         # Deconv
-        x = Deconvolution2D(64, 5, 5, padding='same', activation='relu')(x) #out: 8x8
-        x = Deconvolution2D(64, 5, 5, strides=(2, 2), padding='same', activation='relu')(x) #out: 16x16
-        x = Deconvolution2D(32, 3, 3, strides=(2, 2), padding='same', activation='relu')(x) #out: 32x32
-        x = Deconvolution2D(32, 3, 3, padding='same', activation='relu')(x) #out: 32x32
-        x = Deconvolution2D(3, 3, 3, padding='same', activation='relu')(x) #out: 32x32
-
+        x = Deconvolution2D(64, 5, padding='same', activation='relu')(x) #out: 8x8
+        x = Deconvolution2D(64, 5, strides=(2, 2), padding='same', activation='relu')(x) #out: 16x16
+        x = Deconvolution2D(64, 5, strides=(2, 2), padding='same', activation='relu')(x) #out: 32x32
+        x = Deconvolution2D(64, 5, padding='same', activation='relu')(x) #out: 32x32
+        self.feature_matching_layers.append(x)
+        x = Deconvolution2D(3, 5, padding='same', activation='tanh')(x) #out: 32x32
         self.keras_model = Model(input=[input_img], output=x)
-
+        
 class GAN_BaseModel(BaseModel):
     def __init__(self, model_name, hyperparams = hyper_params.default_gan_basemodel_hyper_params):
         super(GAN_BaseModel, self).__init__(model_name = model_name, hyperparams = hyperparams)
@@ -488,6 +535,9 @@ class GAN_BaseModel(BaseModel):
         self.train_fn = None
         self.gen_fn = None
 
+        # Feature matching layers
+        self.feature_matching_layers = []
+        
         # Constants
         self.gen_filename = "model_generator.npz"
         self.disc_filename = "model_discriminator.npz"
