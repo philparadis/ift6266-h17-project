@@ -83,7 +83,7 @@ class LSGAN_Model(GAN_BaseModel):
     # more functions to better separate the code, but it wouldn't make it any
     # easier to read.
 
-    def train(self, dataset, num_epochs = 1000, epochsize = 50, batchsize = 64, initial_eta = 0.00005, clip=0.01)
+    def train(self, dataset, num_epochs = 1000, epochsize = 50, batchsize = 64, initial_eta = 0.00005, clip=0.01):
         # Load the dataset
         log("Loading data...")
         X_train, X_test, y_train, y_test, ind_train, ind_test = Dataset.return_data()
