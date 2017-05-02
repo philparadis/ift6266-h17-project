@@ -317,7 +317,7 @@ class KerasModel(BaseModel):
             #     optimizer = optimizers.Adam(lr = self.hyper['learning_rate']) # Default lr = 0.001
             # else:
             #     optimizer = self.hyper['optimizer']
-            optimizer = optimizers.Adam(lr = settings.LEARNING_RATE, beta1 = 0.5)
+            optimizer = optimizers.Adam(lr = settings.LEARNING_RATE)
 
             self.keras_model.compile(loss = self.hyper['loss_function'],
                                      optimizer = optimizer,
