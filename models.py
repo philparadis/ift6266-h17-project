@@ -312,11 +312,11 @@ class KerasModel(BaseModel):
             from keras import losses
 
             print_info("Compiling model...")
-            if self.hyper['optimizer'] == "adam":
-                optimizer = optimizers.Adam(lr = self.hyper['learning_rate']) # Default lr = 0.001
-            else:
-                optimizer = self.hyper['optimizer']
-
+            # if self.hyper['optimizer'] == "adam":
+            #     optimizer = optimizers.Adam(lr = self.hyper['learning_rate']) # Default lr = 0.001
+            # else:
+            #     optimizer = self.hyper['optimizer']
+            optimizer = optimizers.Adam(lr = settings.LEARNING_RATE, beta1 = 0.5)
 
             self.keras_model.compile(loss = self.hyper['loss_function'],
                                      optimizer = optimizer,
