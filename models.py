@@ -407,10 +407,8 @@ class MLP_Model(KerasModel):
         from keras.models import Sequential
 
         self.keras_model = Sequential()
-        self.keras_model.add(Dense(units=1024, input_shape=(self.hyper['input_dim'], )))
-        self.keras_model.add(Activation('relu'))
-        self.keras_model.add(Dense(units=512))
-        self.keras_model.add(Activation('tanh'))
+        self.keras_model.add(Dense(units=1024, activation='relu', input_shape=(self.hyper['input_dim'], )))
+        self.keras_model.add(Dense(units=512, activation='tanh'))
         self.keras_model.add(Dense(units=self.hyper['output_dim']))
 
     def plot_architecture(self):
@@ -440,6 +438,7 @@ class Test_Model(KerasModel):
     def build(self):
         from keras.layers.core import Dense, Activation
         from keras.models import Sequential
+
         self.keras_model = Sequential()
         self.keras_model.add(Dense(units=128, input_shape=(self.hyper['input_dim'], )))
         self.keras_model.add(Activation('tanh'))
