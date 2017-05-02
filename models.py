@@ -339,7 +339,7 @@ class KerasModel(BaseModel):
         epoch = 0
         next_epoch_checkpoint = settings.EPOCHS_PER_CHECKPOINT
         while epoch < settings.NUM_EPOCHS:
-            while epoch < next_epoch_checkpoint and epoch < settings.NUM_EPOCHS::
+            while epoch < next_epoch_checkpoint and epoch < settings.NUM_EPOCHS:
                 epochs_for_this_fit = min( settings.NUM_EPOCHS - epoch, next_epoch_checkpoint - epoch)
                 self.keras_model.fit(X_train, Y_train,
                                      validation_data = (X_test, Y_test),
