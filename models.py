@@ -516,7 +516,8 @@ class Conv_Deconv(KerasModel):
         from keras.layers import Conv2DTranspose as Deconvolution2D
 
         # Conv
-        x = Convolution2D(64, 5, strides=(2, 2), padding='same', activation='relu')(Input(shape=(3, 64, 64))) # out: 32x32
+        input_img = Input(shape=(3, 64, 64))
+        x = Convolution2D(64, 5, strides=(2, 2), padding='same', activation='relu')(input_img) # out: 32x32
         x = Convolution2D(64, 5, strides=(2, 2), padding='same', activation='relu')(x) # out: 16x16
         x = Convolution2D(64, 5, strides=(2, 2), padding='same', activation='relu')(x) # out: 8x8
         # Deconv
