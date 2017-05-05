@@ -407,29 +407,29 @@ class MLP_Model(KerasModel):
         from keras.models import Sequential
 
         self.keras_model = Sequential()
-        self.keras_model.add(Dense(units=1024, activation='relu', input_shape=(self.hyper['input_dim'], )))
-        self.keras_model.add(Dense(units=512, activation='tanh'))
-        self.keras_model.add(Dense(units=self.hyper['output_dim']))
+        self.keras_model.add(Dense(1024, activation='relu', input_shape=(self.hyper['input_dim'], )))
+        self.keras_model.add(Dense(512, activation='relu'))
+        self.keras_model.add(Dense(self.hyper['output_dim'], activation='tanh'))
 
     def plot_architecture(self):
         ### Plot a graph of the model's architecture
-        try:
-            import pydot
-            try:
-                import graphviz
-                from keras.utils import plot_model
-                plot_model(self.keras_model, to_file=os.path.join(settings.MODELS_DIR, 'model_plot.png'), show_shapes=True)
-            except ImportError as e:
-                handle_warning("Module graphviz not found, cannot plot a diagram of the model's architecture.", e)
-        except ImportError as e:
-            handle_warning("Module pydot not found, cannot plot a diagram of the model's architecture.", e)
+        # try:
+        #     import pydot
+        #     try:
+        #         import graphviz
+        #         from keras.utils import plot_model
+        #         plot_model(self.keras_model, to_file=os.path.join(settings.MODELS_DIR, 'model_plot.png'), show_shapes=True)
+        #     except ImportError as e:
+        #         handle_warning("Module graphviz not found, cannot plot a diagram of the model's architecture.", e)
+        # except ImportError as e:
+        #     handle_warning("Module pydot not found, cannot plot a diagram of the model's architecture.", e)
 
         ### Output a summary of the model, including the various layers, activations and total number of weights
-        old_stdout = sys.stdout
-        sys.stdout = open(os.path.join(settings.MODELS_DIR, 'model_summary.txt'), 'w')
-        self.keras_model.summary()
-        sys.stdout.close()
-        sys.stdout = old_stdout
+        # old_stdout = sys.stdout
+        # sys.stdout = open(os.path.join(settings.MODELS_DIR, 'model_summary.txt'), 'w')
+        # self.keras_model.summary()
+        # sys.stdout.close()
+        # sys.stdout = old_stdout
 
 class Test_Model(KerasModel):
     def __init__(self, model_name, hyperparams = hyper_params.default_test_hyper_params):
@@ -441,8 +441,8 @@ class Test_Model(KerasModel):
 
         self.keras_model = Sequential()
         self.keras_model.add(Dense(units=128, input_shape=(self.hyper['input_dim'], )))
-        self.keras_model.add(Activation('tanh'))
-        self.keras_model.add(Dense(units=self.hyper['output_dim']))
+        self.keras_model.add(Dense(128, activation='relu'))
+        self.keras_model.add(Dense(self.hyper['output_dim'], activation='tanh'))
     
 
 class Conv_MLP(KerasModel):
@@ -463,14 +463,15 @@ class Conv_MLP(KerasModel):
         self.keras_model.add(Dropout(0.5))
         self.keras_model.add(MaxPooling2D(pool_size=(2, 2))) # out: 16x16
 
-        self.feature_matching_layers.append(Conv2D(256, (5, 5), padding='same', activation='relu'))
-        self.keras_model.add(self.feature_matching_layers[-1]) # num_units: 128x16x16
+        #self.feature_matching_layers.append(Conv2D(256, (5, 5), padding='same', activation='relu'))
+        #self.keras_model.add(self.feature_matching_layers[-1]) # num_units: 128x16x16
+        self.keras_model.add(Conv2D(256, (5, 5), padding='same', activation='relu')) # num_units: 128x16x16
         self.keras_model.add(Dropout(0.5))
         self.keras_model.add(MaxPooling2D(pool_size=(2, 2))) # out: 8x8
 
         self.keras_model.add(Flatten())
-        self.keras_model.add(Dense(units=4096, activation='tanh'))
-        self.keras_model.add(Dense(units=self.hyper['output_dim'])) # output_dim = 3*32*32 = 3072
+        self.keras_model.add(Dense(units=4096, activation='relu'))
+        self.keras_model.add(Dense(self.hyper['output_dim'], activation='tanh')) # output_dim = 3*32*32 = 3072
 
 class Conv_Deconv(KerasModel):
     def __init__(self, model_name, hyperparams = hyper_params.default_conv_deconv_hyper_params):
@@ -491,9 +492,9 @@ class Conv_Deconv(KerasModel):
         x = Deconvolution2D(64, 5, padding='same', activation='relu')(x) #out: 8x8
         x = Deconvolution2D(64, 5, strides=(2, 2), padding='same', activation='relu')(x) #out: 16x16
         x = Deconvolution2D(64, 5, strides=(2, 2), padding='same', activation='relu')(x) #out: 32x32
-        x = Deconvolution2D(64, 5, padding='same', activation='tanh')(x) #out: 32x32
+        x = Deconvolution2D(64, 5, padding='same', activation='relu')(x) #out: 32x32
         self.feature_matching_layers.append(x)
-        x = Deconvolution2D(3, 5, padding='same')(x) #out: 32x32
+        x = Deconvolution2D(3, 5, padding='same', activation='tanh')(x) #out: 32x32
         self.keras_model = Model(input=[input_img], output=x)
         
 class GAN_BaseModel(BaseModel):
