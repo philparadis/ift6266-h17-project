@@ -515,17 +515,19 @@ class Conv_Deconv(KerasModel):
 
         # Conv
         input_img = Input(shape=(3, 64, 64))
-        x = Convolution2D(64, 5, strides=(2, 2), padding='same', activation='relu')(input_img) # out: 32x32
-        x = Convolution2D(64, 5, strides=(2, 2), padding='same', activation='relu')(x) # out: 16x16
-        x = Convolution2D(64, 5, strides=(2, 2), padding='same', activation='relu')(x) # out: 8x8
+        x = Convolution2D(64, (5, 5), strides=(2, 2), padding='same', activation='relu')(input_img) # out: 32x32
+        x = Convolution2D(64, (5, 5), strides=(2, 2), padding='same', activation='relu')(x) # out: 16x16
+        x = Convolution2D(64, (5, 5), strides=(2, 2), padding='same', activation='relu')(x) # out: 8x8
         # Deconv
-        x = Deconvolution2D(64, 5, padding='same', activation='relu')(x) #out: 8x8
-        x = Deconvolution2D(64, 5, strides=(2, 2), padding='same', activation='relu')(x) #out: 16x16
-        x = Deconvolution2D(64, 5, strides=(2, 2), padding='same', activation='relu')(x) #out: 32x32
-        x = Deconvolution2D(64, 5, padding='same', activation='relu')(x) #out: 32x32
+        x = Deconvolution2D(64, (5, 5), padding='same', activation='relu', data_format="channels_first")(x) #out: 8x8
+        x = Deconvolution2D(64, (5, 5), strides=(2, 2), padding='same', activation='relu', data_format="channels_first")(x) #out: 16x16
+        x = Deconvolution2D(64, (5, 5), strides=(2, 2), padding='same', activation='relu', data_format="channels_first")(x) #out: 32x32
+        x = Deconvolution2D(64, (5, 5), padding='same', activation='relu', data_format="channels_first")(x) #out: 32x32
         self.feature_matching_layers.append(x)
-        x = Deconvolution2D(3, 5, padding='same', activation='tanh')(x) #out: 32x32
+        x = Deconvolution2D(3, (5, 5), padding='same', activation='tanh', data_format="channels_first")(x) #out: 32x32
         self.keras_model = Model(inputs=input_img, outputs=x)
+
+        print(self.keras_model.summary())
         
 class GAN_BaseModel(BaseModel):
     def __init__(self, model_name, hyperparams = hyper_params.default_gan_basemodel_hyper_params):
