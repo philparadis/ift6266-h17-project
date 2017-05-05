@@ -83,7 +83,7 @@ class LSGAN_Model(GAN_BaseModel):
     # more functions to better separate the code, but it wouldn't make it any
     # easier to read.
 
-    def train(self, dataset, num_epochs = 1000, epochsize = 50, batchsize = 64, initial_eta = 0.00005, clip=0.01):
+    def train(self, dataset, num_epochs = 1000, epochsize = 50, batchsize = 64, initial_eta = 0.00005):
         # Load the dataset
         log("Loading data...")
         X_train, X_test, y_train, y_test, ind_train, ind_test = Dataset.return_data()
@@ -127,10 +127,6 @@ class LSGAN_Model(GAN_BaseModel):
         from theano import function
         generator_train_fn = function([], generator_loss, givens={noise_var: noise}, updates=generator_updates)
         critic_train_fn = function([input_var], critic_loss, givens={noise_var: noise}, updates=critic_updates)
-
-        # Clip critic parameters in a limited range around zero (except biases)
-        for param in lasagne.layers.get_all_params(critic, trainable=True, regularizable=True):
-            critic_updates[param] = T.clip(critic_updates[param], -clip, clip)
 
         # Compile another function generating some data
         gen_fn = function([noise_var], lasagne.layers.get_output(generator, deterministic=True))
