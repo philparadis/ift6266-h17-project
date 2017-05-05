@@ -166,8 +166,8 @@ class LSGAN_Model(GAN_BaseModel):
             for _ in range(epochsize):
                 if mean_c_loss < 0.15:
                     critic_runs = 1
-                elif mean_c_loss < mean_g_loss/5:
-                    critic_runs = 3:
+                elif mean_c_loss < mean_g_loss/5.0:
+                    critic_runs = 3
                 elif mean_c_loss > mean_g_loss:
                     critic_runs = 30
                 else:
@@ -177,7 +177,7 @@ class LSGAN_Model(GAN_BaseModel):
                     inputs, targets = batch
                     critic_losses.append(critic_train_fn(inputs))
                     generator_runs
-                if mean_g_loss > mean_c_loss*5:
+                if mean_g_loss > mean_c_loss*5.0:
                     generator_runs = 30
                 else:
                     generator_runs = 5
