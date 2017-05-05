@@ -86,7 +86,7 @@ class LSGAN_Model(GAN_BaseModel):
     def train(self, dataset, num_epochs = 1000, epochsize = 50, batchsize = 64, initial_eta = 0.00005):
         # Load the dataset
         log("Loading data...")
-        X_train, X_test, y_train, y_test, ind_train, ind_test = Dataset.return_data()
+        X_train, X_test, y_train, y_test, ind_train, ind_test = dataset.return_data()
 
         # Prepare Theano variables for inputs and targets
         noise_var = T.matrix('noise')
