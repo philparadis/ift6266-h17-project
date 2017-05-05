@@ -4,6 +4,7 @@ import os, sys, errno
 import json
 import time
 import abc, six
+import glob
 
 import utils
 import hyper_params
@@ -234,7 +235,7 @@ class LossHistory(Callback):
 
     def __str__(self):
         for epoch, loss in enumerate(self.losses):
-            print("Epoch {0:>4}/{1:<4} loss = {2:.5f}".format(epoch, settings.NUM_EPOCHS, loss))
+            log("Epoch {0:>4}/{1:<4} loss = {2:.5f}".format(epoch, settings.NUM_EPOCHS, loss))
 
 
 class KerasModel(BaseModel):
@@ -245,8 +246,6 @@ class KerasModel(BaseModel):
         self.feature_matching_layers = []
         # Constants
         self.model_path = os.path.join(settings.MODELS_DIR, "model.hdf5")
-        # Loss history Keras callback
-        self.history = LossHistory()
         
     def get_intermediate_activations(model, k, X_batch):
         """Get the (intermediate) activations at the k-th layer in 'model' from input X_batch"""
@@ -261,30 +260,42 @@ class KerasModel(BaseModel):
         from shutil import copyfile
         from keras.models import load_model
 
-        model_epoch_filename = "model_epoch_{0:0>4}.hdf5".format(self.epochs_completed)
-        most_recent_model_path = os.path.join(settings.CHECKPOINTS_DIR, model_epoch_filename)
-        latest_model_path = self.model_path
-        if not os.path.isfile(latest_model_path):
-            if not os.path.isfile(most_recent_model_path):
-                latest_model_path = most_recent_model_path
-                print_warning("Unexpected problem: cannot find the model's HDF5 file anymore at path:\n'{}'".format(most_recent_model_path))
-                return False
-            
-        print_positive("Loading last known valid model (this includes the complete architecture, all weights, optimizer's state and so on)!")
+        chosen_model_path = None
+        best_model_path = None
+        best_model_glob = glob.glob(settings.MODELS_DIR + "/best_model_*.hdf5")
+        if len(best_model_glob) > 0:
+            best_model_path = best_model_glob[0]
+            chosen_model_path = best_model_path
+            print_positive("Loading *best* model with the lowest validation score: {}"
+                           .format(best_model_path))
+        if best_model_path == None:
+            model_epoch_filename = "model_epoch_{0:0>4}.hdf5".format(self.epochs_completed)
+            most_recent_model_path = os.path.join(settings.CHECKPOINTS_DIR, model_epoch_filename)
+            chosen_model_path = self.model_path
+            if not os.path.isfile(chosen_model_path):
+                if not os.path.isfile(most_recent_model_path):
+                    print_warning("Unexpected problem: cannot find the model's HDF5 file anymore at path:\n'{}'".format(most_recent_model_path))
+                    return False
+                else:
+                    chosen_model_path = most_recent_model_path
+
+            print_positive("Loading last known valid model (this includes the complete architecture, all weights, optimizer's state and so on)!")
+
         # Check if file is readable first
         try:
-            open(latest_model_path, "r").close()
+            open(chosen_model_path, "r").close()
         except Exception as e:
             handle_error("Lacking permission to *open for reading* the HDF5 model located at\n{}."
-                         .format(latest_model_path), e)
+                         .format(chosen_model_path), e)
             return False
+        
         # Load the actual HDF5 model file
         try:
-            self.keras_model = load_model(latest_model_path)
+            self.keras_model = load_model(chosen_model_path)
         except Exception as e:
-            handle_error("Unfortunately, the model did not parse as a valid HDF5 Keras model and cannot be loaded for an unkown reason. A backup of the model will be created, after which training will restart from scratch.".format(latest_model_path), e)
+            handle_error("Unfortunately, the model did not parse as a valid HDF5 Keras model and cannot be loaded for an unkown reason. A backup of the model will be created, after which training will restart from scratch.".format(chosen_model_path), e)
             try:
-                copyfile(latest_model_path, "{}.backup".format(latest_model_path))
+                copyfile(chosen_model_path, "{}.backup".format(chosen_model_path))
             except Exception as e:
                 handle_error("Looks like you're having a bad day. The copy operation failed for an unknown reason. We will exit before causing some serious damage ;). Better luck next time. Please verify your directory permissions and your default umask!.", e)
                 sys.exit(-3)
@@ -350,31 +361,36 @@ class KerasModel(BaseModel):
                    .format(self.epochs_completed + 1,
                            self.epochs_completed + settings.NUM_EPOCHS,
                            "(i.e. training an extra {0} epochs)".format(settings.NUM_EPOCHS) if self.epochs_completed == 0 else "",
-                           settings.EPOCHS_PER_CHECKPOINT))
+                           ))
 
+        # Define training callbacks
+        history = LossHistory()
+        early_stopping = EarlyStopping(monitor='val_loss', patience=201)
+        best_model_path = os.path.join(settings.MODELS_DIR,
+                                       "best_model_epoch.{epoch:03d}_loss.{val_loss:.4f}.hdf5")
+        checkpointer = ModelCheckpoint(filepath=best_model_path,
+                                       verbose=1, save_best_only=True,
+                                       period=settings.EPOCHS_PER_CHECKPOINT)
+        update_epochs_completed = LambdaCallback(on_epoch_end = lambda epoch,
+                                                 logs : self.epochs_completed += 1)
+
+        # Ready to train!
         print_positive("Starting to train model!...")
         epoch = 0
-        next_epoch_checkpoint = settings.EPOCHS_PER_CHECKPOINT
-        while epoch < settings.NUM_EPOCHS:
-            while epoch < next_epoch_checkpoint and epoch < settings.NUM_EPOCHS:
-                epochs_for_this_fit = min( settings.NUM_EPOCHS - epoch, next_epoch_checkpoint - epoch)
-                self.keras_model.fit(X_train, Y_train,
-                                     validation_data = (X_test, Y_test),
-                                     epochs = self.epochs_completed + epochs_for_this_fit,
-                                     batch_size = self.hyper['batch_size'],
-                                     verbose = settings.VERBOSE,
-                                     initial_epoch = self.epochs_completed,
-                                     callbacks=[self.history])
-                logout(str(self.history))
-                epoch += epochs_for_this_fit
-                self.epochs_completed += epochs_for_this_fit
-            # Checkpoint time (save hyper parameters, model and checkpoint file)
-            print_positive("CHECKPOINT AT EPOCH {}. Updating 'checkpoint.json' file...".format(self.epochs_completed))
-            self.update_checkpoint(settings.KEEP_ALL_CHECKPOINTS)
-            next_epoch_checkpoint += settings.EPOCHS_PER_CHECKPOINT
+        self.keras_model.fit(X_train, Y_train,
+                             validation_data = (X_test, Y_test),
+                             epochs = settings.NUM_EPOCHS,
+                             batch_size = self.hyper['batch_size'],
+                             verbose = settings.VERBOSE,
+                             initial_epoch = self.epochs_completed,
+                             callbacks=[self.history, early_stopping, checkpointer, update_epochs_completed])
 
         ### Training complete
         print_positive("Training complete!")
+
+        # Checkpoint time (save hyper parameters, model and checkpoint file)
+        print_positive("CHECKPOINT AT EPOCH {}. Updating 'checkpoint.json' file...".format(self.epochs_completed))
+        self.update_checkpoint(False)
 
         ### Evaluate the model's performance
         print_info("Evaluating model...")
