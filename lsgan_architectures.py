@@ -144,24 +144,19 @@ def build_generator_architecture(input_var=None, architecture=1):
         return layer
     elif architecture == 1:
         # input: 100dim
+        a_fn = LeakyRectify(0.1)
         layer = InputLayer(shape=(None, 100), input_var=input_var)
         # project and reshape
-        layer = batch_norm(DenseLayer(layer, 512*4*4))
-        layer = ReshapeLayer(layer, ([0], 512, 4, 4))
+        layer = batch_norm(DenseLayer(layer, 128*8*8))
+        layer = ReshapeLayer(layer, ([0], 128, 8, 8))
         ### four fractional-stride convolutions
         # Note: Apply dropouts in G. See tip #17 from "ganhacks"
-        layer = batch_norm(Conv2DLayer(layer, 128, 3, stride=1, pad='same'))
-        layer = batch_norm(BilinearUpscaleLayer(layer, factor=2)) # output_size=8x8
-        layer = batch_norm(Conv2DLayer(layer, 128, 3, stride=1, pad='same'))
+        layer = batch_norm(Deconv2DLayer(layer, 128, 5, stride=2, crop='same',
+                                         output_size=16, nonlinearity=a_fn))
         layer = DropoutLayer(layer, p=0.5)
-        layer = batch_norm(Conv2DLayer(layer, 128, 5, stride=1, pad='same'))
-        layer = batch_norm(BilinearUpscaleLayer(layer, factor=2)) # output_size=16x16
-        layer = batch_norm(Conv2DLayer(layer, 128, 5, stride=1, pad='same'))
         layer = batch_norm(BilinearUpscaleLayer(layer, factor=2)) # output_size=32x32
-        layer = DropoutLayer(layer, p=0.5)
-        layer = batch_norm(Conv2DLayer(layer, 128, 3, stride=1, pad='same'))
-        layer = batch_norm(BilinearUpscaleLayer(layer, factor=2)) # output_size=64x64
-        layer = Conv2DLayer(layer, 3, 3, stride=1, pad='same', nonlinearity=T.tanh)
+        layer = Deconv2DLayer(layer, 3, 9, stride=2, crop='same',
+                              output_size=64, nonlinearity=a_fn))
         print ("Generator output:", layer.output_shape)
         return layer
     elif architecture == 2:
@@ -406,18 +401,12 @@ def build_critic_architecture(input_var=None, architecture=1):
         # Injecting some noise after input layer
         layer = GaussianNoiseLayer(layer, sigma=0.1)
         # four convolutions
-        layer = batch_norm(Conv2DLayer(layer, 48, 5, stride=2, pad='same', nonlinearity=a_fn))
-        layer = batch_norm(Conv2DLayer(layer, 64, 5, stride=1, pad='same', nonlinearity=a_fn))
-        layer = DropoutLayer(layer, p=0.5)
+        # convolutions
+        layer = batch_norm(Conv2DLayer(layer, 64, 5, stride=2, pad='same', nonlinearity=a_fn))
         layer = MaxPool2DLayer(layer, 2)
         layer = batch_norm(Conv2DLayer(layer, 128, 5, stride=2, pad='same', nonlinearity=a_fn))
-        layer = DropoutLayer(layer, p=0.5)
-        layer = batch_norm(Conv2DLayer(layer, 64, 3, stride=1, pad='same', nonlinearity=a_fn))
-        layer = DropoutLayer(layer, p=0.5)
-        layer = MaxPool2DLayer(layer, 2)
         # fully-connected layer
-        layer = GaussianNoiseLayer(layer, sigma=0.1)
-        layer = batch_norm(DenseLayer(layer, 256, nonlinearity=a_fn))
+        layer = batch_norm(DenseLayer(layer, 512, nonlinearity=a_fn))
         # Minibatch layer
         layer = GAN.MinibatchLayer(layer, num_kernels = 150, dim_per_kernel=5, theta=Normal(0.05))
         # output layer (linear)
@@ -431,14 +420,12 @@ def build_critic_architecture(input_var=None, architecture=1):
         layer = InputLayer(shape=(None, 3, 64, 64), input_var=input_var)
         # Injecting some noise after input layer
         layer = GaussianNoiseLayer(layer, sigma=0.2)
-        # four convolutions
-        layer = batch_norm(Conv2DLayer(layer, 64, 3, stride=2, pad='same', nonlinearity=a_fn))
+        # convolutions
         layer = batch_norm(Conv2DLayer(layer, 64, 5, stride=2, pad='same', nonlinearity=a_fn))
+        layer = MaxPool2DLayer(layer, 2)
         layer = batch_norm(Conv2DLayer(layer, 128, 5, stride=2, pad='same', nonlinearity=a_fn))
-        layer = batch_norm(Conv2DLayer(layer, 128, 7, stride=2, pad='same', nonlinearity=a_fn))
         # fully-connected layer
-        layer = GaussianNoiseLayer(layer, sigma=0.1)
-        layer = batch_norm(DenseLayer(layer, 256, nonlinearity=a_fn))
+        layer = batch_norm(DenseLayer(layer, 512, nonlinearity=a_fn))
         # output layer (linear)
         layer = DenseLayer(layer, 1, nonlinearity=None)
         print ("critic output:", layer.output_shape)
@@ -450,25 +437,19 @@ def build_critic_architecture(input_var=None, architecture=1):
         layer = InputLayer(shape=(None, 3, 64, 64), input_var=input_var)
         # Injecting some noise after input layer
         layer = GaussianNoiseLayer(layer, sigma=0.1)
-        # four convolutions
-        layer = batch_norm(Conv2DLayer(layer, 48, 5, stride=2, pad='same', nonlinearity=a_fn))
-        layer = batch_norm(Conv2DLayer(layer, 64, 5, stride=1, pad='same', nonlinearity=a_fn))
+        # convolutions
+        layer = batch_norm(Conv2DLayer(layer, 64, 5, stride=2, pad='same', nonlinearity=a_fn))
         layer = MaxPool2DLayer(layer, 2)
         layer = batch_norm(Conv2DLayer(layer, 128, 5, stride=2, pad='same', nonlinearity=a_fn))
-        layer = batch_norm(Conv2DLayer(layer, 64, 3, stride=1, pad='same', nonlinearity=a_fn))
-        layer = MaxPool2DLayer(layer, 2)
         # fully-connected layer
-        layer = GaussianNoiseLayer(layer, sigma=0.1)
-        layer = batch_norm(DenseLayer(layer, 256, nonlinearity=a_fn))
+        layer = batch_norm(DenseLayer(layer, 512, nonlinearity=a_fn))
         # NiN layer
-        layer = batch_norm(NINLayer(layer, num_units=64, nonlinearity=a_fn))
         layer = batch_norm(NINLayer(layer, num_units=64, nonlinearity=a_fn))
         # Global pooling
         layer = ll.GlobalPoolLayer(layer)
         # Minibatch layer
         layer = GAN.MinibatchLayer(layer, num_kernels = 150, dim_per_kernel=5, theta=Normal(0.05))
         # output layer (linear)
-        layer = GaussianNoiseLayer(layer, sigma=0.3)
         layer = DenseLayer(layer, 1, nonlinearity=None)
         print ("critic output:", layer.output_shape)
         return layer
