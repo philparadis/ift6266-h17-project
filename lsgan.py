@@ -58,7 +58,7 @@ class LSGAN_Model(GAN_BaseModel):
     def build_generator(self, input_var=None):
         return lsgan_architectures.build_generator_architecture(input_var, 1)
 
-    def build_critic(self, input_var=None, architecture):
+    def build_critic(self, input_var=None, architecture=1):
         return lsgan_architectures.build_critic_architecture(input_var, architecture)
 
     def iterate_minibatches(self, inputs, targets, batchsize, shuffle=False,
