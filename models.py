@@ -230,12 +230,16 @@ class LossHistory(Callback):
     def on_train_begin(self, logs={}):
         self.losses = []
 
+    def on_epoch_end(self, epoch, logs={}):
+        log("Epoch {0:0>4}/{1:0<4}: loss = {2:.4f}, val_loss = {3:.4f}".
+            format(epoch, settings.NUM_EPOCHS, logs['loss'], logs['val_loss'])
+
     def on_batch_end(self, batch, logs={}):
         self.losses.append(logs.get('loss'))
 
     def __str__(self):
         for epoch, loss in enumerate(self.losses):
-            log("Epoch {0:>4}/{1:<4} loss = {2:.5f}".format(epoch, settings.NUM_EPOCHS, loss))
+            logout("Epoch {0:>4}/{1:<4} loss = {2:.5f}".format(epoch, settings.NUM_EPOCHS, loss))
 
 
 class KerasModel(BaseModel):
@@ -381,14 +385,19 @@ class KerasModel(BaseModel):
         # Ready to train!
         print_positive("Starting to train model!...")
         epoch = 0
+        verbose = settings.VERBOSE
+        if verbose == 2:
+            verbose = 0 # If verbose == 2, the 'history' callback will already be printing the same
         self.keras_model.fit(X_train, Y_train,
                              validation_data = (X_test, Y_test),
                              epochs = settings.NUM_EPOCHS,
                              batch_size = self.hyper['batch_size'],
-                             verbose = settings.VERBOSE,
+                             verbose = verbose,
                              initial_epoch = self.epochs_completed,
                              callbacks=[history, early_stopping, checkpointer, update_epochs_completed])
 
+        print(history)
+        
         ### Training complete
         print_positive("Training complete!")
 
