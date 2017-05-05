@@ -525,7 +525,7 @@ class Conv_Deconv(KerasModel):
         x = Deconvolution2D(64, 5, padding='same', activation='relu')(x) #out: 32x32
         self.feature_matching_layers.append(x)
         x = Deconvolution2D(3, 5, padding='same', activation='tanh')(x) #out: 32x32
-        self.keras_model = Model(input=[input_img], output=x)
+        self.keras_model = Model(inputs=input_img, outputs=x)
         
 class GAN_BaseModel(BaseModel):
     def __init__(self, model_name, hyperparams = hyper_params.default_gan_basemodel_hyper_params):
