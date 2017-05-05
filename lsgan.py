@@ -84,6 +84,10 @@ class LSGAN_Model(GAN_BaseModel):
     # easier to read.
 
     def train(self, dataset, num_epochs = 1000, epochsize = 50, batchsize = 64, initial_eta = 0.00005):
+        import lasagne
+        import theano.tensor as T
+        from theano import shared, function
+
         # Load the dataset
         log("Loading data...")
         X_train, X_test, y_train, y_test, ind_train, ind_test = dataset.return_data()
