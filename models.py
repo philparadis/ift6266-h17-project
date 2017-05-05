@@ -379,7 +379,7 @@ class KerasModel(BaseModel):
                              batch_size = self.hyper['batch_size'],
                              verbose = verbose,
                              initial_epoch = self.epochs_completed,
-                             callbacks=[history, early_stopping, checkpointer, epoch_complete])
+                             callbacks=[early_stopping, checkpointer, epoch_complete])
         
         ### Training complete
         print_positive("Training complete!")
