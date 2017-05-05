@@ -164,7 +164,6 @@ def build_generator_architecture(input_var=None, architecture=1):
         #layer = batch_norm(Conv2DLayer(layer, 64, 5, stride=1, pad='same', nonlinearity=rectify))
         layer = Conv2DLayer(layer, 3, 3, stride=1, pad='full', nonlinearity=T.tanh)
         print ("Generator output:", layer.output_shape)
-        sys.exit(-1)
         return layer
     elif architecture == 2:
         # Optional layers
