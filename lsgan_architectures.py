@@ -148,20 +148,42 @@ def build_generator_architecture(input_var=None, architecture=1):
         a_fn = LeakyRectify(0.1)
         layer = InputLayer(shape=(None, 100), input_var=input_var)
         # project and reshape
-        layer = batch_norm(DenseLayer(layer, 256*8*8))
-        layer = ReshapeLayer(layer, ([0], 256, 8, 8))
+        layer = batch_norm(DenseLayer(layer, 128*8*8))
+        layer = ReshapeLayer(layer, ([0], 128, 8, 8))
         ### four fractional-stride convolutions
-        layer = batch_norm(Deconv2DLayer(layer, 256, 4, stride=2, crop='full',
+        # Note: Apply dropouts in G. See tip #17 from "ganhacks"
+        layer = batch_norm(Deconv2DLayer(layer, 128, 5, stride=2, crop='same',
                                          output_size=16, nonlinearity=a_fn))
-        #layer = DropoutLayer(layer, p=0.5)
-        #layer = batch_norm(BilinearUpscaleLayer(layer, factor=2)) # output_size=32x32
-        layer = batch_norm(Deconv2DLayer(layer, 256, 6, stride=2, crop='full',
+        layer = DropoutLayer(layer, p=0.5)
+        layer = batch_norm(BilinearUpscaleLayer(layer, factor=2)) # output_size=32x32
+        layer = batch_norm(Deconv2DLayer(layer, 128, 6, stride=1, crop='same',
                                          output_size=32, nonlinearity=a_fn))
-        #layer = DropoutLayer(layer, p=0.5)
-        layer = Deconv2DLayer(layer, 3, 8, stride=2, crop='full',
+        layer = batch_norm(BilinearUpscaleLayer(layer, factor=2)) # output_size=64x64
+        layer = Deconv2DLayer(layer, 3, 7, stride=1, crop='same',
                               output_size=64, nonlinearity=T.tanh)
         print ("Generator output:", layer.output_shape)
         return layer
+        
+        # input: 100dim
+        # a_fn = LeakyRectify(0.1)
+        # layer = InputLayer(shape=(None, 100), input_var=input_var)
+        # # project and reshape
+        # layer = batch_norm(DenseLayer(layer, 256*8*8))
+        # layer = ReshapeLayer(layer, ([0], 256, 8, 8))
+        # ### four fractional-stride convolutions
+        # layer = batch_norm(Deconv2DLayer(layer, 256, 4, stride=2, crop='full',
+        #                                  output_size=16, nonlinearity=a_fn))
+        # #layer = DropoutLayer(layer, p=0.5)
+        # #layer = batch_norm(BilinearUpscaleLayer(layer, factor=2)) # output_size=32x32
+        # layer = batch_norm(Deconv2DLayer(layer, 256, 6, stride=2, crop='full',
+        #                                  output_size=32, nonlinearity=a_fn))
+        # #layer = DropoutLayer(layer, p=0.5)
+        # layer = Deconv2DLayer(layer, 3, 8, stride=2, crop='full',
+        #                       output_size=64, nonlinearity=T.tanh)
+        # print ("Generator output:", layer.output_shape)
+        # return layer
+
+        
         # # input: 100dim
         # a_fn = LeakyRectify(0.1)
         # layer = InputLayer(shape=(None, 100), input_var=input_var)
