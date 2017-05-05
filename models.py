@@ -225,23 +225,6 @@ class BaseModel(object):
     def plot_layers():
         raise NotImplemented()
 
-from keras.callbacks import Callback
-class LossHistory(Callback):
-    def on_train_begin(self, logs={}):
-        self.losses = []
-
-    def on_epoch_end(self, epoch, logs={}):
-        log("Epoch {0:0>4}/{1:0<4}: loss = {2:.4f}, val_loss = {3:.4f}".
-            format(epoch, settings.NUM_EPOCHS, logs['loss'], logs['val_loss']))
-
-    def on_batch_end(self, batch, logs={}):
-        self.losses.append(logs.get('loss'))
-
-    def output_to_file(self):
-        for epoch, loss in enumerate(self.losses):
-            logout("Epoch {0:>4}/{1:<4} loss = {2:.5f}".format(epoch, settings.NUM_EPOCHS, loss))
-
-
 class KerasModel(BaseModel):
     def __init__(self, model_name, hyperparams = hyper_params.default_mlp_hyper_params): 
         super(KerasModel, self).__init__(model_name = model_name, hyperparams = hyperparams)
@@ -341,6 +324,9 @@ class KerasModel(BaseModel):
 
     def increment_epochs_completed(self, epoch, logs):
         self.epochs_completed += 1
+        log("")
+        log("Epoch {0:>4}/{1:<4}: loss = {2:.4f}, val_loss = {3:.4f}".
+            format(epoch, settings.NUM_EPOCHS, logs['loss'], logs['val_loss']))
 
     def train(self, Dataset):
         from keras.callbacks import EarlyStopping, ModelCheckpoint, LambdaCallback
@@ -373,30 +359,27 @@ class KerasModel(BaseModel):
                            settings.EPOCHS_PER_CHECKPOINT))
 
         # Define training callbacks
-        history = LossHistory()
         early_stopping = EarlyStopping(monitor='val_loss', patience=5, verbose=1)
         best_model_path = os.path.join(settings.MODELS_DIR,
                                        "best_model_epoch.{epoch:03d}_loss.{val_loss:.4f}.hdf5")
         checkpointer = ModelCheckpoint(filepath=best_model_path,
                                        verbose=1, save_best_only=True,
                                        period=settings.EPOCHS_PER_CHECKPOINT)
-        update_epochs_completed = LambdaCallback(on_epoch_end = self.increment_epochs_completed)
+        epoch_complete = LambdaCallback(on_epoch_end = self.increment_epochs_completed)
 
         # Ready to train!
         print_positive("Starting to train model!...")
         epoch = 0
         verbose = settings.VERBOSE
         if verbose == 2:
-            verbose = 0 # If verbose == 2, the 'history' callback will already be printing the same
+            verbose = 0 # If verbose == 2, the 'epoch_complete' callback will already be printing the same
         self.keras_model.fit(X_train, Y_train,
                              validation_data = (X_test, Y_test),
                              epochs = settings.NUM_EPOCHS,
                              batch_size = self.hyper['batch_size'],
                              verbose = verbose,
                              initial_epoch = self.epochs_completed,
-                             callbacks=[history, early_stopping, checkpointer, update_epochs_completed])
-
-        history.output_to_file()
+                             callbacks=[history, early_stopping, checkpointer, epoch_complete])
         
         ### Training complete
         print_positive("Training complete!")
