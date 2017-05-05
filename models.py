@@ -237,7 +237,7 @@ class LossHistory(Callback):
     def on_batch_end(self, batch, logs={}):
         self.losses.append(logs.get('loss'))
 
-    def __str__(self):
+    def output_to_file(self):
         for epoch, loss in enumerate(self.losses):
             logout("Epoch {0:>4}/{1:<4} loss = {2:.5f}".format(epoch, settings.NUM_EPOCHS, loss))
 
@@ -396,7 +396,7 @@ class KerasModel(BaseModel):
                              initial_epoch = self.epochs_completed,
                              callbacks=[history, early_stopping, checkpointer, update_epochs_completed])
 
-        print(history)
+        history.output_to_file()
         
         ### Training complete
         print_positive("Training complete!")
