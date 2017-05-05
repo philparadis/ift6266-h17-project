@@ -26,7 +26,7 @@ ls -1 "${target_dir}"/train2014/ | head -n $TRAIN_SIZE | xargs -n1 -I{} cp "${ta
 ls -1 "${target_dir}"/test2014/ | head -n $TEST_SIZE | xargs -n1 -I{} cp "${target_dir}"/test2014/'{}' "${small_target_dir}"/test2014/
 popd &>/dev/null
 
-if [[ -s "${target_dir}" ]]; then
-    rm "${target_dir}"
+if [[ -s "${small_target_dir}" ]]; then
+    rm "${small_target_dir}"
 fi
-ln -sf "${user_dir}/${small_target_dir}" "${target_dir}"
+ln -sf "${user_dir}/${small_target_dir}"
