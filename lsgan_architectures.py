@@ -26,6 +26,45 @@ from utils import print_critical, print_error, print_warning, print_info, print_
 #     dropout = True
 
 
+### Utility function "BilinearUpscaleLayer"
+### This should be better than using Deconv2DLayer and avoid the artifacts we were getting
+### Source: https://github.com/TobyPDE/FRRN/blob/master/dltools/layers.py
+import theano.tensor as T
+from lasagne.layers import Layer, MergeLayer
+
+
+class BilinearUpscaleLayer(Layer):
+    """
+    This layer upscales the 4D input tensor along the trailing spatial dimensions using bilinear interpolation.
+    You have to specify image dimensions in order to use this layer - even if you want to have a fully convolutional
+    network.
+    """
+    def __init__(self, incoming, factor, **kwargs):
+        """
+        Initializes a new instance of the BilinearUpscaleLayer class.
+        :param incoming: The incoming network stream
+        :param factor: The factor by which to upscale the input
+        """
+        super(BilinearUpscaleLayer, self).__init__(incoming, **kwargs)
+        self.factor = factor
+
+    def get_output_shape_for(self, input_shape):
+        """
+        Computes the output shape of the layer given the input shape.
+        :param input_shape: The input shape
+        :return: The output shape
+        """
+        return input_shape[0], input_shape[1], self.factor * input_shape[2], self.factor * input_shape[3]
+
+    def get_output_for(self, input, **kwargs):
+        """
+        Constructs the Theano graph for this layer
+        :param input: Symbolic input variable
+        :return: Symbolic output variable
+        """
+        return T.nnet.abstract_conv.bilinear_upsampling(input, self.factor)
+
+
 ################################################################
 ################################################################
 ##########         GENERATOR ARCHITECTURES          ############
@@ -104,21 +143,35 @@ def build_generator_architecture(input_var=None, architecture=1):
         print ("Generator output:", layer.output_shape)
         return layer, layers
     elif architecture == 1:
-        a_fn = LeakyRectify(0.2)
+        #a_fn = LeakyRectify(0.2)
+        a_fn = 'relu'
         # input: 100dim
-        layer = app(InputLayer(shape=(None, 100), input_var=input_var))
+        layer = InputLayer(shape=(None, 100), input_var=input_var)
         # project and reshape
-        layer = app(batch_norm(DenseLayer(layer, 256*4*4)))
-        layer = app(ReshapeLayer(layer, ([0], 256, 4, 4)))
+        layer = batch_norm(DenseLayer(layer, 512*4*4))
+        layer = ReshapeLayer(layer, ([0], 512, 4, 4))
         ### four fractional-stride convolutions
         # Note: Apply dropouts in G. See tip #17 from "ganhacks"
-        layer = app(batch_norm(Deconv2DLayer(layer, 192, 7, stride=2, crop='same', output_size=8, nonlinearity=a_fn)))
-        layer = app(DropoutLayer(layer, p=0.5))
-        layer = app(batch_norm(Deconv2DLayer(layer, 128, 7, stride=2, crop='same', output_size=16, nonlinearity=a_fn)))
-        layer = app(DropoutLayer(layer, p=0.5))
-        layer = app(batch_norm(Deconv2DLayer(layer, 96, 5, stride=2, crop='same', output_size=32, nonlinearity=a_fn)))
-        layer = app(DropoutLayer(layer, p=0.5))
-        layer = app(Deconv2DLayer(layer, 3, 5, stride=2, crop='same', output_size=64, nonlinearity=T.tanh))
+        layer = batch_norm(Conv2DLayer(layer, 256, 7, stride=1, pad='same', output_size=4, nonlinearity=a_fn))
+        layer = DropoutLayer(layer, p=0.5))
+        layer = batch_norm(BilinearUpscaleLayer(layer, factor=2)) # output_size=8x8
+        layer = batch_norm(Conv2DLayer(layer, 192, 7, stride=1, pad='same', output_size=8, nonlinearity=a_fn))
+        layer = DropoutLayer(layer, p=0.5))
+        layer = batch_norm(BilinearUpscaleLayer(layer, factor=2)) # output_size=16x16
+        layer = batch_norm(Conv2DLayer(layer, 128, 5, stride=1, pad='same', output_size=16, nonlinearity=a_fn))
+        layer = DropoutLayer(layer, p=0.5)
+        layer = batch_norm(Conv2DLayer(layer, 128, 5, stride=1, pad='same', output_size=16, nonlinearity=a_fn))
+        layer = DropoutLayer(layer, p=0.5)
+        layer = batch_norm(BilinearUpscaleLayer(layer, factor=2)) # output_size=32x32
+        layer = batch_norm(Conv2DLayer(layer, 96, 5, stride=1, pad='same', output_size=32, nonlinearity=a_fn))
+        layer = DropoutLayer(layer, p=0.5)
+        layer = batch_norm(Conv2DLayer(layer, 96, 5, stride=1, pad='same', output_size=32, nonlinearity=a_fn))
+        layer = DropoutLayer(layer, p=0.5)
+        layer = batch_norm(BilinearUpscaleLayer(layer, factor=2)) # output_size=64x64
+        layer = batch_norm(Conv2DLayer(layer, 64, 5, stride=1, pad='same', output_size=64, nonlinearity=a_fn))
+        layer = DropoutLayer(layer, p=0.5)
+        layer = batch_norm(Conv2DLayer(layer, 64, 3, stride=1, pad='same', output_size=64, nonlinearity=a_fn))
+        layer = Conv2DLayer(layer, 3, 3, stride=1, pap='same', output_size=64, nonlinearity=T.tanh)
         print ("Generator output:", layer.output_shape)
         return layer, layers
     elif architecture == 2:
@@ -408,19 +461,23 @@ def build_critic_architecture(input_var=None, architecture=1):
         alpha = 0.2 # slope of negative x axis of leaky ReLU
         a_fn = LeakyRectify(alpha)
         # input: (None, 3, 64, 64)
-        layer = app(InputLayer(shape=(None, 3, 64, 64), input_var=input_var))
+        layer = InputLayer(shape=(None, 3, 64, 64), input_var=input_var)
         # Injecting some noise after input layer
-        layer = app(GAN.GaussianNoiseLayer(layer, sigma=0.2))
+        layer = GAN.GaussianNoiseLayer(layer, sigma=0.8)
         # four convolutions
-        layer = app(batch_norm(Conv2DLayer(layer, 96, 5, stride=2, pad='same', nonlinearity=a_fn)))
-        layer = app(batch_norm(Conv2DLayer(layer, 128, 5, stride=2, pad='same', nonlinearity=a_fn)))
-        layer = app(batch_norm(Conv2DLayer(layer, 192, 7, stride=2, pad='same', nonlinearity=a_fn)))
-        layer = app(batch_norm(Conv2DLayer(layer, 256, 7, stride=2, pad='same', nonlinearity=a_fn)))
+        layer = batch_norm(Conv2DLayer(layer, 96, 3, stride=1, pad='same', nonlinearity=a_fn))
+        layer = MaxPool2DLayer(layer, 2) # output_size=32x32
+        layer = batch_norm(Conv2DLayer(layer, 96, 5, stride=1, pad='same', nonlinearity=a_fn))
+        layer = MaxPool2DLayer(layer, 2) # output_size=16x16
+        layer = batch_norm(Conv2DLayer(layer, 128, 5, stride=1, pad='same', nonlinearity=a_fn))
+        layer = MaxPool2DLayer(layer, 2) # output_size=8x8
+        layer = batch_norm(Conv2DLayer(layer, 192, 7, stride=1, pad='same', nonlinearity=a_fn))
+        layer = MaxPool2DLayer(layer, 2) # output_size=4x4
         # fully-connected layer
-        layer = app(batch_norm(DenseLayer(layer, 512, nonlinearity=a_fn)))
-        layer = app(GAN.GaussianNoiseLayer(layer, sigma=0.2))
+        layer = batch_norm(DenseLayer(layer, 512, nonlinearity=a_fn))
+        layer = GAN.GaussianNoiseLayer(layer, sigma=0.8)
         # output layer (linear)
-        layer = app(DenseLayer(layer, 1, nonlinearity=None))
+        layer = DenseLayer(layer, 1, nonlinearity=None)
         print ("critic output:", layer.output_shape)
         return layer, layers
     elif architecture == 2:
