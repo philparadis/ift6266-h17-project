@@ -38,6 +38,10 @@ class BaseDataset(object):
         self.images_outer2d = []
         self.images_inner2d = []
 
+        self.images_T = []
+        self.images_inner_flat_T = []
+        self.images_outer_flat_T = [] 
+
         self._is_dataset_loaded = False
         self._num_rows = None
 
@@ -255,11 +259,68 @@ class BaseDataset(object):
             return self.Y[self.id_test,]
         raise Exception("Must specify one of X or Y as True and one of Train or Test as True.")
 
+
+class ImageType(object):
+    images = 1 # Original 64x64 picture, untouched
+    images_outer_flat = 2 # Original
+    images_inner_flat = 3
+    images_outer2d = 4
+    images_inner2d = 5
+    images_MAX = 6
+    
+    def __init__(self, img_type, training_dataset = True, col_channels_first = True):
+        """Define a pre-processed image type. If training_dataset = False, then the image type will
+        be assumed to come from the testing dataset in directory 'test2014'. If col_channels_first == False,
+        then the image will be assumed to have suffix 'col_last.npy', otherwise 'col_first.npy'."""
+        if img_type < 1 or image_type > ImageType.images_MAX:
+            raise Exception("Invalid ImageType supplied. Valid values range between 1"
+                            + "and {0}, but you supplied {1}."
+                            .format(ImageType.images_MAX - 1, img_type))
+        self.image_type = img_type
+        self.training_dataset = training_dataset
+        self.col_channels_first = col_channels_first
+
+    def __str__(self):
+        if self.training_dataset:
+            filename = "train_"
+        else:
+            filename = "test_"
+        if self.image_type = ImageType.images:
+            filename += "images"
+        elif self.image_type = ImageType.images_outer_flat:
+            filename += "images"
+        elif self.image_type = ImageType.images_inner_flat:
+            filename += "images"
+        elif self.image_type = ImageType.images_outer2d:
+            filename += "images"
+        elif self.image_type = ImageType.images_inner2d:
+            filename += "images"
+        if self.col_channels_first:
+            filename += "_col_first.npy"
+        else:
+            filename += "_col_last.npy"
+        return filename
+
+class 
+
+class MinimalDataset(object):
+    def __init__(self):
+        self.dataset = {}
+
+    def load_from_disk(self, img_type, train=True, col_first=True):
+        self.image_type = ImageType(img_type, training_dataset=train, col_channels_first=col_first)
+        self.image_path = os.path.join(settings.MSCOCO_DIR, str(self.image_type))
+        if os.path.isfile(self.image_path):
+            self.dataset[self.image_path] = np.load(self.image_path)
+            return True
+        return False
+
+    def 
         
 class ColorsFirstDataset(BaseDataset):
     def __init__(self, input_dim, output_dim):
         super(ColorsFirstDataset, self).__init__(input_dim, output_dim)
-        self._images_filename = "images_colors_first.npy"
+        self._images_filename = "train_images_col_first.npy"
 
     def transform_images(self, images):
         """Images should be a list of numpy arrays of the form (64, 64, 3). This function will turn it into a numpy batch 4-tensor of the form (batch_size, 3, 64, 64)."""
@@ -344,7 +405,7 @@ class ColorsFirstDataset(BaseDataset):
 class ColorsLastDataset(BaseDataset):
     def __init__(self, input_dim, output_dim):
         super(ColorsLastDataset, self).__init__(input_dim, output_dim)
-        self._images_filename = "images_colors_last.npy"
+        self._images_filename = "train_images_col_last.npy"
 
     def transform_images(self, images):
         """Images should be a list of numpy arrays of the form (64, 64, 3). This function will turn it into a numpy batch 4-tensor of the form (batch_size, 64, 64, 3)."""
