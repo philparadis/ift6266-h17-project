@@ -148,7 +148,6 @@ class LSGAN_Model(GAN_BaseModel):
         # We iterate over epochs:
         epoch_eta_threshold = num_epochs // 5
         generator_runs = 0
-        generator_counts = 0
         mean_g_loss = 0
         mean_c_loss = 0
         for epoch in range(num_epochs):
@@ -161,21 +160,25 @@ class LSGAN_Model(GAN_BaseModel):
             critic_losses = []
             generator_losses = []
             for _ in range(epochsize):
-                if (generator_counts < 25) or (generator_counts % 100 == 0):
-                    critic_runs = 10
+                if mean_c_loss < 0.15:
+                    critic_runs = 1
+                elif mean_c_loss < mean_g_loss/5:
+                    critic_runs = 3:
+                elif mean_c_loss > mean_g_loss:
+                    critic_runs = 30
                 else:
-                    critic_runs = 3
+                    critic_runs = 5
                 for _ in range(critic_runs):
                     batch = next(batches)
                     inputs, targets = batch
                     critic_losses.append(critic_train_fn(inputs))
-                if mean_g_loss > mean_c_loss * 5:
-                    generator_runs = 10
+                    generator_runs
+                if mean_g_loss > mean_c_loss*5:
+                    generator_runs = 30
                 else:
-                    generator_runs = 3
+                    generator_runs = 5
                 for _ in range(generator_runs):
                     generator_losses.append(generator_train_fn())
-                generator_counts += 1
 
             # Then we print the results for this epoch:
             log("Epoch {} of {} took {:.3f}s".format(
@@ -205,7 +208,7 @@ class LSGAN_Model(GAN_BaseModel):
             # After half the epochs, we start decaying the learn rate towards zero
             if epoch >= epoch_eta_threshold:
                 progress = float(epoch - epoch_eta_threshold) / float(num_epochs)
-                eta.set_value(lasagne.utils.floatX(initial_eta*math.pow(1 - progress, 1.5)))
+                eta.set_value(lasagne.utils.floatX(initial_eta*math.pow(1 - progress, 2)))
             # if epoch >= num_epochs // 2:
             #     progress = float(epoch) / num_epochs
             #     eta.set_value(lasagne.utils.floatX(initial_eta*2*(1 - progress)))
