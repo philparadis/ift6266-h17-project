@@ -32,8 +32,10 @@ FEATURE_MATCHING = False
 TRAINING_BATCH_SIZE = 0 # Total number of training examples (i.e. size of first dimension of training tensor)
 TINY_DATASET = False
 
+USE_VGG16_LOSS = False
+
 THEANO_CONFIG_FLOATX = 'float32'
-DATASET_AUGMENTATION = True
+DATASET_AUGMENTATION = False
 LOAD_BLACK_AND_WHITE_IMAGES = False
 SAVE_MODEL_TO_DISK = True
 SAMPLES_TO_GENERATE_PER_EPOCH = -1 # Use -1 to disable this feature
@@ -71,40 +73,4 @@ ERRLOGFILE = None
 def touch_dir(directory):
     if not os.path.exists(directory):
         os.makedirs(directory)
-
-### Settings specific to the MLP model
-PARAMS_MLP = { 'hidden1_neurons' : 512,
-               'hidden2_neurons' : 512,
-               'loss_function' : "mse",
-               'optimizer' : "adam",
-               'learning_rate' : "0.0002" }
-
-PARAMS_CONV_MLP = { 'conv1_features' : 64,
-                    'conv1_filter_size' : 5,
-                    'maxpool1' : 2,
-                    'conv2_features' : 64,
-                    'conv2_filter_size' : 5,
-                    'maxpool2' : 2,
-                    'conv3_features' : 32,
-                    'conv3_filter_size' : 5,
-                    'padding' : True,
-                    'hidden_last_neurons' : 256,
-                    'loss_function' : "mse",
-                    'optimizer' : "adam",
-                    'learning_rate' : "0.0001" }
-
-PARAMS_CONV_DECONV = { 'conv1_features' : 64,
-                       'conv1_filter_size' : 5, # With no padding, output feature maps go from 64x64 input to 60x60
-                       'maxpool1' : 2, # Feature maps go from 60x60 to 30x30
-                       'conv2_features' : 64,
-                       'conv2_filter_size' : 5, # With no padding, output feature maps go from 30x30 to 26x26
-                       'maxpool2' : 2, # Feature maps go from 26x26 to 13x13
-                       'conv3_features' : 32,
-                       'conv3_filter_size' : 3, # With no padding, output feature maps go from 13x13 to 11x11
-                       'padding' : True,
-                       'deconv1_features' : 32,
-                       'hidden_last_neurons' : 256,
-                       'loss_function' : "mse",
-                       'optimizer' : "adam",
-                       'learning_rate' : "0.0001" }
 

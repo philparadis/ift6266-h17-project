@@ -148,18 +148,21 @@ def build_generator_architecture(input_var=None, architecture=1):
         a_fn = LeakyRectify(0.1)
         layer = InputLayer(shape=(None, 100), input_var=input_var)
         # project and reshape
-        layer = batch_norm(DenseLayer(layer, 128*16*16))
-        layer = ReshapeLayer(layer, ([0], 128, 16, 16))
+        layer = batch_norm(DenseLayer(layer, 128*8*8))
+        layer = ReshapeLayer(layer, ([0], 128, 8, 8))
         ### four fractional-stride convolutions
         # Note: Apply dropouts in G. See tip #17 from "ganhacks"
+        layer = batch_norm(BilinearUpscaleLayer(layer, factor=2)) # output_size=16x16
         layer = batch_norm(Deconv2DLayer(layer, 256, 5, stride=1, crop='same',
                                          output_size=16, nonlinearity=a_fn))
         layer = batch_norm(BilinearUpscaleLayer(layer, factor=2)) # output_size=32x32
-        layer = batch_norm(Deconv2DLayer(layer, 256, 7, stride=1, crop='same',
-                                         output_size=32, nonlinearity=rectify))
+        layer = batch_norm(Deconv2DLayer(layer, 256, 5, stride=1, crop='same',
+                                         output_size=32, nonlinearity=a_fn))
         layer = batch_norm(BilinearUpscaleLayer(layer, factor=2)) # output_size=64x64
+        layer = batch_norm(Deconv2DLayer(layer, 256, 7, stride=1, crop='same',
+                                         output_size=64, nonlinearity=rectify))
         layer = Deconv2DLayer(layer, 3, 9, stride=1, crop='same',
-                              output_size=64, nonlinearity=T.tanh)
+                              output_size=64, nonlinearity=sigmoid)
         print ("Generator output:", layer.output_shape)
         return layer
         

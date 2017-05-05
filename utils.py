@@ -3,12 +3,19 @@ import json
 import numpy as np
 from termcolor import cprint
 import datetime
+from sklearn.preprocessing import MinMaxScaler
 
 import settings
 
 ### Utility functions to manipule numpy datasets
 
-def normalize_data(data):
+def normalize_data(data, scaler):
+    return scaler.fit_transform(data.astype('float32').reshape(data.shape[0], -1)).reshape(data.shape)
+
+def denormalize_data(data, scaler):
+    return scaler.inverse_transform(data.reshape(data.shape[0], -1)).reshape(data.shape).astype('uint8')
+
+def normalize_data_tanh(data):
     """Transform linearly integers within [0, 255] to float32 within [-1, 1]. Data must be numpy array of type 'uint8'."""
     if data.dtype == 'float32':
         return
@@ -18,7 +25,7 @@ def normalize_data(data):
         print_error("Trying to normalize data that does not fit within the uint8 range of [0, 255], with max = {} and min = {}.".format(M, m))
     return (data.astype('float32') - 127.5) / 127.5
 
-def denormalize_data(data):
+def denormalize_data_tanh(data):
     """Transform linearly floating points within [-1, 1] to uint8 within [0, 255]. Data must be numpy array of type 'float32'."""
     if data.dtype == 'uint8':
         return

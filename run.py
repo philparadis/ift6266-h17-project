@@ -4,6 +4,7 @@
 import os, sys
 import argparse
 import datetime
+from IPython.core import ultratb
 
 def initialize_directories():
     import settings
@@ -42,6 +43,11 @@ def initialize_directories():
 
 if __name__ == "__main__":
     import settings
+    import numpy as np
+
+    np.random.seed(0)
+
+    sys.excepthook = ultratb.FormattedTB(mode='Verbose', color_scheme='Linux', call_pdb=1)
         
     ### Parse arguments
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -102,7 +108,7 @@ if __name__ == "__main__":
 #    settings.USE_CPU = args.cpu
 
 
-    if not settings.MODEL in ["test", "mlp", "conv_mlp", "conv_deconv", "dcgan", "wgan", "lsgan"]:
+    if not settings.MODEL in ["test", "mlp", "conv_mlp", "conv_mlp_vgg16", "conv_deconv", "dcgan", "wgan", "lsgan"]:
         raise NotImplementedError("The model '{}' is not yet implemented yet, sorry!".format(settings.MODEL))
 
     from utils import print_warning, handle_error, log

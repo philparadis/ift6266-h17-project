@@ -311,15 +311,12 @@ class KerasModel(BaseModel):
             from keras import losses
 
             print_info("Compiling model...")
-            # if self.hyper['optimizer'] == "adam":
-            #     optimizer = optimizers.Adam(lr = self.hyper['learning_rate']) # Default lr = 0.001
-            # else:
-            #     optimizer = self.hyper['optimizer']
+
             optimizer = optimizers.Adam(lr = settings.LEARNING_RATE)
 
-            self.keras_model.compile(loss = self.hyper['loss_function'],
+            self.keras_model.compile(loss = settings.LOSS_FUNCTION,
                                      optimizer = optimizer,
-                                     metrics = [self.hyper['loss_function']])
+                                     metrics = [settings.LOSS_FUNCTION])
             self.model_compiled = True
 
     def increment_epochs_completed(self, epoch, logs):
@@ -423,7 +420,7 @@ class MLP_Model(KerasModel):
         self.keras_model.add(Dense(256))
         self.keras_model.add(Activation('relu'))
         self.keras_model.add(Dense(self.hyper['output_dim']))
-        self.keras_model.add(Activation('tanh'))
+        self.keras_model.add(Activation('sigmoid'))
 
     def plot_architecture(self):
         pass
@@ -481,7 +478,7 @@ class Conv_MLP(KerasModel):
 
         self.keras_model.add(Flatten())
         self.keras_model.add(Dense(units=1024, activation='relu'))
-        self.keras_model.add(Dense(self.hyper['output_dim'], activation='tanh')) # output_dim = 3*32*32 = 3072
+        self.keras_model.add(Dense(self.hyper['output_dim'], activation='sigmoid')) # output_dim = 3*32*32 = 3072
         
         # input_shape = ((None, 3, 64, 64), )
         # self.keras_model = Sequential()
@@ -524,7 +521,7 @@ class Conv_Deconv(KerasModel):
         x = Deconvolution2D(64, (5, 5), strides=(2, 2), padding='same', activation='relu', data_format="channels_first")(x) #out: 32x32
         x = Deconvolution2D(64, (5, 5), padding='same', activation='relu', data_format="channels_first")(x) #out: 32x32
         self.feature_matching_layers.append(x)
-        x = Deconvolution2D(3, (5, 5), padding='same', activation='tanh', data_format="channels_first")(x) #out: 32x32
+        x = Deconvolution2D(3, (5, 5), padding='same', activation='sigmoid', data_format="channels_first")(x) #out: 32x32
         self.keras_model = Model(inputs=input_img, outputs=x)
 
         print(self.keras_model.summary())
