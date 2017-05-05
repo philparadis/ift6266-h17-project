@@ -98,8 +98,8 @@ class LSGAN_Model(GAN_BaseModel):
 
         # Create neural network model
         log("Building model and compiling functions...")
-        generator = build_generator(noise_var, 1)
-        critic = build_critic(input_var, 1)
+        generator = self.build_generator(noise_var, 1)
+        critic = self.build_critic(input_var, 1)
 
         # Create expression for passing real data through the critic
         real_out = lasagne.layers.get_output(critic)
@@ -138,7 +138,7 @@ class LSGAN_Model(GAN_BaseModel):
         # Finally, launch the training loop.
         log("Starting training...")
         # We create an infinite supply of batches (as an iterable generator):
-        batches = iterate_minibatches(X_train, y_train, batchsize, shuffle=True, forever=True)
+        batches = self.iterate_minibatches(X_train, y_train, batchsize, shuffle=True, forever=True)
         # We iterate over epochs:
         generator_updates = 0
         for epoch in range(num_epochs):
