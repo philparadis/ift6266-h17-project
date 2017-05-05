@@ -359,12 +359,11 @@ class KerasModel(BaseModel):
                            settings.EPOCHS_PER_CHECKPOINT))
 
         # Define training callbacks
-        early_stopping = EarlyStopping(monitor='val_loss', patience=5, verbose=1)
+        early_stopping = EarlyStopping(monitor='val_loss', patience=10, verbose=1, mode='min')
         best_model_path = os.path.join(settings.MODELS_DIR,
                                        "best_model_epoch.{epoch:03d}_loss.{val_loss:.4f}.hdf5")
         checkpointer = ModelCheckpoint(filepath=best_model_path,
-                                       verbose=1, save_best_only=True,
-                                       period=settings.EPOCHS_PER_CHECKPOINT)
+                                       verbose=1, save_best_only=True)
         epoch_complete = LambdaCallback(on_epoch_end = self.increment_epochs_completed)
 
         # Ready to train!
@@ -376,7 +375,7 @@ class KerasModel(BaseModel):
         self.keras_model.fit(X_train, Y_train,
                              validation_data = (X_test, Y_test),
                              epochs = settings.NUM_EPOCHS,
-                             batch_size = self.hyper['batch_size'],
+                             batch_size = settings.BATCH_SIZE,
                              verbose = verbose,
                              initial_epoch = self.epochs_completed,
                              callbacks=[early_stopping, checkpointer, epoch_complete])
@@ -390,8 +389,8 @@ class KerasModel(BaseModel):
 
         ### Evaluate the model's performance
         print_info("Evaluating model...")
-        train_scores = self.keras_model.evaluate(X_train, Y_train, batch_size = self.hyper['batch_size'], verbose = 0)
-        test_scores = self.keras_model.evaluate(X_test, Y_test, batch_size = self.hyper['batch_size'], verbose = 0)
+        train_scores = self.keras_model.evaluate(X_train, Y_train, batch_size = settings.BATCH_SIZE, verbose = 0)
+        test_scores = self.keras_model.evaluate(X_test, Y_test, batch_size = settings.BATCH_SIZE,, verbose = 0)
         metric = self.keras_model.metrics_names[1]
         print_positive("Training score {0: >6}: {1:.5f}".format(metric, train_scores[1]))
         print_positive("Testing score  {0: >6}: {1:.5f}".format(metric, train_scores[1]))
@@ -455,7 +454,7 @@ class Test_Model(KerasModel):
         self.keras_model = Sequential()
         self.keras_model.add(Dense(units=128, input_shape=(self.hyper['input_dim'], )))
         self.keras_model.add(Dense(128, activation='relu'))
-        self.keras_model.add(Dense(self.hyper['output_dim'], activation='tanh'))
+        self.keras_model.add(Dense(self.hyper['output_dim']))
     
 
 class Conv_MLP(KerasModel):
@@ -484,7 +483,7 @@ class Conv_MLP(KerasModel):
 
         self.keras_model.add(Flatten())
         self.keras_model.add(Dense(units=4096, activation='relu'))
-        self.keras_model.add(Dense(self.hyper['output_dim'], activation='tanh')) # output_dim = 3*32*32 = 3072
+        self.keras_model.add(Dense(self.hyper['output_dim'])) # output_dim = 3*32*32 = 3072
 
 class Conv_Deconv(KerasModel):
     def __init__(self, model_name, hyperparams = hyper_params.default_conv_deconv_hyper_params):
@@ -507,7 +506,7 @@ class Conv_Deconv(KerasModel):
         x = Deconvolution2D(64, 5, strides=(2, 2), padding='same', activation='relu')(x) #out: 32x32
         x = Deconvolution2D(64, 5, padding='same', activation='relu')(x) #out: 32x32
         self.feature_matching_layers.append(x)
-        x = Deconvolution2D(3, 5, padding='same', activation='tanh')(x) #out: 32x32
+        x = Deconvolution2D(3, 5, padding='same')(x) #out: 32x32
         self.keras_model = Model(inputs=input_img, outputs=x)
         
 class GAN_BaseModel(BaseModel):
