@@ -152,26 +152,26 @@ def build_generator_architecture(input_var=None, architecture=1):
         layer = ReshapeLayer(layer, ([0], 512, 4, 4))
         ### four fractional-stride convolutions
         # Note: Apply dropouts in G. See tip #17 from "ganhacks"
-        layer = batch_norm(Conv2DLayer(layer, 256, 7, stride=1, pad='same', output_size=4, nonlinearity=a_fn))
+        layer = batch_norm(Conv2DLayer(layer, 256, 7, stride=1, pad='same', nonlinearity=a_fn))
         layer = DropoutLayer(layer, p=0.5)
         layer = batch_norm(BilinearUpscaleLayer(layer, factor=2)) # output_size=8x8
-        layer = batch_norm(Conv2DLayer(layer, 192, 7, stride=1, pad='same', output_size=8, nonlinearity=a_fn))
+        layer = batch_norm(Conv2DLayer(layer, 192, 7, stride=1, pad='same', nonlinearity=a_fn))
         layer = DropoutLayer(layer, p=0.5)
         layer = batch_norm(BilinearUpscaleLayer(layer, factor=2)) # output_size=16x16
-        layer = batch_norm(Conv2DLayer(layer, 128, 5, stride=1, pad='same', output_size=16, nonlinearity=a_fn))
+        layer = batch_norm(Conv2DLayer(layer, 128, 5, stride=1, pad='same', nonlinearity=a_fn))
         layer = DropoutLayer(layer, p=0.5)
-        layer = batch_norm(Conv2DLayer(layer, 128, 5, stride=1, pad='same', output_size=16, nonlinearity=a_fn))
+        layer = batch_norm(Conv2DLayer(layer, 128, 5, stride=1, pad='same', nonlinearity=a_fn))
         layer = DropoutLayer(layer, p=0.5)
         layer = batch_norm(BilinearUpscaleLayer(layer, factor=2)) # output_size=32x32
-        layer = batch_norm(Conv2DLayer(layer, 96, 5, stride=1, pad='same', output_size=32, nonlinearity=a_fn))
+        layer = batch_norm(Conv2DLayer(layer, 96, 5, stride=1, pad='same', nonlinearity=a_fn))
         layer = DropoutLayer(layer, p=0.5)
-        layer = batch_norm(Conv2DLayer(layer, 96, 5, stride=1, pad='same', output_size=32, nonlinearity=a_fn))
+        layer = batch_norm(Conv2DLayer(layer, 96, 5, stride=1, pad='same', nonlinearity=a_fn))
         layer = DropoutLayer(layer, p=0.5)
         layer = batch_norm(BilinearUpscaleLayer(layer, factor=2)) # output_size=64x64
-        layer = batch_norm(Conv2DLayer(layer, 64, 5, stride=1, pad='same', output_size=64, nonlinearity=a_fn))
+        layer = batch_norm(Conv2DLayer(layer, 64, 5, stride=1, pad='same', nonlinearity=a_fn))
         layer = DropoutLayer(layer, p=0.5)
-        layer = batch_norm(Conv2DLayer(layer, 64, 3, stride=1, pad='same', output_size=64, nonlinearity=a_fn))
-        layer = Conv2DLayer(layer, 3, 3, stride=1, pap='same', output_size=64, nonlinearity=T.tanh)
+        layer = batch_norm(Conv2DLayer(layer, 64, 3, stride=1, pad='same', nonlinearity=a_fn))
+        layer = Conv2DLayer(layer, 3, 3, stride=1, pap='same', 64, nonlinearity=T.tanh)
         print ("Generator output:", layer.output_shape)
         return layer, layers
     elif architecture == 2:
