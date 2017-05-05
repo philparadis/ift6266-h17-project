@@ -465,16 +465,12 @@ def build_critic_architecture(input_var=None, architecture=1):
         # Injecting some noise after input layer
         layer = GAN.GaussianNoiseLayer(layer, sigma=0.8)
         # four convolutions
-        layer = batch_norm(Conv2DLayer(layer, 96, 3, stride=1, pad='same', nonlinearity=a_fn))
-        layer = MaxPool2DLayer(layer, 2) # output_size=32x32
-        layer = batch_norm(Conv2DLayer(layer, 96, 5, stride=1, pad='same', nonlinearity=a_fn))
-        layer = MaxPool2DLayer(layer, 2) # output_size=16x16
-        layer = batch_norm(Conv2DLayer(layer, 128, 5, stride=1, pad='same', nonlinearity=a_fn))
-        layer = MaxPool2DLayer(layer, 2) # output_size=8x8
-        layer = batch_norm(Conv2DLayer(layer, 192, 7, stride=1, pad='same', nonlinearity=a_fn))
-        layer = MaxPool2DLayer(layer, 2) # output_size=4x4
+        layer = batch_norm(Conv2DLayer(layer, 64, 3, stride=2, pad='same', nonlinearity=a_fn))
+        layer = batch_norm(Conv2DLayer(layer, 64, 5, stride=2, pad='same', nonlinearity=a_fn))
+        layer = batch_norm(Conv2DLayer(layer, 128, 5, stride=2, pad='same', nonlinearity=a_fn))
+        layer = batch_norm(Conv2DLayer(layer, 128, 7, stride=2, pad='same', nonlinearity=a_fn))
         # fully-connected layer
-        layer = batch_norm(DenseLayer(layer, 512, nonlinearity=a_fn))
+        layer = batch_norm(DenseLayer(layer, 256, nonlinearity=a_fn))
         layer = GAN.GaussianNoiseLayer(layer, sigma=0.8)
         # output layer (linear)
         layer = DenseLayer(layer, 1, nonlinearity=None)
