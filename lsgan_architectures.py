@@ -156,10 +156,10 @@ def build_generator_architecture(input_var=None, architecture=1):
                                          output_size=16, nonlinearity=a_fn))
         layer = DropoutLayer(layer, p=0.5)
         layer = batch_norm(BilinearUpscaleLayer(layer, factor=2)) # output_size=32x32
-        layer = batch_norm(Deconv2DLayer(layer, 128, 6, stride=1, crop='same',
+        layer = batch_norm(Deconv2DLayer(layer, 128, 5, stride=1, crop='same',
                                          output_size=32, nonlinearity=a_fn))
         layer = batch_norm(BilinearUpscaleLayer(layer, factor=2)) # output_size=64x64
-        layer = Deconv2DLayer(layer, 3, 7, stride=1, crop='same',
+        layer = Deconv2DLayer(layer, 3, 5, stride=1, crop='same',
                               output_size=64, nonlinearity=T.tanh)
         print ("Generator output:", layer.output_shape)
         return layer
