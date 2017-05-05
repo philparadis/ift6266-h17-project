@@ -155,8 +155,8 @@ def build_generator_architecture(input_var=None, architecture=1):
                                          output_size=16, nonlinearity=a_fn))
         layer = DropoutLayer(layer, p=0.5)
         layer = batch_norm(BilinearUpscaleLayer(layer, factor=2)) # output_size=32x32
-        layer = Deconv2DLayer(layer, 3, 9, stride=2, crop='same',
-                              output_size=64, nonlinearity=a_fn))
+        layer = Deconv2DLayer(layer, 3, 7, stride=2, crop='same',
+                              output_size=64, nonlinearity=T.tanh)
         print ("Generator output:", layer.output_shape)
         return layer
     elif architecture == 2:
