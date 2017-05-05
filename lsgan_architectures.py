@@ -390,7 +390,7 @@ def build_critic_architecture(input_var=None, architecture=1):
         from lasagne.layers import batch_norm
     from lasagne.layers import InputLayer, ReshapeLayer, DenseLayer, DropoutLayer
     from lasagne.layers import (InputLayer, Conv2DLayer, ReshapeLayer,
-                                DenseLayer, NINLayer, DropoutLayer)
+                                DenseLayer, NINLayer, DropoutLayer, MaxPool2DLayer)
     from lasagne.nonlinearities import LeakyRectify, sigmoid, tanh
     from lasagne.init import Normal, GlorotUniform, GlorotNormal
     import lasagne.layers as ll
