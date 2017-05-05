@@ -152,7 +152,7 @@ def build_generator_architecture(input_var=None, architecture=1):
         layer = ReshapeLayer(layer, ([0], 512, 4, 4))
         ### four fractional-stride convolutions
         # Note: Apply dropouts in G. See tip #17 from "ganhacks"
-        layer = batch_norm(Conv2DLayer(layer, 256, 3), stride=1, pad='same')
+        layer = batch_norm(Conv2DLayer(layer, 256, 3, stride=1, pad='same'))
         layer = DropoutLayer(layer, p=0.5)
         layer = batch_norm(BilinearUpscaleLayer(layer, factor=2)) # output_size=8x8
         layer = batch_norm(Conv2DLayer(layer, 192, 5, stride=1, pad='same'))
