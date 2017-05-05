@@ -257,6 +257,7 @@ def run_experiment():
 
         ### Reshape predictions
         Y_test_pred_2d = dataset.denormalize_data(Y_test_pred_2d)
+        Y_test_pred_2d = transpose_colors_channel(Y_test_pred_2d, from_first_to_last = True)
 
         ### Create dataset with colors channel last
         NewDataset = dataset.ColorsLastDataset(settings.IMAGE_WIDTH, settings.IMAGE_HEIGHT)

@@ -161,7 +161,6 @@ def build_generator_architecture(input_var=None, architecture=1):
         layer = Deconv2DLayer(layer, 3, 8, stride=2, crop='full',
                               output_size=64, nonlinearity=T.tanh)
         print ("Generator output:", layer.output_shape)
-        sys.exit(0)
         return layer
         # # input: 100dim
         # a_fn = LeakyRectify(0.1)

@@ -178,7 +178,7 @@ class LSGAN_Model(GAN_BaseModel):
                 if mean_g_loss > mean_c_loss*5.0:
                     generator_runs = 5
                 else:
-                    generator_runs = 1
+                    generator_runs = 3
                 for _ in range(generator_runs):
                     generator_losses.append(generator_train_fn())
 
