@@ -423,7 +423,7 @@ class MLP_Model(KerasModel):
         self.keras_model.add(Dense(256))
         self.keras_model.add(Activation('relu'))
         self.keras_model.add(Dense(self.hyper['output_dim']))
-        self.keras.model.add(Activation('tanh'))
+        self.keras_model.add(Activation('tanh'))
 
     def plot_architecture(self):
         pass
