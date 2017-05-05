@@ -419,7 +419,7 @@ class MLP_Model(KerasModel):
 
         self.keras_model = Sequential()
         self.keras_model.add(Dense(1024, activation='relu', input_shape=(self.hyper['input_dim'], )))
-        self.keras_model.add(Dense(512, activation='relu'))
+        self.keras_model.add(Dense(512, activation='tanh'))
         self.keras_model.add(Dense(self.hyper['output_dim']))
 
     def plot_architecture(self):
