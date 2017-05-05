@@ -204,7 +204,7 @@ class WGAN_Model(BaseModel):
         batches = iterate_minibatches(X_train, y_train, batchsize, shuffle=True,
                                       forever=True)
         # We iterate over epochs:
-        generator_updates = 0
+        generator_runs = 0
         for epoch in range(num_epochs):
             start_time = time.time()
 
@@ -215,16 +215,16 @@ class WGAN_Model(BaseModel):
             critic_scores = []
             generator_scores = []
             for _ in range(epochsize):
-                if (generator_updates < 25) or (generator_updates % 500 == 0):
-                    critic_runs = 100
-                else:
-                    critic_runs = 5
-                for _ in range(critic_runs):
-                    batch = next(batches)
-                    inputs, targets = batch
-                    critic_scores.append(critic_train_fn(inputs))
+                # if (generator_runs < 25) or (generator_runs % 500 == 0):
+                #     critic_runs = 100
+                # else:
+                #     critic_runs = 5
+                # for _ in range(critic_runs):
+                batch = next(batches)
+                inputs, targets = batch
+                critic_scores.append(critic_train_fn(inputs))
                 generator_scores.append(generator_train_fn())
-                generator_updates += 1
+                generator_runs += 1
 
             # Then we print the results for this epoch:
             log("Epoch {} of {} took {:.3f}s".format(

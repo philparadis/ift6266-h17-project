@@ -141,7 +141,7 @@ class LSGAN_Model(GAN_BaseModel):
         # We create an infinite supply of batches (as an iterable generator):
         batches = self.iterate_minibatches(X_train, y_train, batchsize, shuffle=True, forever=True)
         # We iterate over epochs:
-        generator_updates = 0
+        generator_runs = 0
         for epoch in range(num_epochs):
             start_time = time.time()
 
@@ -152,16 +152,16 @@ class LSGAN_Model(GAN_BaseModel):
             critic_losses = []
             generator_losses = []
             for _ in range(epochsize):
-                if (generator_updates < 25) or (generator_updates % 500 == 0):
-                    critic_runs = 100
-                else:
-                    critic_runs = 5
-                for _ in range(critic_runs):
-                    batch = next(batches)
-                    inputs, targets = batch
-                    critic_losses.append(critic_train_fn(inputs))
+                # if (generator_runs < 25) or (generator_runs % 500 == 0):
+                #     critic_runs = 100
+                # else:
+                #     critic_runs = 5
+                # for _ in range(critic_runs):
+                batch = next(batches)
+                inputs, targets = batch
+                critic_losses.append(critic_train_fn(inputs))
                 generator_losses.append(generator_train_fn())
-                generator_updates += 1
+                generator_runs += 1
 
             # Then we print the results for this epoch:
             log("Epoch {} of {} took {:.3f}s".format(
@@ -305,7 +305,7 @@ class LSGAN_Model(GAN_BaseModel):
 
         # We iterate over epochs:
         found_stop_file = False
-        generator_updates = 0
+        generator_runs = 0
         next_epoch_checkpoint = settings.EPOCHS_PER_CHECKPOINT
         num_repeat_gen_train = 1.5
         
