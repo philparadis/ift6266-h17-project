@@ -1,6 +1,7 @@
 #!/bin/bash
 
-SIZE=2000
+TRAIN_SIZE=5000
+TEST_SIZE=500
 
 SAVE_DIR=""
 
@@ -15,11 +16,17 @@ fi
 
 user_dir="${SAVE_DIR}/${USER}"
 target_dir="mscoco"
+small_target_dir="mscoco_small"
 
 pushd "$user_dir" &>/dev/null
-mkdir -p mscoco_small/train2014
-cp mscoco/*.pkl mscoco_small/
-ls -1 mscoco/train2014/ | head -n $SIZE | xargs -n1 -I{} cp mscoco/train2014/'{}' mscoco_small/train2014/
+mkdir -p "${small_target_dir}"/train2014
+mkdir -p "${small_target_dir}"/test2014
+cp "${target_dir}"/*.pkl "${small_target_dir}"/
+ls -1 "${target_dir}"/train2014/ | head -n $TRAIN_SIZE | xargs -n1 -I{} cp "${target_dir}"/train2014/'{}' "${small_target_dir}"/train2014/
+ls -1 "${target_dir}"/test2014/ | head -n $TEST_SIZE | xargs -n1 -I{} cp "${target_dir}"/test2014/'{}' "${small_target_dir}"/test2014/
 popd &>/dev/null
 
-ln -sf "${user_dir}/mscoco_small" mscoco
+if [[ -s "${target_dir}" ]]; then
+    rm "${target_dir}"
+fi
+ln -sf "${user_dir}/${small_target_dir}" "${target_dir}"

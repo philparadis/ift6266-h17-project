@@ -3,6 +3,7 @@
 #set -o verbose on
 
 SAVE_DIR=""
+TESTING_DATASET_SIZE=1000
 
 if [[ -d "/Tmp" ]]; then
     SAVE_DIR="/Tmp"
@@ -38,7 +39,7 @@ skip_extract=0
 if [[ -d "${target_dir}" ]]; then
     echo "Found directory '${target_dir}' already exists. Verifying integrity of data..."
     digest=$(find "${target_dir}" -type f \( -iname '*.pkl' -o -iname '*.jpg' \) -print0 | sort -z | xargs -0 -n5000 cat | openssl dgst -sha1 | sed 's/(stdin)= //')
-    if [[ "$digest" == "592931a25a997aa0c2f012a3a25aaa2eb1201df4" ]]; then
+    if [[ "$digest" == "b089be985b1c0c0643700c3e0550cfaef1c6f5f8" ]]; then
 	echo "Okay, directory is valid! We can skip extracting the archive."
 	skip_extract=1
     else
@@ -52,9 +53,18 @@ if [[ "$skip_extract" == 0 ]]; then
     tar xf inpainting.tar.bz2
 
     mv inpainting "$target_dir"
+
+    echo "Creating directory 'test2014' as a testing dataset made up of the first ${TESTING_DATASET_SIZE} images from subdirectory 'val2014'"
+    pushd "$target_dir" &>/dev/null
+    mkdir -p test2014
+    ls -1 val2014/ | head -n ${TESTING_DATASET_SIZE} | sed 's/COCO_val2014_//' | xargs -n1 -I{} cp val2014/COCO_val2014_'{}' test2014/COCO_test2014_'{}'
+    popd &>/dev/null
 fi
 
 popd &>/dev/null
 
 echo "Creating a symlink $(pwd)/${target_dir} --> ${user_dir}/${target_dir}"
+if [[ -s "${target_dir}" ]]; then
+    rm "${target_dir}"
+fi
 ln -sf "${user_dir}/${target_dir}"
