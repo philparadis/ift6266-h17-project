@@ -336,6 +336,8 @@ class KerasModel(BaseModel):
             self.model_compiled = True
 
     def train(self, Dataset):
+        from keras.callbacks import EarlyStopping, ModelCheckpoint, LambdaCallback
+        
         ### Get the datasets
         X_train, X_test, Y_train, Y_test, id_train, id_test = Dataset.return_data()
 
@@ -371,8 +373,8 @@ class KerasModel(BaseModel):
         checkpointer = ModelCheckpoint(filepath=best_model_path,
                                        verbose=1, save_best_only=True,
                                        period=settings.EPOCHS_PER_CHECKPOINT)
-        update_epochs_completed = LambdaCallback(on_epoch_end = lambda epoch,
-                                                 logs : self.epochs_completed += 1)
+        update_epochs_completed = LambdaCallback(
+            on_epoch_end = lambda epoch, logs : self.epochs_completed += 1)
 
         # Ready to train!
         print_positive("Starting to train model!...")
