@@ -389,7 +389,7 @@ def build_critic_architecture(input_var=None, architecture=1):
                       "Instead, using batch_norm from lasagne.layers.")
         from lasagne.layers import batch_norm
     from lasagne.layers import InputLayer, ReshapeLayer, DenseLayer, DropoutLayer
-    from lasagne.layers import (InputLayer, Conv2DLayer, ReshapeLayer,
+    from lasagne.layers import (InputLayer, Conv2DLayer, ReshapeLayer, GaussianNoiseLayer,
                                 DenseLayer, NINLayer, DropoutLayer, MaxPool2DLayer)
     from lasagne.nonlinearities import LeakyRectify, sigmoid, tanh
     from lasagne.init import Normal, GlorotUniform, GlorotNormal
@@ -463,15 +463,15 @@ def build_critic_architecture(input_var=None, architecture=1):
         # input: (None, 3, 64, 64)
         layer = InputLayer(shape=(None, 3, 64, 64), input_var=input_var)
         # Injecting some noise after input layer
-        layer = GAN.GaussianNoiseLayer(layer, sigma=0.8)
+        layer = GaussianNoiseLayer(layer, sigma=0.4, deterministic=False)
         # four convolutions
         layer = batch_norm(Conv2DLayer(layer, 64, 3, stride=2, pad='same', nonlinearity=a_fn))
         layer = batch_norm(Conv2DLayer(layer, 64, 5, stride=2, pad='same', nonlinearity=a_fn))
         layer = batch_norm(Conv2DLayer(layer, 128, 5, stride=2, pad='same', nonlinearity=a_fn))
         layer = batch_norm(Conv2DLayer(layer, 128, 7, stride=2, pad='same', nonlinearity=a_fn))
         # fully-connected layer
+        layer = GaussianNoiseLayer(layer, sigma=0.4, deterministic=False)
         layer = batch_norm(DenseLayer(layer, 256, nonlinearity=a_fn))
-        layer = GAN.GaussianNoiseLayer(layer, sigma=0.8)
         # output layer (linear)
         layer = DenseLayer(layer, 1, nonlinearity=None)
         print ("critic output:", layer.output_shape)
