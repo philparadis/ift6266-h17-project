@@ -153,14 +153,15 @@ def build_generator_architecture(input_var=None, architecture=1):
         ### four fractional-stride convolutions
         layer = batch_norm(Deconv2DLayer(layer, 256, 4, stride=2, crop='full',
                                          output_size=16, nonlinearity=a_fn))
-        layer = DropoutLayer(layer, p=0.5)
-        layer = batch_norm(BilinearUpscaleLayer(layer, factor=2)) # output_size=32x32
-        layer = batch_norm(Deconv2DLayer(layer, 256, 7, stride=1, crop='same',
+        #layer = DropoutLayer(layer, p=0.5)
+        #layer = batch_norm(BilinearUpscaleLayer(layer, factor=2)) # output_size=32x32
+        layer = batch_norm(Deconv2DLayer(layer, 256, 6, stride=2, crop='full',
                                          output_size=32, nonlinearity=a_fn))
-        layer = DropoutLayer(layer, p=0.5)
+        #layer = DropoutLayer(layer, p=0.5)
         layer = Deconv2DLayer(layer, 3, 8, stride=2, crop='full',
                               output_size=64, nonlinearity=T.tanh)
         print ("Generator output:", layer.output_shape)
+        sys.exit(0)
         return layer
         # # input: 100dim
         # a_fn = LeakyRectify(0.1)
