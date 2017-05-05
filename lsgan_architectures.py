@@ -119,7 +119,7 @@ def build_generator_architecture(input_var=None, architecture=1):
         layer = app(GAN.GaussianNoiseLayer(layer, sigma=0.5))
         layer = app(GAN.weight_norm(Deconv2DLayer(layer, 3, (5, 5), stride=(2, 2), output_size=64, nonlinearity=T.tanh), train_g=True, init_stdv=0.1))
         print ("Generator output:", layer.output_shape)
-        return layer, layers
+        return layer
     elif architecture == 0:
         a_fn = LeakyRectify(0.2)
         # input: 100dim
@@ -141,7 +141,7 @@ def build_generator_architecture(input_var=None, architecture=1):
         layer = Deconv2DLayer(layer, 96, 5, stride=2, crop='same', output_size=64, nonlinearity=a_fn)
         layer = Deconv2DLayer(layer, 3, 5, stride=1, crop='same', output_size=64, nonlinearity=T.tanh)
         print ("Generator output:", layer.output_shape)
-        return layer, layers
+        return layer
     elif architecture == 1:
         #a_fn = LeakyRectify(0.2)
         a_fn = 'relu'
@@ -173,7 +173,7 @@ def build_generator_architecture(input_var=None, architecture=1):
         layer = batch_norm(Conv2DLayer(layer, 64, 5, stride=1, pad='same'))
         layer = Conv2DLayer(layer, 3, 5, stride=1, pad='same', nonlinearity=T.tanh)
         print ("Generator output:", layer.output_shape)
-        return layer, layers
+        return layer
     elif architecture == 2:
         # Optional layers
         input_noise = True
@@ -239,7 +239,7 @@ def build_generator_architecture(input_var=None, architecture=1):
         
         gen_dat = ll.get_output(layer)
         print ("Generator output:", layer.output_shape)
-        return layer, layers
+        return layer
 
     elif architecture == 3:
         # Optional layers
@@ -295,7 +295,7 @@ def build_generator_architecture(input_var=None, architecture=1):
         
         gen_dat = ll.get_output(layer)
         print ("Generator output:", layer.output_shape)
-        return layer, layers
+        return layer
     elif architecture == 4:
         a_fn = LeakyRectify(0.2)
         # input: 100dim
@@ -330,7 +330,7 @@ def build_generator_architecture(input_var=None, architecture=1):
         layer = Deconv2DLayer(layer, 3, 5, stride=2, crop='same',
                               output_size=64, nonlinearity=T.tanh)
         print ("Generator output:", layer.output_shape)
-        return layer, layers
+        return layer
 
     elif architecture == 5:
         a_fn = LeakyRectify(0.2)
@@ -355,7 +355,7 @@ def build_generator_architecture(input_var=None, architecture=1):
         layer = Deconv2DLayer(layer, 3, 5, stride=2, crop='same', W=W_init,
                               output_size=64, nonlinearity=T.tanh)
         print ("Generator output:", layer.output_shape)
-        return layer, layers
+        return layer
     elif architecture == 6 or architecture == 7:
         layer = app(InputLayer(shape=(None, 100), input_var=input_var))
         layer = app(GAN.batch_norm(ll.DenseLayer(layer, num_units=4*4*512, W=Normal(0.05), nonlinearity=GAN.relu), g=None))
@@ -368,7 +368,7 @@ def build_generator_architecture(input_var=None, architecture=1):
         gen_dat = ll.get_output(layer)
 
         print ("Generator output:", layer.output_shape)
-        return layer, layers
+        return layer
 
     raise Exception("Invalid argument to LSGAN's build_generator: architecture = {}".format(architecture))
     
@@ -433,7 +433,7 @@ def build_critic_architecture(input_var=None, architecture=1):
         layer = app(ll.GlobalPoolLayer(layer))
         layer = app(GAN.weight_norm(DenseLayer(layer, 1, nonlinearity=None)))
         print ("critic output:", layer.output_shape)
-        return layer, layers
+        return layer
     elif architecture == 0:
         a_fn = LeakyRectify(0.2)
         # input: (None, 3, 64, 64)
@@ -456,7 +456,7 @@ def build_critic_architecture(input_var=None, architecture=1):
         # output layer (linear)
         layer = DenseLayer(layer, 1, nonlinearity=None)
         print ("critic output:", layer.output_shape)
-        return layer, layers
+        return layer
     elif architecture == 1:
         alpha = 0.2 # slope of negative x axis of leaky ReLU
         a_fn = LeakyRectify(alpha)
@@ -475,7 +475,7 @@ def build_critic_architecture(input_var=None, architecture=1):
         # output layer (linear)
         layer = DenseLayer(layer, 1, nonlinearity=None)
         print ("critic output:", layer.output_shape)
-        return layer, layers
+        return layer
     elif architecture == 2:
         # Optional layers
         input_noise = True
@@ -558,7 +558,7 @@ def build_critic_architecture(input_var=None, architecture=1):
 
         disc_params = ll.get_all_params(layer, trainable=True)
         print ("critic output:", layer.output_shape)
-        return layer, layers
+        return layer
 
     elif architecture == 3:
         # Optional layers
@@ -641,7 +641,7 @@ def build_critic_architecture(input_var=None, architecture=1):
 
         disc_params = ll.get_all_params(layer, trainable=True)
         print ("critic output:", layer.output_shape)
-        return layer, layers
+        return layer
 
     elif architecture == 4:
         # Optional layers
@@ -697,7 +697,7 @@ def build_critic_architecture(input_var=None, architecture=1):
         # output layer (linear)
         layer = DenseLayer(layer, 1, nonlinearity=None)
         print ("critic output:", layer.output_shape)
-        return layer, layers
+        return layer
     elif architecture == 5:
         a_fn = LeakyRectify(0.2)
         W_init = Normal(0.05)
@@ -723,7 +723,7 @@ def build_critic_architecture(input_var=None, architecture=1):
         layer = DenseLayer(layer, 1, nonlinearity=None)
 
         print ("critic output:", layer.output_shape)
-        return layer, layers
+        return layer
     elif architecture == 6:
         try:
             from lasagne.layers import dnn
@@ -751,7 +751,7 @@ def build_critic_architecture(input_var=None, architecture=1):
         disc_params = ll.get_all_params(layer, trainable=True)
 
         print ("critic output:", layer.output_shape)
-        return layer, layers
+        return layer
     elif architecture == 7:
         try:
             from lasagne.layers import dnn
@@ -781,7 +781,7 @@ def build_critic_architecture(input_var=None, architecture=1):
         disc_params = ll.get_all_params(layer, trainable=True)
 
         print ("critic output:", layer.output_shape)
-        return layer, layers
+        return layer
     
     raise Exception("Invalid argument to LSGAN's build_critic: architecture = {}".format(architecture))
 
