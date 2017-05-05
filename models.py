@@ -335,6 +335,9 @@ class KerasModel(BaseModel):
                                      metrics = [self.hyper['loss_function']])
             self.model_compiled = True
 
+    def increment_epochs_completed(self, epoch, logs):
+        self.epochs_completed += 1
+
     def train(self, Dataset):
         from keras.callbacks import EarlyStopping, ModelCheckpoint, LambdaCallback
         
@@ -362,8 +365,8 @@ class KerasModel(BaseModel):
         print_info("Starting training from epoch {0} to epoch {1} {2}, creating checkpoints every {3} epochs."
                    .format(self.epochs_completed + 1,
                            self.epochs_completed + settings.NUM_EPOCHS,
-                           "(i.e. training an extra {0} epochs)".format(settings.NUM_EPOCHS) if self.epochs_completed == 0 else "",
-                           ))
+                           "(i.e. training an extra {0} epochs)".format(settings.NUM_EPOCHS),
+                           settings.EPOCHS_PER_CHECKPOINT))
 
         # Define training callbacks
         history = LossHistory()
@@ -373,8 +376,7 @@ class KerasModel(BaseModel):
         checkpointer = ModelCheckpoint(filepath=best_model_path,
                                        verbose=1, save_best_only=True,
                                        period=settings.EPOCHS_PER_CHECKPOINT)
-        update_epochs_completed = LambdaCallback(
-            on_epoch_end = lambda epoch, logs : self.epochs_completed += 1)
+        update_epochs_completed = LambdaCallback(on_epoch_end = self.increment_epochs_completed)
 
         # Ready to train!
         print_positive("Starting to train model!...")
@@ -385,7 +387,7 @@ class KerasModel(BaseModel):
                              batch_size = self.hyper['batch_size'],
                              verbose = settings.VERBOSE,
                              initial_epoch = self.epochs_completed,
-                             callbacks=[self.history, early_stopping, checkpointer, update_epochs_completed])
+                             callbacks=[history, early_stopping, checkpointer, update_epochs_completed])
 
         ### Training complete
         print_positive("Training complete!")
