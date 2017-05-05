@@ -194,7 +194,6 @@ from os.path import join
 import sys
 import numpy as np
 import PIL.Image as Image
-from keras.utils import plot_model
 
 ## Your model will be saved in:                           models/<experiment_name>.hdf5
 ## A summary of your model architecture will saved be in: models/summary_<experiment_name>.txt
