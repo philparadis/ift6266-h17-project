@@ -418,7 +418,7 @@ class MLP_Model(KerasModel):
         from keras.models import Sequential
 
         self.keras_model = Sequential()
-        self.keras_model.add(Dense(512 input_shape=(self.hyper['input_dim'], )))
+        self.keras_model.add(Dense(512, input_shape=(self.hyper['input_dim'], )))
         self.keras_model.add(Activation('relu'))
         self.keras_model.add(Dense(256))
         self.keras_model.add(Activation('relu'))
