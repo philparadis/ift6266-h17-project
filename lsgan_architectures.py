@@ -148,21 +148,23 @@ def build_generator_architecture(input_var=None, architecture=1):
         a_fn = LeakyRectify(0.1)
         layer = InputLayer(shape=(None, 100), input_var=input_var)
         # project and reshape
-        layer = batch_norm(DenseLayer(layer, 128*8*8))
-        layer = ReshapeLayer(layer, ([0], 128, 8, 8))
-        layer = batch_norm(Conv2DLayer(layer, 256, 5, stride=1, pad='same', nonlinearity=rectify))
-        layer = DropoutLayer(layer, p=0.5)
+        layer = batch_norm(DenseLayer(layer, 256*4*4))
+        layer = ReshapeLayer(layer, ([0], 256, 4, 4))
         ### four fractional-stride convolutions
         # Note: Apply dropouts in G. See tip #17 from "ganhacks"
         layer = batch_norm(BilinearUpscaleLayer(layer, factor=2)) # output_size=16x16
-        layer = batch_norm(Conv2DLayer(layer, 256, 7, stride=1, pad='same', nonlinearity=rectify))
+        layer = batch_norm(Conv2DLayer(layer, 64, 3, stride=1, pad=3, nonlinearity=rectify))
+        layer = batch_norm(Deconv2DLayer(layer, 192, 8, stride=2, crop='full', nonlinearity=rectify))
         layer = DropoutLayer(layer, p=0.5)
         layer = batch_norm(BilinearUpscaleLayer(layer, factor=2)) # output_size=32x32
-        layer = batch_norm(Conv2DLayer(layer, 256, 7, stride=1, pad='same', nonlinearity=rectify))
+        layer = batch_norm(Conv2DLayer(layer, 64, 8, stride=2, pad='full', nonlinearity=rectify))
         layer = DropoutLayer(layer, p=0.5)
+        layer = batch_norm(Deconv2DLayer(layer, 192, 9, stride=2, crop='full', nonlinearity=rectify))
         layer = batch_norm(BilinearUpscaleLayer(layer, factor=2)) # output_size=64x64
-        layer = Conv2DLayer(layer, 3, 7, stride=1, pad='same', nonlinearity=T.tanh)
+        #layer = batch_norm(Conv2DLayer(layer, 64, 5, stride=1, pad='same', nonlinearity=rectify))
+        layer = Conv2DLayer(layer, 3, 3, stride=1, pad='full', nonlinearity=T.tanh)
         print ("Generator output:", layer.output_shape)
+        sys.exit(-1)
         return layer
     elif architecture == 2:
         # Optional layers
