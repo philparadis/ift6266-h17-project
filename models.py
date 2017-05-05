@@ -470,23 +470,38 @@ class Conv_MLP(KerasModel):
 
         input_shape = (3, 64, 64)
         self.keras_model = Sequential()
-        self.keras_model.add(Conv2D(64, (5, 5), input_shape=input_shape, activation='relu'))  # num_units: 32*64*64
-        self.keras_model.add(Dropout(0.2))
-        self.keras_model.add(MaxPooling2D(pool_size=(2, 2))) # out: 32x32
+        self.keras_model.add(Conv2D(64, (5, 5), strides=(2, 2), padding='same',
+                                    input_shape=input_shape, activation='relu'))  # num_units: 32*64*64
 
-        self.keras_model.add(Conv2D(128, (5, 5), padding='same', activation='relu'))  # num_units: 64*32*32
-        self.keras_model.add(Dropout(0.5))
-        self.keras_model.add(MaxPooling2D(pool_size=(2, 2))) # out: 16x16
+        self.keras_model.add(Conv2D(128, (5, 5), strides=(2, 2), padding='same', activation='relu'))  # num_units: 64*32*32
 
         #self.feature_matching_layers.append(Conv2D(256, (5, 5), padding='same', activation='relu'))
         #self.keras_model.add(self.feature_matching_layers[-1]) # num_units: 128x16x16
-        self.keras_model.add(Conv2D(256, (5, 5), padding='same', activation='relu')) # num_units: 128x16x16
-        self.keras_model.add(Dropout(0.5))
-        self.keras_model.add(MaxPooling2D(pool_size=(2, 2))) # out: 8x8
+        self.keras_model.add(Conv2D(256, (5, 5), strides=(2, 2), padding='same', activation='relu')) # num_units: 128x16x16
 
         self.keras_model.add(Flatten())
-        self.keras_model.add(Dense(units=4096, activation='relu'))
-        self.keras_model.add(Dense(self.hyper['output_dim'])) # output_dim = 3*32*32 = 3072
+        self.keras_model.add(Dense(units=1024, activation='relu'))
+        self.keras_model.add(Dense(self.hyper['output_dim'], activation='tanh')) # output_dim = 3*32*32 = 3072
+        
+        # input_shape = ((None, 3, 64, 64), )
+        # self.keras_model = Sequential()
+        # self.keras_model.add(Conv2D(64, (5, 5), input_shape=input_shape, activation='relu'))  # num_units: 32*64*64
+        # self.keras_model.add(Dropout(0.2))
+        # self.keras_model.add(MaxPooling2D(pool_size=(2, 2))) # out: 32x32
+
+        # self.keras_model.add(Conv2D(128, (5, 5), padding='same', activation='relu'))  # num_units: 64*32*32
+        # self.keras_model.add(Dropout(0.5))
+        # self.keras_model.add(MaxPooling2D(pool_size=(2, 2))) # out: 16x16
+
+        # #self.feature_matching_layers.append(Conv2D(256, (5, 5), padding='same', activation='relu'))
+        # #self.keras_model.add(self.feature_matching_layers[-1]) # num_units: 128x16x16
+        # self.keras_model.add(Conv2D(256, (5, 5), padding='same', activation='relu')) # num_units: 128x16x16
+        # self.keras_model.add(Dropout(0.5))
+        # self.keras_model.add(MaxPooling2D(pool_size=(2, 2))) # out: 8x8
+
+        # self.keras_model.add(Flatten())
+        # self.keras_model.add(Dense(units=4096, activation='relu'))
+        # self.keras_model.add(Dense(self.hyper['output_dim'])) # output_dim = 3*32*32 = 3072
 
 class Conv_Deconv(KerasModel):
     def __init__(self, model_name, hyperparams = hyper_params.default_conv_deconv_hyper_params):
