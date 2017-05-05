@@ -463,14 +463,14 @@ def build_critic_architecture(input_var=None, architecture=1):
         # input: (None, 3, 64, 64)
         layer = InputLayer(shape=(None, 3, 64, 64), input_var=input_var)
         # Injecting some noise after input layer
-        layer = GaussianNoiseLayer(layer, sigma=0.4, deterministic=False)
+        layer = GaussianNoiseLayer(layer, sigma=0.5)
         # four convolutions
         layer = batch_norm(Conv2DLayer(layer, 64, 3, stride=2, pad='same', nonlinearity=a_fn))
         layer = batch_norm(Conv2DLayer(layer, 64, 5, stride=2, pad='same', nonlinearity=a_fn))
         layer = batch_norm(Conv2DLayer(layer, 128, 5, stride=2, pad='same', nonlinearity=a_fn))
         layer = batch_norm(Conv2DLayer(layer, 128, 7, stride=2, pad='same', nonlinearity=a_fn))
         # fully-connected layer
-        layer = GaussianNoiseLayer(layer, sigma=0.4, deterministic=False)
+        layer = GaussianNoiseLayer(layer, sigma=0.5)
         layer = batch_norm(DenseLayer(layer, 256, nonlinearity=a_fn))
         # output layer (linear)
         layer = DenseLayer(layer, 1, nonlinearity=None)
