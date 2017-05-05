@@ -22,7 +22,7 @@ from utils import print_critical, print_error, print_warning, print_info, print_
 ### Define the main class for handling our dataset called InpaintingDataset
 
 class BaseDataset(object):
-    def __init__(self, input_dim, output_dim, scaler):
+    def __init__(self, input_dim, output_dim):
         self.input_dim = input_dim
         self.output_dim = output_dim
 
@@ -51,8 +51,6 @@ class BaseDataset(object):
         self.Y = None
         self.id_train = []
         self.id_test = []
-
-        self.scaler = scaler
 
     def transform_images(self, images):
         """Images should be a list of numpy arrays of the form (64, 64, 3). This function will turn it into a numpy batch 4-tensor of the form (batch_size, 64, 64, 3) or (batch_size, 3, 64, 64) depending on the implementation of the derived class."""
@@ -170,17 +168,17 @@ class BaseDataset(object):
                 
     def normalize(self, model = settings.MODEL):
         if model == "mlp" or model == "test":
-            self.images_outer_flat = normalize_data(self.images_outer_flat, self.scaler)
-            self.images_inner_flat = normalize_data(self.images_inner_flat, self.scaler)
+            self.images_outer_flat = normalize_data(self.images_outer_flat)
+            self.images_inner_flat = normalize_data(self.images_inner_flat)
         elif model == "conv_mlp":
-            self.images_outer2d = normalize_data(self.images_outer2d, self.scaler)
-            self.images_inner_flat = normalize_data(self.images_inner_flat, self.scaler)
+            self.images_outer2d = normalize_data(self.images_outer2d)
+            self.images_inner_flat = normalize_data(self.images_inner_flat)
         elif model == "conv_deconv":
-            self.images_outer2d = normalize_data(self.images_outer2d, self.scaler)
-            self.images_inner2d = normalize_data(self.images_inner2d, self.scaler)
+            self.images_outer2d = normalize_data(self.images_outer2d)
+            self.images_inner2d = normalize_data(self.images_inner2d)
         elif model == "dcgan" or model == "wgan" or model == "lsgan":
-            self.images = normalize_data(self.images, self.scaler)
-            self.images_inner2d = normalize_data(self.images_inner2d, self.scaler)
+            self.images = normalize_data(self.images)
+            self.images_inner2d = normalize_data(self.images_inner2dy)
 
             
     def preload(self, test_size = 0.2, seed = 0, model = settings.MODEL):
@@ -228,17 +226,17 @@ class BaseDataset(object):
             
     def denormalize(self, model = settings.MODEL):
         if model == "mlp" or model == "test":
-            self.images_outer_flat = denormalize_data(self.images_outer_flat, self.scaler)
-            self.images_inner_flat = denormalize_data(self.images_inner_flat, self.scaler)
+            self.images_outer_flat = denormalize_data(self.images_outer_flat)
+            self.images_inner_flat = denormalize_data(self.images_inner_flat)
         elif model == "conv_mlp":
-            self.images_outer2d = denormalize_data(self.images_outer2d, self.scaler)
-            self.images_inner_flat = denormalize_data(self.images_inner_flat, self.scaler)
+            self.images_outer2d = denormalize_data(self.images_outer2d)
+            self.images_inner_flat = denormalize_data(self.images_inner_flat)
         elif model == "conv_deconv":
-            self.images_outer2d = denormalize_data(self.images_outer2d, self.scaler)
-            self.images_inner2d = denormalize_data(self.images_inner2d, self.scaler)
+            self.images_outer2d = denormalize_data(self.images_outer2d)
+            self.images_inner2d = denormalize_data(self.images_inner2d)
         elif model == "dcgan" or model == "wgan" or model == "lsgan":
-            self.images = denormalize_data(self.images, self.scaler)
-            self.images_inner2d = denormalize_data(self.images_inner2d, self.scaler)
+            self.images = denormalize_data(self.images)
+            self.images_inner2d = denormalize_data(self.images_inner2d)
 
 
     def return_data(self):
@@ -317,8 +315,8 @@ class MinimalDataset(object):
         return False
         
 class ColorsFirstDataset(BaseDataset):
-    def __init__(self, input_dim, output_dim, scaler):
-        super(ColorsFirstDataset, self).__init__(input_dim, output_dim, scaler)
+    def __init__(self, input_dim, output_dim):
+        super(ColorsFirstDataset, self).__init__(input_dim, output_dim)
         self._images_filename = "train_images_col_first.npy"
 
     def transform_images(self, images):
@@ -402,8 +400,8 @@ class ColorsFirstDataset(BaseDataset):
                 
 
 class ColorsLastDataset(BaseDataset):
-    def __init__(self, input_dim, output_dim, scaler):
-        super(ColorsLastDataset, self).__init__(input_dim, output_dim, scaler)
+    def __init__(self, input_dim, output_dim):
+        super(ColorsLastDataset, self).__init__(input_dim, output_dim)
         self._images_filename = "train_images_col_last.npy"
 
     def transform_images(self, images):

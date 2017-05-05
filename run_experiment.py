@@ -212,8 +212,7 @@ def run_experiment():
     import dataset
 
     ### Create and initialize an empty InpaintingDataset object
-    scaler = MinMaxScaler(feature_range=(0, 1))
-    Dataset = dataset.ColorsFirstDataset(settings.IMAGE_WIDTH, settings.IMAGE_HEIGHT, scaler)
+    Dataset = dataset.ColorsFirstDataset(settings.IMAGE_WIDTH, settings.IMAGE_HEIGHT)
 
     ### Load dataset
     Dataset.load_dataset()
@@ -243,7 +242,7 @@ def run_experiment():
         Y_test_pred_2d = transpose_colors_channel(Y_test_pred_2d, from_first_to_last = True)
 
         ### Create dataset with colors channel last
-        NewDataset = dataset.ColorsLastDataset(settings.IMAGE_WIDTH, settings.IMAGE_HEIGHT, scaler)
+        NewDataset = dataset.ColorsLastDataset(settings.IMAGE_WIDTH, settings.IMAGE_HEIGHT)
         NewDataset.load_dataset()
         NewDataset.preprocess(model = "conv_deconv")
         NewDataset.preload(model = "conv_deconv")
@@ -266,7 +265,7 @@ def run_experiment():
         Y_test_pred_2d = transpose_colors_channel(Y_test_pred_2d, from_first_to_last = True)
 
         ### Create dataset with colors channel last
-        NewDataset = dataset.ColorsLastDataset(settings.IMAGE_WIDTH, settings.IMAGE_HEIGHT, scaler)
+        NewDataset = dataset.ColorsLastDataset(settings.IMAGE_WIDTH, settings.IMAGE_HEIGHT)
         NewDataset.load_dataset()
         NewDataset.preprocess(model = "conv_deconv")
         NewDataset.preload(model = "conv_deconv")

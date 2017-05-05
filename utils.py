@@ -9,11 +9,13 @@ import settings
 
 ### Utility functions to manipule numpy datasets
 
-def normalize_data(data, scaler):
+def normalize_data(data):
+    scaler = MinMaxScaler(feature_range=(0, 1))
     return scaler.fit_transform(data.astype('float32').reshape(data.shape[0], -1)).reshape(data.shape)
 
-def denormalize_data(data, scaler):
-    return scaler.inverse_transform(data.reshape(data.shape[0], -1)).reshape(data.shape).astype('uint8')
+def denormalize_data(data):
+    unscaler = MinMaxScaler(feature_range=(0, 256))
+    return unscaler.fit_transform(data.reshape(data.shape[0], -1)).reshape(data.shape).astype('uint8')
 
 def normalize_data_tanh(data):
     """Transform linearly integers within [0, 255] to float32 within [-1, 1]. Data must be numpy array of type 'uint8'."""
