@@ -146,7 +146,7 @@ class LSGAN_Model(GAN_BaseModel):
         batches = self.iterate_minibatches(X_train, y_train, batchsize, shuffle=True, forever=True)
 
         # We iterate over epochs:
-        epoch_eta_threshold = min(num_epochs // 5,)
+        epoch_eta_threshold = num_epochs // 5
         generator_runs = 0
         generator_counts = 0
         mean_g_loss = 0
