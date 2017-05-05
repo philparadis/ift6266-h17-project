@@ -451,7 +451,7 @@ class Conv_MLP(KerasModel):
 
     def build(self):
         from keras.models import Sequential
-        from keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Activation
+        from keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Activation, Dropout
 
         input_shape = (3, 64, 64)
         self.keras_model = Sequential()
