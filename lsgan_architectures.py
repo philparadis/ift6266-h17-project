@@ -88,6 +88,7 @@ def build_generator_architecture(input_var=None, architecture=1):
         from lasagne.layers import batch_norm
     from lasagne.layers import InputLayer, ReshapeLayer, DenseLayer, DropoutLayer, Conv2DLayer
     from lasagne.nonlinearities import LeakyRectify, sigmoid, tanh
+    from lasagne.nonlinearities import rectify
     from lasagne.init import Normal, GlorotUniform, GlorotNormal
     import lasagne.layers as ll
     import gan_lasagne as GAN
@@ -149,15 +150,15 @@ def build_generator_architecture(input_var=None, architecture=1):
         # project and reshape
         layer = batch_norm(DenseLayer(layer, 128*8*8))
         layer = ReshapeLayer(layer, ([0], 128, 8, 8))
-        layer = batch_norm(Conv2DLayer(layer, 256, 5, stride=1, pad='same', nonlinearity=relu))
+        layer = batch_norm(Conv2DLayer(layer, 256, 5, stride=1, pad='same', nonlinearity=rectify))
         layer = DropoutLayer(layer, p=0.5)
         ### four fractional-stride convolutions
         # Note: Apply dropouts in G. See tip #17 from "ganhacks"
         layer = batch_norm(BilinearUpscaleLayer(layer, factor=2)) # output_size=16x16
-        layer = batch_norm(Conv2DLayer(layer, 256, 7, stride=1, pad='same', nonlinearity=relu))
+        layer = batch_norm(Conv2DLayer(layer, 256, 7, stride=1, pad='same', nonlinearity=rectify))
         layer = DropoutLayer(layer, p=0.5)
         layer = batch_norm(BilinearUpscaleLayer(layer, factor=2)) # output_size=32x32
-        layer = batch_norm(Conv2DLayer(layer, 256, 7, stride=1, pad='same', nonlinearity=relu))
+        layer = batch_norm(Conv2DLayer(layer, 256, 7, stride=1, pad='same', nonlinearity=rectify))
         layer = DropoutLayer(layer, p=0.5)
         layer = batch_norm(BilinearUpscaleLayer(layer, factor=2)) # output_size=64x64
         layer = Conv2DLayer(layer, 3, 7, stride=1, pad='same', nonlinearity=T.tanh)
