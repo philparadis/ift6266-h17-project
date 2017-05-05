@@ -310,14 +310,14 @@ def run_experiment():
         Dataset.denormalize()
         for i in range(100):
             samples = gen_fn(floatX(np.random.rand(10*10, 100)))
-            path = os.path.join(settings.EPOCHS_DIR, 'samples_%i.png' % i)
+            path = os.path.join(settings.SAMPLES_DIR, "samples_{:0>3}.png".format(i))
             samples = dataset.denormalize_data(samples)
             Image.fromarray(samples.reshape(10, 10, 3, 64, 64)
                             .transpose(0, 3, 1, 4, 2)
                             .reshape(10*64, 10*64, 3)).save(path)
             sample = gen_fn(floatX(np.random.rand(1, 100)))
             sample = dataset.denormalize_data(sample)
-            path = os.path.join(settings.SAMPLES_DIR, 'one_sample_%i.png' % i)
+            path = os.path.join(settings.SAMPLES_DIR, "one_sample_{:0>3}.png".format(i))
             Image.fromarray(sample.reshape(3, 64, 64).transpose(1, 2, 0).reshape(64, 64, 3)).save(path)
 
     ### Success...? Well, at least we didn't crash :P
