@@ -232,7 +232,7 @@ class LossHistory(Callback):
 
     def on_epoch_end(self, epoch, logs={}):
         log("Epoch {0:0>4}/{1:0<4}: loss = {2:.4f}, val_loss = {3:.4f}".
-            format(epoch, settings.NUM_EPOCHS, logs['loss'], logs['val_loss'])
+            format(epoch, settings.NUM_EPOCHS, logs['loss'], logs['val_loss']))
 
     def on_batch_end(self, batch, logs={}):
         self.losses.append(logs.get('loss'))
