@@ -86,7 +86,7 @@ def build_generator_architecture(input_var=None, architecture=1):
         print_warning("Couldn't import batch_norm_dnn from lasagne.layers.dnn. "
                       "Instead, using batch_norm from lasagne.layers.")
         from lasagne.layers import batch_norm
-    from lasagne.layers import InputLayer, ReshapeLayer, DenseLayer, DropoutLayer
+    from lasagne.layers import InputLayer, ReshapeLayer, DenseLayer, DropoutLayer, Conv2DLayer
     from lasagne.nonlinearities import LeakyRectify, sigmoid, tanh
     from lasagne.init import Normal, GlorotUniform, GlorotNormal
     import lasagne.layers as ll
