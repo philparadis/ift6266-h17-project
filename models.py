@@ -390,7 +390,7 @@ class KerasModel(BaseModel):
         ### Evaluate the model's performance
         print_info("Evaluating model...")
         train_scores = self.keras_model.evaluate(X_train, Y_train, batch_size = settings.BATCH_SIZE, verbose = 0)
-        test_scores = self.keras_model.evaluate(X_test, Y_test, batch_size = settings.BATCH_SIZE,, verbose = 0)
+        test_scores = self.keras_model.evaluate(X_test, Y_test, batch_size = settings.BATCH_SIZE, verbose = 0)
         metric = self.keras_model.metrics_names[1]
         print_positive("Training score {0: >6}: {1:.5f}".format(metric, train_scores[1]))
         print_positive("Testing score  {0: >6}: {1:.5f}".format(metric, train_scores[1]))
