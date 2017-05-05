@@ -37,6 +37,14 @@ def download_dataset():
         pass
     raise OSError("Could not find the script '%s'." % dataset_script)
 
+def create_tiny_dataset():
+    script="create-small-dataset.sh"
+    try:
+        return subprocess.call("./" + script)
+    except OSError, e:
+        pass
+    raise OSError("Could not find the script '%s'." % script)
+
 
 #################################################
 # Run experiments here
@@ -135,6 +143,10 @@ def run_experiment():
         if rc != 0:
             log("(!) Failed to download the project dataset, exiting...")
             sys.exit(rc)
+
+    if settings.TINY_DATASET == True:
+        create_tiny_dataset()
+        settings.MSCOCO_DIR = os.path.join(settings.THIS_DIR, "mscoco_small/")
 
     verbosity_level = "Low"
     if settings.VERBOSE == 1:

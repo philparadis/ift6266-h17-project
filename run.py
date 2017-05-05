@@ -77,6 +77,7 @@ if __name__ == "__main__":
     parser.add_argument("-u", "--updates_per_epoch", type=int, default=settings.UPDATES_PER_EPOCH,
                         help="Number of times to update the generator and discriminator/critic per epoch. Applies to GAN models only.")
     parser.add_argument("-m", "--feature_matching", action="store_true", default=settings.FEATURE_MATCHING, help="By default, feature matching is not used (equivalently, it is set to 0, meaning that the loss function uses the last layer's output). You can set this value to 1 to use the output of the second-to-last layer, or a value of 2 to use the output of the third-to-last layer, and so on. This technique is called 'feature matching' and many provide benefits in some cases. Note that it is not currently implemented in all models and you will receive a message indicating if feature matching is used for your model.")
+    parser.add_argument("-t", "--tiny", action="store_true", default.settings.TINY_DATASET, help="Use a tiny dataset containing only 5000 training samples and 500 test samples, for testing purposes.")
     
 #                        help="Use CPU instead of GPU. Used for debugging and testing purposes.")
 
@@ -97,7 +98,9 @@ if __name__ == "__main__":
     settings.LSGAN_ARCHITECTURE = args.architecture
     settings.UPDATES_PER_EPOCH = args.updates_per_epoch
     settings.FEATURE_MATCHING = args.feature_matching
+    settings.TINY_DATASET = args.tiny
 #    settings.USE_CPU = args.cpu
+
 
     if not settings.MODEL in ["test", "mlp", "conv_mlp", "conv_deconv", "dcgan", "wgan", "lsgan"]:
         raise NotImplementedError("The model '{}' is not yet implemented yet, sorry!".format(settings.MODEL))

@@ -30,6 +30,7 @@ LSGAN_ARCHITECTURE = 1
 UPDATES_PER_EPOCH = 10
 FEATURE_MATCHING = False
 TRAINING_BATCH_SIZE = 0 # Total number of training examples (i.e. size of first dimension of training tensor)
+TINY_DATASET = False
 
 THEANO_CONFIG_FLOATX = 'float32'
 DATASET_AUGMENTATION = True
