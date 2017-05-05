@@ -161,7 +161,7 @@ class LSGAN_Model(GAN_BaseModel):
             critic_losses = []
             generator_losses = []
             for _ in range(epochsize):
-                if (generator_counts < 25) or (generator_counts % 100 = 0):
+                if (generator_counts < 25) or (generator_counts % 100 == 0):
                     critic_runs = 10
                 else:
                     critic_runs = 3
