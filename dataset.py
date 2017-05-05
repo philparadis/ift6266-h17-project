@@ -178,7 +178,7 @@ class BaseDataset(object):
             self.images_inner2d = normalize_data(self.images_inner2d)
         elif model == "dcgan" or model == "wgan" or model == "lsgan":
             self.images = normalize_data(self.images)
-            self.images_inner2d = normalize_data(self.images_inner2dy)
+            self.images_inner2d = normalize_data(self.images_inner2d)
 
             
     def preload(self, test_size = 0.2, seed = 0, model = settings.MODEL):
