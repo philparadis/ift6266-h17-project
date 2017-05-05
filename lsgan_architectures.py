@@ -160,7 +160,7 @@ def build_generator_architecture(input_var=None, architecture=1):
         layer = batch_norm(Conv2DLayer(layer, 256, 7, stride=1, pad='same', nonlinearity=relu))
         layer = DropoutLayer(layer, p=0.5)
         layer = batch_norm(BilinearUpscaleLayer(layer, factor=2)) # output_size=64x64
-        layer = Conv2DLayer(layer, 3, 7, stride=1, pad='same', nonlinearity=T.tanh))
+        layer = Conv2DLayer(layer, 3, 7, stride=1, pad='same', nonlinearity=T.tanh)
         print ("Generator output:", layer.output_shape)
         return layer
     elif architecture == 2:
