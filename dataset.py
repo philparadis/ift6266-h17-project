@@ -1,6 +1,7 @@
 #!/usr/bin/env python2
 # coding: utf-8
 
+from sklearn.model_selection import train_test_split  
 import os
 import glob
 import cPickle as pkl
@@ -201,7 +202,6 @@ class BaseDataset(object):
             
         ### Split into training and testing data
         log("Splitting the training dataset containingg {} images into training and validation sets  after random shuffling...".format(self.images.shape[0]))
-        from sklearn.model_selection import train_test_split  
         indices = np.arange(self.images.shape[0])
         id_train, id_test = train_test_split(indices,
                                              test_size=test_size,

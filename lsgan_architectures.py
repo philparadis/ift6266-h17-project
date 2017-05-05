@@ -171,7 +171,7 @@ def build_generator_architecture(input_var=None, architecture=1):
         layer = batch_norm(Conv2DLayer(layer, 64, 5, stride=1, pad='same', nonlinearity=a_fn))
         layer = DropoutLayer(layer, p=0.5)
         layer = batch_norm(Conv2DLayer(layer, 64, 3, stride=1, pad='same', nonlinearity=a_fn))
-        layer = Conv2DLayer(layer, 3, 3, stride=1, pap='same', nonlinearity=T.tanh)
+        layer = Conv2DLayer(layer, 3, 3, stride=1, pad='same', nonlinearity=T.tanh)
         print ("Generator output:", layer.output_shape)
         return layer, layers
     elif architecture == 2:
