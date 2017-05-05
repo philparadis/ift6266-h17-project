@@ -255,6 +255,7 @@ def run_experiment():
         save_keras_predictions(Y_test_pred_2d, Dataset.id_test, NewDataset, num_images=50)
         print_results_as_html(Y_test_pred_2d, num_images=50)
     elif settings.MODEL == "dcgan":
+        from lasagne.utils import floatX
         Dataset.preprocess()
         Dataset.normalize()
         Dataset.preload()
@@ -263,18 +264,19 @@ def run_experiment():
         
         settings.touch_dir(settings.SAMPLES_DIR)
         for i in range(100):
-            samples = gen_fn(lasagne.utils.floatX(np.random.rand(10*10, 100)))
+            samples = gen_fn(floatX(np.random.rand(10*10, 100)))
             path = os.path.join(settings.EPOCHS_DIR, 'samples_%i.png' % i)
             samples = dataset.denormalize_data(samples)
             Image.fromarray(samples.reshape(10, 10, 3, 64, 64)
                             .transpose(0, 3, 1, 4, 2)
                             .reshape(10*64, 10*64, 3)).save(path)
-            sample = gen_fn(lasagne.utils.floatX(np.random.rand(1, 100)))
+            sample = gen_fn(floatX(np.random.rand(1, 100)))
             sample = dataset.denormalize_data(sample)
             path = os.path.join(settings.SAMPLES_DIR, 'one_sample_%i.png' % i)
             Image.fromarray(sample.reshape(3, 64, 64).transpose(1, 2, 0).reshape(64, 64, 3)).save(path)
     elif settings.MODEL == "wgan": 
         import wgan
+        from lasagne.utils import floatX
 
         Dataset.preprocess()
         Dataset.normalize()
@@ -284,17 +286,18 @@ def run_experiment():
         
         settings.touch_dir(settings.SAMPLES_DIR)
         for i in range(100):
-            samples = gen_fn(lasagne.utils.floatX(np.random.rand(10*10, 100)))
+            samples = gen_fn(floatX(np.random.rand(10*10, 100)))
             path = os.path.join(settings.EPOCHS_DIR, 'samples_%i.png' % i)
             samples = dataset.denormalize_data(samples)
             Image.fromarray(samples.reshape(10, 10, 3, 64, 64)
                             .transpose(0, 3, 1, 4, 2)
                             .reshape(10*64, 10*64, 3)).save(path)
-            sample = gen_fn(lasagne.utils.floatX(np.random.rand(1, 100)))
+            sample = gen_fn(floatX(np.random.rand(1, 100)))
             sample = dataset.denormalize_data(sample)
             path = os.path.join(settings.SAMPLES_DIR, 'one_sample_%i.png' % i)
             Image.fromarray(sample.reshape(3, 64, 64).transpose(1, 2, 0).reshape(64, 64, 3)).save(path) 
-    elif settings.MODEL == "lsgan": 
+    elif settings.MODEL == "lsgan":
+        from lasagne.utils import floatX
         Dataset.preprocess()
         Dataset.normalize()
         Dataset.preload()
@@ -306,13 +309,13 @@ def run_experiment():
                                                 architecture = settings.LSGAN_ARCHITECTURE)
         Dataset.denormalize()
         for i in range(100):
-            samples = gen_fn(lasagne.utils.floatX(np.random.rand(10*10, 100)))
+            samples = gen_fn(floatX(np.random.rand(10*10, 100)))
             path = os.path.join(settings.EPOCHS_DIR, 'samples_%i.png' % i)
             samples = dataset.denormalize_data(samples)
             Image.fromarray(samples.reshape(10, 10, 3, 64, 64)
                             .transpose(0, 3, 1, 4, 2)
                             .reshape(10*64, 10*64, 3)).save(path)
-            sample = gen_fn(lasagne.utils.floatX(np.random.rand(1, 100)))
+            sample = gen_fn(floatX(np.random.rand(1, 100)))
             sample = dataset.denormalize_data(sample)
             path = os.path.join(settings.SAMPLES_DIR, 'one_sample_%i.png' % i)
             Image.fromarray(sample.reshape(3, 64, 64).transpose(1, 2, 0).reshape(64, 64, 3)).save(path)

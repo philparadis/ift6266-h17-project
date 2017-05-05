@@ -373,7 +373,7 @@ class KerasModel(BaseModel):
         if verbose == 2:
             verbose = 0 # If verbose == 2, the 'epoch_complete' callback will already be printing the same
         self.keras_model.fit(X_train, Y_train,
-                             validation_data = (X_test, Y_test),
+                             validation_split=0.1,
                              epochs = settings.NUM_EPOCHS,
                              batch_size = settings.BATCH_SIZE,
                              verbose = verbose,
@@ -418,8 +418,10 @@ class MLP_Model(KerasModel):
         from keras.models import Sequential
 
         self.keras_model = Sequential()
-        self.keras_model.add(Dense(1024, activation='relu', input_shape=(self.hyper['input_dim'], )))
-        self.keras_model.add(Dense(512, activation='tanh'))
+        self.keras_model.add(Dense(512 input_shape=(self.hyper['input_dim'], )))
+        self.keras_model.add(Activation('relu'))
+        self.keras_model.add(Dense(256))
+        self.keras_model.add(Activation('relu'))
         self.keras_model.add(Dense(self.hyper['output_dim']))
 
     def plot_architecture(self):
