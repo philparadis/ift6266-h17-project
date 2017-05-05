@@ -126,39 +126,6 @@ class BaseDataset(object):
             # Save dataset as npy file so that loading can be sped up in the future
             self._save_jpgs_and_captions_npy()
 
-            for i, img_path in enumerate(train_images_paths):
-                img = Image.open(img_path)
-                img_array = np.array(img)
-
-                # File names look like this: COCO_train2014_000000520978.jpg
-                cap_id = os.path.basename(img_path)[:-4]
-
-                # For now, discard greyscale images
-                if len(img_array.shape) != 3:
-                    continue
-
-                images.append(img_array)
-                captions_ids.append(cap_id)
-                captions_dict.append(cap_dict[cap_id])
-                
-                if i % 5000 == 0:
-                    log(" - Loaded image #%i" % i)
-            log(" - Loaded image #%i as the last image..." % i)
-            self.images = self.transform_images(images)
-            self.captions_ids = np.array(captions_ids)
-            self.captions_dict = np.array(captions_dict)
-            self._is_dataset_loaded = True
-
-            log("Summary of data within dataset:")
-            log(" * images.shape            = " + str(self.images.shape))
-            log(" * captions_ids.shape      = " + str(self.captions_ids.shape))
-            log(" * captions_dict.shape     = " + str(self.captions_dict.shape))
-            log(" * Number of color images loaded        = {}".format(self.images.shape[0]))
-            log(" * Number of greyscale images discarded = {}".format(num_train_images_path - self.images.shape[0]))
-
-            # Save dataset as npy file so that loading can be sped up in the future
-            self._save_jpgs_and_captions_npy()
-
     def _load_jpgs_and_captions_npy(self):
         print_positive("Found the project datasets encoded as a 4-tensor in '.npy' format. Attempting to load...")
         try:
