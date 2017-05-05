@@ -55,11 +55,11 @@ class LSGAN_Model(GAN_BaseModel):
     # The models are the same as in the Lasagne DCGAN example, except that the
     # discriminator is now a critic with linear output instead of sigmoid output.
 
-    def build_generator(self, input_var=None, architecture=1):
+    def build_generator(self, input_var=None):
         return lsgan_architectures.build_generator_architecture(input_var, 1)
 
-    def build_critic(self, input_var=None, architecture=1):
-        return lsgan_architectures.build_critic_architecture(input_var, 1)
+    def build_critic(self, input_var=None, architecture):
+        return lsgan_architectures.build_critic_architecture(input_var, architecture)
 
     def iterate_minibatches(self, inputs, targets, batchsize, shuffle=False,
                             forever=False):
@@ -83,7 +83,8 @@ class LSGAN_Model(GAN_BaseModel):
     # more functions to better separate the code, but it wouldn't make it any
     # easier to read.
 
-    def train(self, dataset, num_epochs = 1000, epochsize = 50, batchsize = 64, initial_eta = 0.00005):
+    def train(self, dataset, num_epochs = 1000, epochsize = 50, batchsize = 64, initial_eta = 0.00005,
+              architecture = 1):
         import lasagne
         import theano.tensor as T
         from theano import shared, function
@@ -99,7 +100,7 @@ class LSGAN_Model(GAN_BaseModel):
         # Create neural network model
         log("Building model and compiling functions...")
         generator = self.build_generator(noise_var)
-        critic = self.build_critic(input_var)
+        critic = self.build_critic(input_var, architecture)
 
         # Create expression for passing real data through the critic
         real_out = lasagne.layers.get_output(critic)

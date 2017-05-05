@@ -302,7 +302,8 @@ def run_experiment():
         generator, critic, gen_fn = model.train(Dataset, num_epochs = settings.NUM_EPOCHS,
                                                 epochsize = settings.UPDATES_PER_EPOCH,
                                                 batchsize = settings.BATCH_SIZE,
-                                                initial_eta = settings.GAN_LEARNING_RATE)
+                                                initial_eta = settings.GAN_LEARNING_RATE,
+                                                architecture = settings.LSGAN_ARCHITECTURE)
         Dataset.denormalize()
         for i in range(100):
             samples = gen_fn(lasagne.utils.floatX(np.random.rand(10*10, 100)))
