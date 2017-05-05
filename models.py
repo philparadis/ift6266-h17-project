@@ -370,7 +370,7 @@ class KerasModel(BaseModel):
 
         # Define training callbacks
         history = LossHistory()
-        early_stopping = EarlyStopping(monitor='val_loss', patience=201)
+        early_stopping = EarlyStopping(monitor='val_loss', patience=5, verbose=1)
         best_model_path = os.path.join(settings.MODELS_DIR,
                                        "best_model_epoch.{epoch:03d}_loss.{val_loss:.4f}.hdf5")
         checkpointer = ModelCheckpoint(filepath=best_model_path,
