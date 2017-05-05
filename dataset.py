@@ -205,7 +205,7 @@ class BaseDataset(object):
         indices = np.arange(self.images.shape[0])
         id_train, id_test = train_test_split(indices,
                                              test_size=test_size,
-                                             random_state=rand_seed)
+                                             random_state=np.random.RandomState(rand_seed))
         log("After the split, there are {} training images and {} validation images.".format(len(id_train), len(id_test)))
         
         ### Generating the training and testing datasets (80%/20% train/test split)
