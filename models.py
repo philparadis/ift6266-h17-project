@@ -464,7 +464,7 @@ class Conv_MLP(KerasModel):
         self.keras_model.add(MaxPooling2D(pool_size=(2, 2))) # out: 16x16
 
         self.feature_matching_layers.append(Conv2D(256, (5, 5), padding='same', activation='relu'))
-        self.keras_model.add(self.feature_matching_layer[-1]) # num_units: 128x16x16
+        self.keras_model.add(self.feature_matching_layers[-1]) # num_units: 128x16x16
         self.keras_model.add(Dropout(0.5))
         self.keras_model.add(MaxPooling2D(pool_size=(2, 2))) # out: 8x8
 
