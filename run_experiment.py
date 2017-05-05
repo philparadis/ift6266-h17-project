@@ -18,9 +18,9 @@ from utils import print_critical, print_error, print_warning, print_info, print_
 # Helper functions
 #######################
 
-def check_mscoco_dir():
+def check_mscoco_dir(path):
     try:
-        os.stat(settings.MSCOCO_DIR)
+        os.stat(path)
     except OSError, e:
         if e.errno == errno.ENOENT:
             return False
@@ -135,7 +135,7 @@ def run_experiment():
     ###
     ### Make sure the dataset has been downloaded and extracted correctly on disk
     ###
-    if check_mscoco_dir() == False:
+    if check_mscoco_dir(settings.MSCOCO_DIR) == False:
         log("(!) The project dataset based on MSCOCO was not found in its expected location '{}' or the symlink is broken."
               .format(settings.MSCOCO_DIR))
         log("Attempting to download the dataset...")
@@ -145,8 +145,9 @@ def run_experiment():
             sys.exit(rc)
 
     if settings.TINY_DATASET == True:
-        create_tiny_dataset()
-        settings.MSCOCO_DIR = os.path.join(settings.THIS_DIR, "mscoco_small/")
+        if check_mscoco_dir(os.path.join(settings.THIS_DIR, "mscoco_small/")) == False:
+            create_tiny_dataset()
+            settings.MSCOCO_DIR = os.path.join(settings.THIS_DIR, "mscoco_small/")
 
     verbosity_level = "Low"
     if settings.VERBOSE == 1:
