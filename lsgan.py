@@ -153,6 +153,10 @@ class LSGAN_Model(GAN_BaseModel):
         for epoch in range(num_epochs):
             start_time = time.time()
 
+            if self.check_stop_file():
+                print_error("Detected a STOP file. Aborting experiment.")
+                break
+
             # In each epoch, we do `epochsize` generator updates. Usually, the
             # critic is updated 5 times before every generator update. For the
             # first 25 generator updates and every 500 generator updates, the
