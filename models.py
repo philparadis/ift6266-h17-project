@@ -412,6 +412,7 @@ class MLP_Model(KerasModel):
         self.keras_model.add(Dense(self.hyper['output_dim'], activation='tanh'))
 
     def plot_architecture(self):
+        pass
         ### Plot a graph of the model's architecture
         # try:
         #     import pydot
