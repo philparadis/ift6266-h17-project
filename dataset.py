@@ -318,23 +318,21 @@ class ImageType(object):
             filename = "train_"
         else:
             filename = "test_"
-        if self.image_type = ImageType.images:
+        if self.image_type == ImageType.images:
             filename += "images"
-        elif self.image_type = ImageType.images_outer_flat:
+        elif self.image_type == ImageType.images_outer_flat:
             filename += "images"
-        elif self.image_type = ImageType.images_inner_flat:
+        elif self.image_type == ImageType.images_inner_flat:
             filename += "images"
-        elif self.image_type = ImageType.images_outer2d:
+        elif self.image_type == ImageType.images_outer2d:
             filename += "images"
-        elif self.image_type = ImageType.images_inner2d:
+        elif self.image_type == ImageType.images_inner2d:
             filename += "images"
         if self.col_channels_first:
             filename += "_col_first.npy"
         else:
             filename += "_col_last.npy"
         return filename
-
-class 
 
 class MinimalDataset(object):
     def __init__(self):
@@ -347,8 +345,6 @@ class MinimalDataset(object):
             self.dataset[self.image_path] = np.load(self.image_path)
             return True
         return False
-
-    def 
         
 class ColorsFirstDataset(BaseDataset):
     def __init__(self, input_dim, output_dim):
