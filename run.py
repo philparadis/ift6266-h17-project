@@ -44,7 +44,7 @@ if __name__ == "__main__":
     import settings
         
     ### Parse arguments
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("model",
                         help="Model choice (current options: test, mlp, conv_mlp, conv_deconv, vgg16*, conv_lstm*, lstm*, vae*, conv_autoencoder*, dcgan, wgan, lsgan (*: Models with * may not be fully implemented yet).)")
     parser.add_argument("exp_name_prefix", help="Prefix used at the beginning of the name of the experiment. Your results will be stored in various subfolders and files which start with this prefix. The exact name of the experiment depends on the model used and various hyperparameters.")
@@ -76,7 +76,7 @@ if __name__ == "__main__":
                         help="Architecture type, only applies to the LSGAN model (values: 1, 2, 3 or 4).")
     parser.add_argument("-u", "--updates_per_epoch", type=int, default=settings.UPDATES_PER_EPOCH,
                         help="Number of times to update the generator and discriminator/critic per epoch. Applies to GAN models only.")
-    parser.add_argument("-m", "--feature_matching", type=int, default=settings.FEATURE_MATCHING, help="By default, feature matching is not used (equivalently, it is set to 0, meaning that the loss function uses the last layer's output). You can set this value to 1 to use the output of the second-to-last layer, or a value of 2 to use the output of the third-to-last layer, and so on. This technique is called 'feature matching' and many provide benefits in some cases. Note that it is not currently implemented in all models and you will receive a message indicating if feature matching is used for your model.")
+    parser.add_argument("-m", "--feature_matching", action="store_true", default=settings.FEATURE_MATCHING, help="By default, feature matching is not used (equivalently, it is set to 0, meaning that the loss function uses the last layer's output). You can set this value to 1 to use the output of the second-to-last layer, or a value of 2 to use the output of the third-to-last layer, and so on. This technique is called 'feature matching' and many provide benefits in some cases. Note that it is not currently implemented in all models and you will receive a message indicating if feature matching is used for your model.")
     
 #                        help="Use CPU instead of GPU. Used for debugging and testing purposes.")
 
