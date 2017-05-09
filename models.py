@@ -76,6 +76,8 @@ class BaseModel(object):
         self.hyperparams_filename = "hyperparams.json"
         self.path_hyperparams_file = os.path.join(settings.BASE_DIR, self.hyperparams_filename)
 
+    def load_model(self):
+        return False
 
     def is_there_hyperparams_file(self):
         return os.path.isfile(self.path_hyperparams_file)
@@ -593,7 +595,7 @@ class GAN_BaseModel(BaseModel):
             np.savez(self.full_gen_path, *get_all_param_values(self.generator))
             np.savez(self.full_disc_path, *get_all_param_values(self.discriminator))
 
-def VGG_16(KerasModel):
+def Keras_VGG_16(KerasModel):
     def build(self, weights_path=None):
         from matplotlib import pyplot as plt
         import theano

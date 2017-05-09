@@ -38,6 +38,14 @@ def download_dataset():
         pass
     raise OSError("Could not find the script '%s'." % dataset_script)
 
+def download_vgg16_weights():
+    url="https://s3.amazonaws.com/lasagne/recipes/pretrained/imagenet/vgg16.pkl"
+    try:
+        return subprocess.call("wget " + url)
+    except OSError, e:
+        pass
+    raise OSError("Failed to execute 'wget'.")
+
 def create_tiny_dataset():
     script="create-small-dataset.sh"
     try:
@@ -93,10 +101,17 @@ def run_experiment():
     elif settings.MODEL == "dcgan":
         model = models.DCGAN_Model(settings.MODEL)
     elif settings.MODEL == "wgan":
-        model = models.WGAN_Model(settings.MODEL)
+        from wgan import WGAN_Model
+        model = WGAN_Model(settings.MODEL)
     elif settings.MODEL == "lsgan":
         from lsgan import LSGAN_Model
         model = LSGAN_Model(settings.MODEL)
+    elif settings.MODEL == "vgg16":
+        if not os.path.isfile("vgg16.pkl"):
+            log("Could not find VGG-16 pre-trained weights file 'vgg16.pkl'. Downloading...")
+            download_vgg16_weights()
+        from vgg16 import VGG16_Model
+        model = VGG16_Model(settings.MODEL)
     else:
         raise NotImplementedError()
 
@@ -250,7 +265,7 @@ def run_experiment():
         ### Save predictions to disk
         save_keras_predictions(Y_test_pred_2d, Dataset.id_test, NewDataset, num_images=50)
         print_results_as_html(Y_test_pred_2d, num_images=50)
-    elif settings.MODEL == "conv_deconv":
+    elif settings.MODEL == "conv_deconv" or settings.MODEL == "vgg16":
         Dataset.preprocess()
         Dataset.normalize()
         Dataset.preload()

@@ -218,11 +218,11 @@ class WGAN_Model(BaseModel):
                 # if (generator_runs < 25) or (generator_runs % 500 == 0):
                 #     critic_runs = 100
                 # else:
-                #     critic_runs = 5
-                # for _ in range(critic_runs):
-                batch = next(batches)
-                inputs, targets = batch
-                critic_scores.append(critic_train_fn(inputs))
+                critic_runs = 5
+                for _ in range(critic_runs):
+                    batch = next(batches)
+                    inputs, targets = batch
+                    critic_scores.append(critic_train_fn(inputs))
                 generator_scores.append(generator_train_fn())
                 generator_runs += 1
 

@@ -95,3 +95,10 @@ default_lsgan_hyper_params = {
     "beta_1" : 0.5,
     "batch_size" : 64
     }
+
+### VGG 16
+
+default_vgg16_hyper_params = {
+    "input_dim" : (None, 3, 224,224),
+    "output_dim" : 1000
+    }
