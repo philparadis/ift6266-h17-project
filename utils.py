@@ -234,14 +234,33 @@ def save_keras_predictions(pred, pred_indices, dataset,
     else:
         raise NotImplementedError("Haven't implemented save_predictions_info for 2D images (only flattened images).")
 
-def print_results_as_html(pred, num_images=20):
-    from settings import touch_dir
-    from settings import HTML_DIR
 
-    touch_dir(HTML_DIR)
-    img_src = "assets/"
-    html_file = join(HTML_DIR, "results.html")
-    print_positive("Saving results as html to: " + html_file)
+def denormalize_and_save_jpg_results(assets_dir, preds, X_test, y_test, X_original_test, num_images):
+    if not os.path.exists(assets_dir):
+        os.makedirs(assets_dir)
+
+    # Denormalize images datasets
+    preds = denormalize_data(preds)
+    X_test = denormalize_data(X_test)
+    y_test = denormalize_data(y_test)
+    X_original_test = denormalize_data(X_original_test)
+    # Save the 'num_images' predictions to JPG files within the 'assets' subdirectory
+    for index in range(min(num_images, preds.shape[0])):
+        Image.fromarray(X_test[index]).save(os.path.join(assets_dir, 'images_outer2d_' + str(index) + '.jpg'))
+        Image.fromarray(preds[index]).save(os.path.join(assets_dir, 'images_pred_' + str(index) + '.jpg'))
+        Image.fromarray(y_test[index]).save(os.path.join(assets_dir, 'images_inner2d_' + str(index) + '.jpg'))
+        Image.fromarray(X_original_test[index]).save(os.path.join(assets_dir, 'fullimages_' + str(index) + '.jpg'))
+        fullimg_pred = np.copy(X_original_test[index])
+        center = (int(np.floor(fullimg_pred.shape[0] / 2.)), int(np.floor(fullimg_pred.shape[1] / 2.)))
+        fullimg_pred[center[0]-16:center[0]+16, center[1]-16:center[1]+16, :] = preds[index, :, :, :]
+        Image.fromarray(fullimg_pred).save(os.path.join(assets_dir, 'fullimages_pred_' + str(index) + '.jpg'))
+
+def create_html_results_page(filename, assets_dir, num_images):
+    # Write a file called 'results.html' that display the image predictions versus the true images in a convenient way
+    img_src = assets_dir
+    if not img_src[-1] == '/':
+        img_src += '/'
+    html_file = filename
     with open(html_file, 'w') as fd:
         fd.write("""
 <table>
@@ -254,13 +273,13 @@ def print_results_as_html(pred, num_images=20):
   </tr>
 """)
 
-        for row in range(num_images):
+        for index in range(num_images):
             fd.write("  <tr>\n")
-            fd.write("    <td><img src='%s/images_outer2d_%i.jpg' width='128' height='128'></td>\n" % (img_src, row))
-            fd.write("    <td><img src='%s/images_pred_%i.jpg' width='64' height='64'></td>\n" % (img_src, row))
-            fd.write("    <td><img src='%s/images_inner2d_%i.jpg' width='64' height='64'></td>\n" % (img_src, row))
-            fd.write("    <td><img src='%s/fullimages_pred_%i.jpg' width='128' height='128'></td>\n" % (img_src, row))
-            fd.write("    <td><img src='%s/fullimages_%i.jpg' width='128' height='128'></td>\n" % (img_src, row))
+            fd.write("    <td><img src='%s/images_outer2d_%i.jpg' width='128' height='128'></td>\n" % (img_src, index))
+            fd.write("    <td><img src='%s/images_pred_%i.jpg' width='64' height='64'></td>\n" % (img_src, index))
+            fd.write("    <td><img src='%s/images_inner2d_%i.jpg' width='64' height='64'></td>\n" % (img_src, index))
+            fd.write("    <td><img src='%s/fullimages_pred_%i.jpg' width='128' height='128'></td>\n" % (img_src, index))
+            fd.write("    <td><img src='%s/fullimages_%i.jpg' width='128' height='128'></td>\n" % (img_src, index))
             fd.write('</tr>\n')
         
         fd.write('</table>')

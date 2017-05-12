@@ -52,6 +52,7 @@ IMAGE_HEIGHT = 64
 THIS_DIR = os.path.abspath(os.path.dirname(__file__))
 MSCOCO_DIR = os.path.join(THIS_DIR, "mscoco/")
 TRAIN_DIR = os.path.join(MSCOCO_DIR, "train2014/")
+TEST_DIR = os.path.join(MSCOCO_DIR, "test2014/")
 VALIDATE_DIR = os.path.join(MSCOCO_DIR, "validate2014/")
 CAPTIONS_PKL_PATH = os.path.join(MSCOCO_DIR, "dict_key_imgID_value_caps_train_and_valid.pkl")
 

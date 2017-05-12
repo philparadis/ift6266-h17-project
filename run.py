@@ -52,7 +52,7 @@ if __name__ == "__main__":
     ### Parse arguments
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("model",
-                        help="Model type, among: mlp, conv_mlp, conv_deconv, vgg16, dcgan, wgan, lsgan.")
+                        help="Model type, among: mlp, conv_mlp, conv_deconv, lasagne_conv_deconv, vgg16, dcgan, wgan, lsgan.")
     parser.add_argument("exp_name_prefix", help="Prefix used at the beginning of the name of the experiment. Your results will be stored in various subfolders and files which start with this prefix. The exact name of the experiment depends on the model used and various hyperparameters.")
     parser.add_argument("-v", "--verbose", type=int,
                         default=settings.VERBOSE, help="0 means quiet, 1 means verbose and 2 means limited verbosity.")
@@ -108,7 +108,7 @@ if __name__ == "__main__":
 #    settings.USE_CPU = args.cpu
 
 
-    if not settings.MODEL in ["test", "mlp", "conv_mlp", "conv_deconv", "vgg16", "dcgan", "wgan", "lsgan"]:
+    if not settings.MODEL in ["test", "mlp", "conv_mlp", "conv_deconv", "lasagne_conv_deconv", "vgg16", "dcgan", "wgan", "lsgan"]:
         raise NotImplementedError("The model '{}' is not yet implemented yet, sorry!".format(settings.MODEL))
 
     from utils import print_warning, handle_error, log
@@ -116,15 +116,15 @@ if __name__ == "__main__":
     ### Setup logging and xtraceback
     try:
         import logging
-        try:
-            import xtraceback
-            xtraceback.compat.install()
-            settings.MODULE_HAVE_XTRACEBACK = True
-        except ImportError as e:
-            print_warning("You do not have the 'xtraceback' module. " +
-                          "Please consider installing it, and all other " +
-                          "required or optional modules, via the command " +
-                          "line \"> pip install -r requirements.txt\"")
+        #try:
+            #import xtraceback
+            #xtraceback.compat.install(options={'print_width':60})
+            #settings.MODULE_HAVE_XTRACEBACK = True
+        #except ImportError as e:
+        #    print_warning("You do not have the 'xtraceback' module. " +
+        #                  "Please consider installing it, and all other " +
+        #                  "required or optional modules, via the command " +
+        #                  "line \"> pip install -r requirements.txt\"")
     except ImportError as e:
         print_warning("You do not have the 'logging' module. Please consider" +
                       " installing it, and all other required or optional " +
@@ -139,19 +139,15 @@ if __name__ == "__main__":
     initialize_directories()
 
     ### All systems are go, let's fire up this ship to infinity and beyond!
-    try:
-        from run_experiment import run_experiment
-        t = datetime.datetime.now()
-        log("Current stardate: {0}".format(t.strftime("%Y-%m-%d %H:%M:%S")))
-        log("")
-        log("All output is logged on disk to: {}".format(settings.OUTLOGFILE))
-        log("All errors are logged on disk to: {}".format(settings.ERRLOGFILE))
-        log("")
+    from run_experiment import run_experiment
+    t = datetime.datetime.now()
+    log("Current stardate: {0}".format(t.strftime("%Y-%m-%d %H:%M:%S")))
+    log("")
+    log("All output is logged on disk to: {}".format(settings.OUTLOGFILE))
+    log("All errors are logged on disk to: {}".format(settings.ERRLOGFILE))
+    log("")
 
-        run_experiment()
-    except Exception as e:
-        handle_error("This exception reached the top-most level and couldn't be caught earlier. "
-                     "We shall provide the entire stack trace with context.", e)
+    run_experiment()
 
     ### Graceful exit
     sys.exit(0)

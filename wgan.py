@@ -126,8 +126,8 @@ def iterate_minibatches(inputs, targets, batchsize, shuffle=False,
 
 
 class WGAN_Model(BaseModel):
-    def __init__(self, model_name, hyperparams = hyper_params.default_wgan_hyper_params):
-        super(WGAN_Model, self).__init__(model_name = model_name, hyperparams = hyperparams)
+    def __init__(self, hyperparams = hyper_params.default_wgan_hyper_params):
+        super(WGAN_Model, self).__init__(hyperparams = hyperparams)
         self.generator = None
         self.critic = None
         self.generator_train_fn = None
@@ -140,7 +140,7 @@ class WGAN_Model(BaseModel):
     def train(self, Dataset, num_epochs=1000, epochsize=100, batchsize=64, initial_eta=5e-5, clip=0.01):
         # Load the dataset
         log("Loading data...")
-        X_train, X_test, y_train, y_test, ind_train, ind_test = Dataset.return_data()
+        X_train, X_test, y_train, y_test, ind_train, ind_test = Dataset.return_train_data()
 
         # Prepare Theano variables for inputs and targets
         noise_var = T.matrix('noise')

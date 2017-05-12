@@ -7,57 +7,9 @@
 # https://s3.amazonaws.com/lasagne/recipes/pretrained/imagenet/vgg16.pkl
 
 import numpy as np
-from models import BaseModel, Conv_Deconv
+from lasagne_models import LasagneModel, Lasagne_Conv_Deconv
 import hyper_params
 from utils import print_critical, print_error, print_warning, print_info, print_positive, log, logout
-
-def iterate_minibatches(inputs, targets, batchsize, shuffle=False):
-    assert len(inputs) == len(targets)
-    if shuffle:
-        indices = np.arange(len(inputs))
-        np.random.shuffle(indices)
-    for start_idx in range(0, len(inputs) - batchsize + 1, batchsize):
-        if shuffle:
-            excerpt = indices[start_idx:start_idx + batchsize]
-        else:
-            excerpt = slice(start_idx, start_idx + batchsize)
-        yield inputs[excerpt], targets[excerpt]
-
-
-class Lasagne_Conv_Deconv(BaseModel):
-    def __init__(self, model_name, hyperparams = hyper_params.default_conv_deconv_hyper_params):
-        super(VGG16_Model, self).__init__(model_name = model_name, hyperparams = hyperparams)
-        self.lasagne_model = None
-
-    def build(self, batch_size, input_var=None):
-        from lasagne.layers import InputLayer
-        from lasagne.layers import DenseLayer
-        from lasagne.layers import NonlinearityLayer
-        from lasagne.layers import DropoutLayer
-        from lasagne.layers import Pool2DLayer as PoolLayer
-        from lasagne.nonlinearities import softmax
-        def build_model(bs, input_var=None):
-        net= {}
-        net['input'] = InputLayer((batch_size, 3, 64, 64), input_var=input_var)
-        net['conv1'] = ConvLayer(net['input'], 64, 5, pad=0)
-        net['pool1'] = PoolLayer(net['conv1'], 2)
-        net['conv2'] = ConvLayer(net['pool1'], 128, 3, pad=0)
-        net['pool2'] = PoolLayer(net['conv2'], 2)
-        net['conv3_1'] = ConvLayer(net['pool2'], 256, 3, pad=0)
-        net['conv3_2'] = ConvLayer(net['conv3_1'], 256, 3, pad=0)
-        net['pool3'] = PoolLayer(net['conv3_2'], 2)
-        net['conv4'] = ConvLayer(net['pool3'], 2048, 5, pad=0)
-        net['conv4_drop'] = NonlinearityLayer(net['conv4'], nonlinearity=rescale)
-        net['conv5'] = ConvLayer(net['conv4_drop'], 2048, 1, pad=0)
-        net['conv5_drop'] = NonlinearityLayer(net['conv5'], nonlinearity=rescale)
-
-        net['conv6'] = ConvLayer(net['conv5_drop'], 64, 1, pad=0, nonlinearity=sigmoid)
-        net['conv7'] = ConvLayer(net['conv6'], 10, 1, pad=0, nonlinearity=softmax4d)
-
-        return net
-
-    def train(self, dataset):
-        pass
 
 def naive_compute_all(batch_size=50):
 

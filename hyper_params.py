@@ -98,6 +98,11 @@ default_lsgan_hyper_params = {
 
 ### VGG 16
 
+default_lasagne_hyper_params = {
+    "input_shape" : (None, 3, 64, 64),
+    "output_shape" : (None, 3, 32, 32)
+    }
+
 default_vgg16_hyper_params = {
     "input_dim" : (None, 3, 224,224),
     "output_dim" : 1000

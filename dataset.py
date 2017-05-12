@@ -27,6 +27,7 @@ class BaseDataset(object):
         self.output_dim = output_dim
 
         self._images_filename = None
+        self._test_images_filename = None
         self._captions_ids_filename = "captions_ids.npy"
         self._captions_dict_filename = "captions_dict.npy"
 
@@ -50,7 +51,9 @@ class BaseDataset(object):
         self.X = None
         self.Y = None
         self.id_train = []
-        self.id_test = []
+        self.id_val = []
+
+        self.test_images = []
 
     def transform_images(self, images):
         """Images should be a list of numpy arrays of the form (64, 64, 3). This function will turn it into a numpy batch 4-tensor of the form (batch_size, 64, 64, 3) or (batch_size, 3, 64, 64) depending on the implementation of the derived class."""
@@ -80,50 +83,68 @@ class BaseDataset(object):
             
         if self._is_dataset_loaded == False:
             images = []
+            test_images = []
             captions_ids = []
             captions_dict = []
 
-            # Get a list of all training images full filename paths
-            print_info("Loading dataset from individual JPG files and pickled dictionaries...")
-            log(" * Training images paths     = " + settings.TRAIN_DIR + "*.jpg")
-            train_images_paths = glob.glob(settings.TRAIN_DIR + "/*.jpg")
-            num_train_images_path = len(train_images_paths)
-            log(" * Number of training images =  %i" % num_train_images_path)
             print_info("Loading images and captions into memory...")
-            log("")
-            
             with open(settings.CAPTIONS_PKL_PATH) as fd:
                 cap_dict = pkl.load(fd)
 
-            for i, img_path in enumerate(train_images_paths):
-                img = Image.open(img_path)
-                img_array = np.array(img)
+            for dataset_type in ["train", "test"]:
+                # Get a list of all training images full filename paths
+                print_info("Loading dataset from individual JPG files and pickled dictionaries...")
+                if dataset_type == "train":
+                    dataset_dir = settings.TRAIN_DIR
+                elif dataset_type == "test":
+                    dataset_dir = settings.TEST_DIR
+                log(" * {} images paths     = {}*.jpg".format(dataset_type, dataset_dir))
+                images_paths = glob.glob(os.path.join(dataset_dir, "*.jpg"))
+                num_images_path = len(images_paths)
+                log(" * Number of {} images = {}".format(dataset_type, num_images_path))
 
-                # File names look like this: COCO_train2014_000000520978.jpg
-                cap_id = os.path.basename(img_path)[:-4]
+                for i, img_path in enumerate(images_paths):
+                    img = Image.open(img_path)
+                    img_array = np.array(img)
 
-                # For now, discard greyscale images
-                if len(img_array.shape) != 3:
-                    continue
+                    # For now, discard greyscale images
+                    if len(img_array.shape) != 3:
+                        continue
 
-                images.append(img_array)
-                captions_ids.append(cap_id)
-                captions_dict.append(cap_dict[cap_id])
-                
-                if i % 5000 == 0:
-                    log(" - Loaded image #%i" % i)
-            log(" - Loaded image #%i as the last image..." % i)
+                    if dataset_type == "train":
+                        images.append(img_array)                
+                        # File names look like this: COCO_train2014_000000520978.jpg
+                        cap_id = os.path.basename(img_path)[:-4]
+                        captions_ids.append(cap_id)
+                        captions_dict.append(cap_dict[cap_id])
+                    elif dataset_type == "test":
+                        test_img = np.copy(img_array)
+                        center = (int(np.floor(test_img.shape[1] / 2.)),
+                                  int(np.floor(test_img.shape[2] / 2.)))
+                        test_img[:, center[0]-16:center[0]+16, center[1]-16:center[1]+16] = 0
+                        test_images.append(test_img)
+
+                    if dataset_type == "train" and i % 5000 == 0:
+                        log(" - Loaded TRAINING image #%i" % i)
+
+                if dataset_type == "train":
+                    log(" - Loaded TRAINING image #%i as the last image..." % i)
+                elif dataset_type == "test":
+                    log(" - Loaded TESTING image #%i as the last image..." % i)
+
+
+
             self.images = self.transform_images(images)
+            self.test_images = self.transform_images(test_images)
             self.captions_ids = np.array(captions_ids)
             self.captions_dict = np.array(captions_dict)
             self._is_dataset_loaded = True
 
             log("Summary of data within dataset:")
             log(" * images.shape            = " + str(self.images.shape))
+            log(" * test_images.shape       = " + str(self.test_images.shape))
             log(" * captions_ids.shape      = " + str(self.captions_ids.shape))
             log(" * captions_dict.shape     = " + str(self.captions_dict.shape))
-            log(" * Number of color images loaded        = {}".format(self.images.shape[0]))
-            log(" * Number of greyscale images discarded = {}".format(num_train_images_path - self.images.shape[0]))
 
             # Save dataset as npy file so that loading can be sped up in the future
             self._save_jpgs_and_captions_npy()
@@ -131,15 +152,18 @@ class BaseDataset(object):
     def _load_jpgs_and_captions_npy(self):
         print_positive("Found the project datasets encoded as a 4-tensor in '.npy' format. Attempting to load...")
         try:
-            for i, filename in enumerate([self._images_filename, self._captions_ids_filename, self._captions_dict_filename]):
+            for i, filename in enumerate([self._images_filename, self._test_images_filename,  self._captions_ids_filename, self._captions_dict_filename]):
                 path = os.path.join(settings.MSCOCO_DIR, filename)
                 if i == 0:
                     self.images = np.load(path)
                     print_info("Loaded: {}".format(path))
                 elif i == 1:
-                    self.captions_ids = np.load(path)
+                    self.test_images = np.load(path)
                     print_info("Loaded: {}".format(path))
                 elif i == 2:
+                    self.captions_ids = np.load(path)
+                    print_info("Loaded: {}".format(path))
+                elif i == 3:
                     self.captions_dict = np.load(path)
                     print_info("Loaded: {}".format(path))
             log("")
@@ -150,15 +174,18 @@ class BaseDataset(object):
             self._is_dataset_loaded = False
         
     def _save_jpgs_and_captions_npy(self):
-        for i, filename in enumerate([self._images_filename, self._captions_ids_filename, self._captions_dict_filename]):
+        for i, filename in enumerate([self._images_filename, self._test_images_filename, self._captions_ids_filename, self._captions_dict_filename]):
             path = os.path.join(settings.MSCOCO_DIR, filename)
             if i == 0:
                 print_info("Writing to disk training images: {}".format(path))
                 np.save(path, self.images)
             elif i == 1:
+                print_info("Writing to disk test images: {}".format(path))
+                np.save(path, self.test_images)
+            elif i == 2:
                 print_info("Writing to disk captions ids: {}".format(path))
                 np.save(path, self.captions_ids)
-            elif i == 2:
+            elif i == 3:
                 print_info("Writing to disk captions dictionary: {}".format(path))
                 np.save(path, self.captions_dict)
 
@@ -173,7 +200,7 @@ class BaseDataset(object):
         elif model == "conv_mlp":
             self.images_outer2d = normalize_data(self.images_outer2d)
             self.images_inner_flat = normalize_data(self.images_inner_flat)
-        elif model == "conv_deconv" or model == "vgg16":
+        elif model == "conv_deconv" or model == "vgg16" or model == "lasagne_conv_deconv":
             self.images_outer2d = normalize_data(self.images_outer2d)
             self.images_inner2d = normalize_data(self.images_inner2d)
         elif model == "dcgan" or model == "wgan" or model == "lsgan":
@@ -190,7 +217,7 @@ class BaseDataset(object):
             x = self.images_outer2d
             y = self.images_inner_flat
             rand_seed = 1001 + seed
-        elif model == "conv_deconv" or model == "vgg16":
+        elif model == "conv_deconv" or model == "vgg16" or model == "lasagne_conv_deconv":
             x = self.images_outer2d
             y = self.images_inner2d
             rand_seed = 1001 + seed
@@ -204,24 +231,24 @@ class BaseDataset(object):
         ### Split into training and testing data
         log("Splitting the training dataset containingg {} images into training and validation sets  after random shuffling...".format(self.images.shape[0]))
         indices = np.arange(self.images.shape[0])
-        id_train, id_test = train_test_split(indices,
+        id_train, id_val = train_test_split(indices,
                                              test_size=test_size,
                                              random_state=np.random.RandomState(rand_seed))
-        log("After the split, there are {} training images and {} validation images.".format(len(id_train), len(id_test)))
+        log("After the split, there are {} training images and {} validation images.".format(len(id_train), len(id_val)))
         
         ### Generating the training and testing datasets (80%/20% train/test split)
-        #X_train, X_test, Y_train, Y_test = x[id_train], x[id_test], y[id_train], y[id_test]
+        #X_train, X_test, Y_train, Y_test = x[id_train], x[id_val], y[id_train], y[id_val]
 
         self.X = x
         self.Y = y
         self.id_train = id_train
-        self.id_test = id_test
+        self.id_val = id_val
 
         log("Preloading is complete, with the following results:")
         log("Input training dataset X has shape     =  {0}".format(str(self.X[id_train].shape)))
         log("Output training dataset Y has shape    =  {0}".format(str(self.Y[id_train].shape)))
-        log("Input validation dataset X has shape   =  {0}".format(str(self.X[id_test].shape)))
-        log("Output validation dataset Y has shape  =  {0}".format(str(self.Y[id_test].shape)))
+        log("Input validation dataset X has shape   =  {0}".format(str(self.X[id_val].shape)))
+        log("Output validation dataset Y has shape  =  {0}".format(str(self.Y[id_val].shape)))
 
             
     def denormalize(self, model = settings.MODEL):
@@ -231,7 +258,7 @@ class BaseDataset(object):
         elif model == "conv_mlp":
             self.images_outer2d = denormalize_data(self.images_outer2d)
             self.images_inner_flat = denormalize_data(self.images_inner_flat)
-        elif model == "conv_deconv" or model == "vgg16":
+        elif model == "conv_deconv" or model == "vgg16" or model == "lasagne_conv_deconv":
             self.images_outer2d = denormalize_data(self.images_outer2d)
             self.images_inner2d = denormalize_data(self.images_inner2d)
         elif model == "dcgan" or model == "wgan" or model == "lsgan":
@@ -239,11 +266,18 @@ class BaseDataset(object):
             self.images_inner2d = denormalize_data(self.images_inner2d)
 
 
-    def return_data(self):
-        settings.TRAINING_BATCH_SIZE = len(self.id_train)
-        return self.X[self.id_train,], self.X[self.id_test,], \
-            self.Y[self.id_train,], self.Y[self.id_test,], \
-            self.id_train, self.id_test
+    def return_train_data(self):
+        return self.X[self.id_train,], self.X[self.id_val,], \
+            self.Y[self.id_train,], self.Y[self.id_val,], \
+            self.id_train, self.id_val
+
+    def return_test_data(self):
+        y_test = []
+        for i in range(self.test_images.shape[0]):
+            y = np.copy(self.test_images[i])
+            center = (int(np.floor(y.shape[1] / 2.)), int(np.floor(y.shape[2] / 2.)))
+            y_test.append(y[:, center[0]-16:center[0]+16, center[1] - 16:center[1]+16])
+        return self.test_images, np.array(y_test)
 
     def get_data(self, X = False, Y = False, Train = False, Test = False):
         if X and Y:
@@ -253,11 +287,11 @@ class BaseDataset(object):
         if X and Train:
             return self.X[self.id_train,]
         if X and Test:
-            return self.X[self.id_test,]
+            return self.X[self.id_val,]
         if Y and Train:
             return self.Y[self.id_train,]
         if Y and Test:
-            return self.Y[self.id_test,]
+            return self.Y[self.id_val,]
         raise Exception("Must specify one of X or Y as True and one of Train or Test as True.")
 
 
@@ -318,6 +352,7 @@ class ColorsFirstDataset(BaseDataset):
     def __init__(self, input_dim, output_dim):
         super(ColorsFirstDataset, self).__init__(input_dim, output_dim)
         self._images_filename = "train_images_col_first.npy"
+        self._test_images_filename = "test_images_col_first.npy"
 
     def transform_images(self, images):
         """Images should be a list of numpy arrays of the form (64, 64, 3). This function will turn it into a numpy batch 4-tensor of the form (batch_size, 3, 64, 64)."""
@@ -374,7 +409,7 @@ class ColorsFirstDataset(BaseDataset):
 
                 images_outer2d.append(outer_2d)
                 images_inner_flat.append(inner_flat)
-            elif model == "conv_deconv" or model == "vgg16":
+            elif model == "conv_deconv" or model == "vgg16" or model == "lasagne_conv_deconv":
                 outer_2d = np.copy(img_array)
                 outer_2d[:, center[0]-16:center[0]+16, center[1]-16:center[1]+16] = 0
                 inner2d = np.copy(img_array)
@@ -392,17 +427,17 @@ class ColorsFirstDataset(BaseDataset):
         elif model == "conv_mlp":
             self.images_outer2d = np.array(images_outer2d)
             self.images_inner_flat = np.array(images_inner_flat)
-        elif model == "conv_deconv" or model == "vgg16":
+        elif model == "conv_deconv" or model == "vgg16" or model == "lasagne_conv_deconv":
             self.images_outer2d = np.array(images_outer2d)
             self.images_inner2d = np.array(images_inner2d)
         elif model == "dcgan" or model == "wgan" or model == "lsgan":
             self.images_inner2d = np.array(images_inner2d)
-                
 
 class ColorsLastDataset(BaseDataset):
     def __init__(self, input_dim, output_dim):
         super(ColorsLastDataset, self).__init__(input_dim, output_dim)
         self._images_filename = "train_images_col_last.npy"
+        self._test_images_filename = "test_images_col_last.npy"
 
     def transform_images(self, images):
         """Images should be a list of numpy arrays of the form (64, 64, 3). This function will turn it into a numpy batch 4-tensor of the form (batch_size, 64, 64, 3)."""
@@ -460,7 +495,7 @@ class ColorsLastDataset(BaseDataset):
 
                 images_outer2d.append(outer_2d)
                 images_inner_flat.append(inner_flat)
-            elif model == "conv_deconv" or model == "vgg16":
+            elif model == "conv_deconv" or model == "vgg16" or model == "lasagne_conv_deconv":
                 outer_2d = np.copy(img_array)
                 outer_2d[center[0]-16:center[0]+16, center[1]-16:center[1]+16, :] = 0
                 inner2d = np.copy(img_array)
@@ -478,7 +513,7 @@ class ColorsLastDataset(BaseDataset):
         elif model == "conv_mlp":
             self.images_outer2d = np.array(images_outer2d)
             self.images_inner_flat = np.array(images_inner_flat)
-        elif model == "conv_deconv" or model == "vgg16":
+        elif model == "conv_deconv" or model == "vgg16" or model == "lasagne_conv_deconv":
             self.images_outer2d = np.array(images_outer2d)
             self.images_inner2d = np.array(images_inner2d)
         elif model == "dcgan" or model == "wgan" or model == "lsgan":

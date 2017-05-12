@@ -10,7 +10,7 @@ from sklearn.preprocessing import MinMaxScaler
 import models
 import settings
 from utils import normalize_data, denormalize_data
-from utils import save_keras_predictions, print_results_as_html
+from utils import save_keras_predictions, create_html_results_page
 from utils import unflatten_to_4tensor, unflatten_to_3tensor, transpose_colors_channel
 from utils import handle_critical, handle_error, handle_warning
 from utils import print_critical, print_error, print_warning, print_info, print_positive, log
@@ -91,27 +91,34 @@ def run_experiment():
         
     # Define model's specific settings
     if settings.MODEL == "test":
-        model = models.Test_Model(settings.MODEL)
+        from keras_models import Test_Model
+        model = Test_Model()
     elif settings.MODEL == "mlp":
-        model = models.MLP_Model(settings.MODEL)
+        from keras_models import MLP_Model
+        model = MLP_Model()
     elif settings.MODEL == "conv_mlp":
-        model = models.Conv_MLP(settings.MODEL)
+        from keras_models import Conv_MLP
+        model = Conv_MLP()
     elif settings.MODEL == "conv_deconv":
-        model = models.Conv_Deconv(settings.MODEL)
+        from keras_models import Conv_Deconv
+        model = Conv_Deconv()
+    elif settings.MODEL == "lasagne_conv_deconv":
+        from lasagne_models import Lasagne_Conv_Deconv
+        model = Lasagne_Conv_Deconv()
     elif settings.MODEL == "dcgan":
-        model = models.DCGAN_Model(settings.MODEL)
+        model = models.DCGAN_Model()
     elif settings.MODEL == "wgan":
         from wgan import WGAN_Model
-        model = WGAN_Model(settings.MODEL)
+        model = WGAN_Model()
     elif settings.MODEL == "lsgan":
         from lsgan import LSGAN_Model
-        model = LSGAN_Model(settings.MODEL)
+        model = LSGAN_Model()
     elif settings.MODEL == "vgg16":
         if not os.path.isfile("vgg16.pkl"):
             log("Could not find VGG-16 pre-trained weights file 'vgg16.pkl'. Downloading...")
             download_vgg16_weights()
         from vgg16 import VGG16_Model
-        model = VGG16_Model(settings.MODEL)
+        model = VGG16_Model()
     else:
         raise NotImplementedError()
 
@@ -263,8 +270,8 @@ def run_experiment():
         NewDataset.preload(model = "conv_deconv")
 
         ### Save predictions to disk
-        save_keras_predictions(Y_test_pred_2d, Dataset.id_test, NewDataset, num_images=50)
-        print_results_as_html(Y_test_pred_2d, num_images=50)
+        save_keras_predictions(Y_test_pred_2d, Dataset.id_val, NewDataset, num_images=50)
+        create_html_results_page("results.html", "assets/", num_images=50)
     elif settings.MODEL == "conv_deconv" or settings.MODEL == "vgg16":
         Dataset.preprocess()
         Dataset.normalize()
@@ -286,8 +293,13 @@ def run_experiment():
         NewDataset.preload(model = "conv_deconv")
 
         ### Save predictions to disk
-        save_keras_predictions(Y_test_pred_2d, Dataset.id_test, NewDataset, num_images=50)
-        print_results_as_html(Y_test_pred_2d, num_images=50)
+        save_keras_predictions(Y_test_pred_2d, Dataset.id_val, NewDataset, num_images=50)
+        create_html_results_page("results.html", "assets/", num_images=50)
+    elif settings.MODEL == "lasagne_conv_deconv":
+        Dataset.preprocess()
+        Dataset.normalize()
+        Dataset.preload()
+        model.train(Dataset)
     elif settings.MODEL == "dcgan":
         from lasagne.utils import floatX
         Dataset.preprocess()

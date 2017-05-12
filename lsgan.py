@@ -34,8 +34,8 @@ from utils import handle_critical, handle_error, handle_warning
 from utils import print_critical, print_error, print_warning, print_info, print_positive, log
 
 class LSGAN_Model(GAN_BaseModel):
-    def __init__(self, model_name, hyperparams = hyper_params.default_lsgan_hyper_params):
-        super(LSGAN_Model, self).__init__(model_name = model_name, hyperparams = hyperparams)
+    def __init__(self, hyperparams = hyper_params.default_lsgan_hyper_params):
+        super(LSGAN_Model, self).__init__(hyperparams = hyperparams)
         self.gen_fn = None
         self.generator_train_fn = None
         self.critic_train_fn = None
@@ -91,7 +91,7 @@ class LSGAN_Model(GAN_BaseModel):
 
         # Load the dataset
         log("Fetching data...")
-        X_train, X_test, y_train, y_test, ind_train, ind_test = dataset.return_data()
+        X_train, X_test, y_train, y_test, ind_train, ind_test = dataset.return_train_data()
 
         # Prepare Theano variables for inputs and targets
         noise_var = T.matrix('noise')
