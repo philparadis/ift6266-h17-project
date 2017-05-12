@@ -1,0 +1,256 @@
+import os, sys, errno
+import json
+import time
+import abc, six
+import glob
+import numpy as np
+
+import lasagne
+import theano
+import theano.tensor as T
+
+import utils
+import hyper_params
+import settings
+from utils import handle_critical, handle_error, handle_warning
+from utils import print_critical, print_error, print_warning, print_info, print_positive, log, logout
+from utils import force_symlink, get_json_pretty_print
+from utils import denormalize_and_save_jpg_results, create_html_results_page
+
+from models import BaseModel
+
+class LasagneModel(BaseModel):
+    def __init__(self, hyperparams = hyper_params.default_lasagne_hyper_params): 
+        super(LasagneModel, self).__init__(hyperparams = hyperparams)
+        self.network = None
+        self.matching_layers = []
+        self.matching_layers_weights = []
+        
+    def iterate_minibatches(self, inputs, targets, batchsize, shuffle=False,
+                            forever=False):
+        assert len(inputs) == len(targets)
+        if shuffle:
+            indices = np.arange(len(inputs))
+        while True:
+            if shuffle:
+                np.random.shuffle(indices)
+            for start_idx in range(0, len(inputs) - batchsize + 1, batchsize):
+                if shuffle:
+                    excerpt = indices[start_idx:start_idx + batchsize]
+                else:
+                    excerpt = slice(start_idx, start_idx + batchsize)
+                yield inputs[excerpt], targets[excerpt]
+            if not forever:
+                break
+
+    def train(self, dataset):
+        log("Fetching data...")
+        X_train, X_val, y_train, y_val, ind_train, ind_val = dataset.return_train_data()
+        X_test, y_test = dataset.return_test_data()
+        
+        #Variance of the prediction can be maximized to obtain sharper images.
+        #If this coefficient is set to "0", the loss is just the L2 loss.
+        StdevCoef = 0
+
+        # Prepare Theano variables for inputs and targets
+        input_var = T.tensor4('inputs')
+        target_var = T.tensor4('targets')
+
+        # Create neural network model
+        log("Building model and compiling functions...")
+        self.build_network(input_var)
+        
+        # Training Loss expression
+        network_output = lasagne.layers.get_output(self.network)
+        loss = lasagne.objectives.squared_error(network_output, target_var).mean()
+        #loss = loss.mean() - StdevCoef * theano.tensor.std(network_output, axis=(1, 2, 3)).mean()
+
+        # Test/validation Loss expression (disable dropout and so on...)
+        network_prediction = lasagne.layers.get_output(self.network, deterministic=True)
+        val_loss = lasagne.objectives.squared_error(network_prediction, target_var).mean()
+
+        # Update expressions
+        from theano import shared
+        eta = shared(lasagne.utils.floatX(settings.LEARNING_RATE))
+        params = lasagne.layers.get_all_params(self.network, trainable=True)
+        updates = lasagne.updates.adam(loss, params, learning_rate=eta)
+
+        # Train loss function
+        train_fn = theano.function([input_var, target_var], loss, updates=updates)
+
+        # Validation loss function
+        val_fn = theano.function([input_var, target_var], val_loss)
+
+        # Predict function
+        predict_fn = theano.function([input_var], network_prediction)
+        
+        # Finally, launch the training loop.
+        log("Starting training...")
+        batch_size = settings.BATCH_SIZE
+        for epoch in range(settings.NUM_EPOCHS):
+            start_time = time.time()
+            train_losses = []
+            for batch in self.iterate_minibatches(X_train, y_train, batch_size, shuffle=True):
+                inputs, targets = batch
+                train_losses.append(train_fn(inputs, targets))
+                
+            val_losses = []
+            for batch in self.iterate_minibatches(X_val, y_val, batch_size, shuffle=False):
+                inputs, targets = batch
+                val_losses.append(val_fn(inputs, targets))
+
+            # Print the results for this epoch
+            log("Epoch {} of {} took {:.3f}s".format(epoch + 1, num_epochs, time.time() - start_time))
+            log(" - training loss:    {:.6f}".format(np.mean(train_losses)))
+            log(" - validation loss:  {:.6f}".format(np.mean(val_losses)))
+
+
+        log_info("Training complete!")
+        # Print the test error
+        test_losses = 0
+        preds = np.zeros((X_test.shape[0], 3, 32, 32))
+        for batch in self.iterate_minibatches(X_test, y_test, batch_size, shuffle=False):
+            inputs, targets = batch
+            preds[test_batches*batch_size:(test_batches+1)*batch_size] = predict_fn(inputs)
+            test_losses.append(val_fn(inputs, targets))
+        log("Final results:")
+        if test_batches == 0:
+            log("test_batches is 0, can't compute test loss.")
+        else:
+            log(" - test loss:        {:.6f}".format(np.mean(test_losses)))
+
+        # Save model
+        save_model(os.path.join(settings.MODELS_DIR, settings.EXP_NAME + ".npz"))
+
+        # Save predictions and create HTML page to visualize them
+        save_jpg_results(settings.ASSETS_DIR, preds, X_test, y_test, dataset.images)
+        create_html_results_page("results.html", settings.ASSETS_DIR, preds.shape[0])
+
+    def save_model(self, filename):
+        np.savez(filename, *lasagne.layers.get_all_param_values(self.network))
+
+def rescale(x):
+    return x*0.5
+        
+class Lasagne_Conv_Deconv(LasagneModel):
+    def __init__(self):
+        super(Lasagne_Conv_Deconv, self).__init__()
+
+    def build(self):
+        pass
+
+    def build_network(self, input_var):
+        from lasagne.layers import InputLayer
+        from lasagne.layers import DenseLayer
+        from lasagne.layers import NonlinearityLayer
+        from lasagne.layers import DropoutLayer
+        from lasagne.layers import Pool2DLayer as PoolLayer
+        from lasagne.layers import TransposedConv2DLayer as Deconv2DLayer
+        from lasagne.nonlinearities import sigmoid
+
+        try:            
+            from lasagne.layers.dnn import Conv2DDNNLayer as ConvLayer
+        except ImportError as e:
+            from lasagne.layers import Conv2DLayer as ConvLayer
+            print_warning("Cannot import 'lasagne.layers.dnn.Conv2DDNNLayer' as it requires GPU support and a functional cuDNN installation. Falling back on slower convolution function 'lasagne.layers.Conv2DLayer'.")
+
+        batch_size = settings.BATCH_SIZE
+        
+        net = {}
+        net['input'] = InputLayer((batch_size, 3, 64, 64), input_var=input_var)
+        net['conv1'] = ConvLayer(net['input'], 64, 5, stride=2, pad='same')
+        net['pool1'] = PoolLayer(net['conv1'], 2) # 16x16
+        net['conv2'] = ConvLayer(net['pool1'], 64, 5, stride=1, pad='same')
+        net['pool2'] = PoolLayer(net['conv2'], 2) # 8x8
+        net['conv3'] = ConvLayer(net['pool2'], 64, 5, stride=1, pad='same')
+        net['deconv1'] = Deconv2DLayer(net['conv3'], 64, 5, stride=1, crop='same', output_size=8) # 8x8
+        net['deconv2'] = Deconv2DLayer(net['deconv1'], 64, 5, stride=2, crop='same', output_size=16) # 16x16
+        net['deconv3'] = Deconv2DLayer(net['deconv2'], 64, 5, stride=2, crop='same', output_size=32) # 32x32
+        net['deconv4'] = Deconv2DLayer(net['deconv3'], 64, 5, stride=1, crop='same', output_size=32)
+        net['deconv5'] = Deconv2DLayer(net['deconv4'], 3, 5, stride=1, crop='same', output_size=32, nonlinearity=sigmoid)
+        
+        # net['input'] = InputLayer((batch_size, 3, 64, 64), input_var=input_var)
+        # net['conv1'] = ConvLayer(net['input'], 64, 5, pad=0)
+        # net['pool1'] = PoolLayer(net['conv1'], 2) # 32x32
+        # net['conv2'] = ConvLayer(net['pool1'], 128, 3, pad=0)
+        # net['pool2'] = PoolLayer(net['conv2'], 2) # 16x16
+        # net['conv3_1'] = ConvLayer(net['pool2'], 256, 3, pad=0)
+        # net['conv3_2'] = ConvLayer(net['conv3_1'], 256, 3, pad=0)
+        # net['pool3'] = PoolLayer(net['conv3_2'], 2) #8x8
+        # net['conv4'] = ConvLayer(net['pool3'], 2048, 5, pad=0)
+        # net['conv4_drop'] = NonlinearityLayer(net['conv4'], nonlinearity=rescale)
+        # net['conv5'] = ConvLayer(net['conv4_drop'], 2048, 1, pad=0)
+        # net['conv5_drop'] = NonlinearityLayer(net['conv5'], nonlinearity=rescale)
+
+        # net['conv6'] = ConvLayer(net['conv5_drop'], 64, 1, pad=0, nonlinearity=sigmoid)
+        # net['conv7'] = ConvLayer(net['conv6'], 10, 1, pad=0, nonlinearity=softmax4d)
+
+        self.network = net['deconv5']
+
+class GAN_BaseModel(BaseModel):
+    def __init__(self, hyperparams = hyper_params.default_gan_basemodel_hyper_params):
+        super(GAN_BaseModel, self).__init__(hyperparams = hyperparams)
+        self.generator = None
+        self.discriminator = None
+        self.train_fn = None
+        self.gen_fn = None
+
+        # Feature matching layers
+        self.feature_matching_layers = []
+        
+        # Constants
+        self.gen_filename = "model_generator.npz"
+        self.disc_filename = "model_discriminator.npz"
+        self.full_gen_path = os.path.join(settings.MODELS_DIR, self.gen_filename)
+        self.full_disc_path = os.path.join(settings.MODELS_DIR, self.disc_filename)
+
+    def build(self):
+        pass
+
+    def load_model(self):
+        """Return True if a valid model was found and correctly loaded. Return False if no model was loaded."""
+        import numpy as np
+        from lasagne.layers import set_all_param_values
+
+        if os.path.isfile(self.full_gen_path) and os.path.isfile(self.full_disc_path):
+            print_positive("Found latest '.npz' model's weights files saved to disk at paths:\n{}\n{}".format(self.full_gen_path, self.full_disc_path))
+        else:
+            print_info("Cannot resume from checkpoint. Could not find '.npz'  weights files, either {} or {}.".format(self.full_gen_path, self.full_disc_path))
+            return False
+            
+        try:
+            ### Load the generator model's weights
+            print_info("Attempting to load generator model: {}".format(self.full_gen_path))
+            with np.load(self.full_gen_path) as fp:
+                param_values = [fp['arr_%d' % i] for i in range(len(fp.files))]
+            set_all_param_values(self.generator, param_values)
+
+            ### Load the discriminator model's weights
+            print_info("Attempting to load generator model: {}".format(self.full_disc_path))
+            with np.load(self.full_disc_path) as fp:
+                param_values = [fp['arr_%d' % i] for i in range(len(fp.files))]
+            set_all_param_values(self.discriminator, param_values)
+        except Exception as e:
+            handle_error("Failed to read or parse the '.npz' weights files, either {} or {}.".format(self.full_gen_path, self.full_disc_path), e)
+            return False
+        return True
+
+        
+    def save_model(self, keep_all_checkpoints=False):
+        """Save model. If keep_all_checkpoints is set to True, then a copy of the entire model's weight and optimizer state is preserved for each checkpoint, along with the corresponding epoch in the file name. If set to False, then only the latest model is kept on disk, saving a lot of space, but potentially losing a good model due to overtraining."""
+        import numpy as np
+        from lasagne.layers import get_all_param_values
+        # Save the gen and disc weights to disk
+        if keep_all_checkpoints:
+            epoch_gen_path = "model_generator_epoch{0:0>4}.npz".format(self.epochs_completed)
+            epoch_disc_path = "model_discriminator_epoch{0:0>4}.npz".format(self.epochs_completed)
+            chkpoint_gen_path = os.path.join(settings.CHECKPOINTS_DIR, epoch_gen_path)
+            chkpoint_disc_path = os.path.join(settings.CHECKPOINTS_DIR, epoch_disc_path)
+            np.savez(chkpoint_gen_path, *get_all_param_values(self.generator))
+            np.savez(chkpoint_disc_path, *get_all_param_values(self.discriminator))
+            force_symlink("../checkpoints/{}".format(epoch_gen_path), self.full_gen_path)
+            force_symlink("../checkpoints/{}".format(epoch_disc_path), self.full_disc_path)
+        else:
+            np.savez(self.full_gen_path, *get_all_param_values(self.generator))
+            np.savez(self.full_disc_path, *get_all_param_values(self.discriminator))
+
