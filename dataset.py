@@ -69,6 +69,7 @@ class BaseDataset(object):
             raise Exception("ERROR: You did not define the filename the '.npy' dataset containing images.")
 
         images_path = os.path.join(settings.MSCOCO_DIR, self._images_filename)
+        test_images_path = os.path.join(settings.MSCOCO_DIR, self._test_images_filename)
         captions_ids_path = os.path.join(settings.MSCOCO_DIR, self._captions_ids_filename)
         captions_dict_path = os.path.join(settings.MSCOCO_DIR, self._captions_dict_filename)
         if all([os.path.isfile(images_path), os.path.isfile(captions_ids_path), os.path.isfile(captions_dict_path)]):
@@ -119,8 +120,8 @@ class BaseDataset(object):
                         captions_dict.append(cap_dict[cap_id])
                     elif dataset_type == "test":
                         test_img = np.copy(img_array)
-                        center = (int(np.floor(test_img.shape[1] / 2.)),
-                                  int(np.floor(test_img.shape[2] / 2.)))
+                        center = (int(np.floor(test_img.shape[0] / 2.)),
+                                  int(np.floor(test_img.shape[1] / 2.)))
                         test_img[:, center[0]-16:center[0]+16, center[1]-16:center[1]+16] = 0
                         test_images.append(test_img)
 

@@ -100,31 +100,31 @@ class LasagneModel(BaseModel):
                 val_losses.append(val_fn(inputs, targets))
 
             # Print the results for this epoch
-            log("Epoch {} of {} took {:.3f}s".format(epoch + 1, num_epochs, time.time() - start_time))
+            log("Epoch {} of {} took {:.3f}s".format(epoch + 1, settings.NUM_EPOCHS, time.time() - start_time))
             log(" - training loss:    {:.6f}".format(np.mean(train_losses)))
             log(" - validation loss:  {:.6f}".format(np.mean(val_losses)))
 
 
-        log_info("Training complete!")
+        print_info("Training complete!")
         # Print the test error
-        test_losses = 0
+        test_losses = []
+        num_iter = 0
         preds = np.zeros((X_test.shape[0], 3, 32, 32))
         for batch in self.iterate_minibatches(X_test, y_test, batch_size, shuffle=False):
             inputs, targets = batch
-            preds[test_batches*batch_size:(test_batches+1)*batch_size] = predict_fn(inputs)
+            preds[num_iter*batch_size:(num_iter+1)*batch_size] = predict_fn(inputs)
             test_losses.append(val_fn(inputs, targets))
+            num_iter += 1
         log("Final results:")
-        if test_batches == 0:
-            log("test_batches is 0, can't compute test loss.")
-        else:
-            log(" - test loss:        {:.6f}".format(np.mean(test_losses)))
+        log(" - test loss:        {:.6f}".format(np.mean(test_losses)))
 
         # Save model
-        save_model(os.path.join(settings.MODELS_DIR, settings.EXP_NAME + ".npz"))
+        self.save_model(os.path.join(settings.MODELS_DIR, settings.EXP_NAME + ".npz"))
 
         # Save predictions and create HTML page to visualize them
-        save_jpg_results(settings.ASSETS_DIR, preds, X_test, y_test, dataset.images)
-        create_html_results_page("results.html", settings.ASSETS_DIR, preds.shape[0])
+        num_images = 100
+        denormalize_and_save_jpg_results(preds, X_test, y_test, dataset.test_images, num_images)
+        create_html_results_page(num_images)
 
     def save_model(self, filename):
         np.savez(filename, *lasagne.layers.get_all_param_values(self.network))

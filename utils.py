@@ -8,14 +8,22 @@ from sklearn.preprocessing import MinMaxScaler
 import settings
 
 ### Utility functions to manipule numpy datasets
+def cf_to_cl(x):
+    rows = x.shape[0]
+    width = x.shape[2]
+    height = x.shape[3]
+    return x.transpose(0, 2, 3, 1).reshape(x.shape[0], width, height, 3)
 
 def normalize_data(data):
     scaler = MinMaxScaler(feature_range=(0, 1))
     return scaler.fit_transform(data.astype('float32').reshape(data.shape[0], -1)).reshape(data.shape)
 
 def denormalize_data(data):
-    unscaler = MinMaxScaler(feature_range=(0, 256))
-    return unscaler.fit_transform(data.reshape(data.shape[0], -1)).reshape(data.shape).astype('uint8')
+    if data.dtype == 'uint8':
+        return data
+    #unscaler = MinMaxScaler(feature_range=(0, 256))
+    #return unscaler.fit_transform(data.reshape(data.shape[0], -1)).reshape(data.shape).astype('uint8')
+    return (data*256.0).clip(0.0, 255.5).astype('uint8')
 
 def normalize_data_tanh(data):
     """Transform linearly integers within [0, 255] to float32 within [-1, 1]. Data must be numpy array of type 'uint8'."""
@@ -235,17 +243,19 @@ def save_keras_predictions(pred, pred_indices, dataset,
         raise NotImplementedError("Haven't implemented save_predictions_info for 2D images (only flattened images).")
 
 
-def denormalize_and_save_jpg_results(assets_dir, preds, X_test, y_test, X_original_test, num_images):
+def denormalize_and_save_jpg_results(preds, X_test, y_test, X_original_test, num_images):
+    assets_dir = settings.ASSETS_DIR
     if not os.path.exists(assets_dir):
         os.makedirs(assets_dir)
 
     # Denormalize images datasets
-    preds = denormalize_data(preds)
-    X_test = denormalize_data(X_test)
-    y_test = denormalize_data(y_test)
-    X_original_test = denormalize_data(X_original_test)
+    preds  = transpose_colors_channel(denormalize_data(preds))
+    X_test = transpose_colors_channel(denormalize_data(X_test))
+    y_test = transpose_colors_channel(denormalize_data(y_test))
+    X_original_test = transpose_colors_channel(denormalize_data(X_original_test))
+    
     # Save the 'num_images' predictions to JPG files within the 'assets' subdirectory
-    for index in range(min(num_images, preds.shape[0])):
+    for index in range(num_images):
         Image.fromarray(X_test[index]).save(os.path.join(assets_dir, 'images_outer2d_' + str(index) + '.jpg'))
         Image.fromarray(preds[index]).save(os.path.join(assets_dir, 'images_pred_' + str(index) + '.jpg'))
         Image.fromarray(y_test[index]).save(os.path.join(assets_dir, 'images_inner2d_' + str(index) + '.jpg'))
@@ -255,11 +265,10 @@ def denormalize_and_save_jpg_results(assets_dir, preds, X_test, y_test, X_origin
         fullimg_pred[center[0]-16:center[0]+16, center[1]-16:center[1]+16, :] = preds[index, :, :, :]
         Image.fromarray(fullimg_pred).save(os.path.join(assets_dir, 'fullimages_pred_' + str(index) + '.jpg'))
 
-def create_html_results_page(filename, assets_dir, num_images):
+def create_html_results_page(num_images):
     # Write a file called 'results.html' that display the image predictions versus the true images in a convenient way
-    img_src = assets_dir
-    if not img_src[-1] == '/':
-        img_src += '/'
+    filename = os.path.join(settings.PRED_DIR, "results.html")
+    img_src = "assets/"
     html_file = filename
     with open(html_file, 'w') as fd:
         fd.write("""
