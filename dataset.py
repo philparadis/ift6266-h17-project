@@ -209,7 +209,7 @@ class BaseDataset(object):
             self.images_inner2d = normalize_data(self.images_inner2d)
 
             
-    def preload(self, test_size = 0.2, seed = 0, model = settings.MODEL):
+    def preload(self, test_size = 0.1, seed = 0, model = settings.MODEL):
         if model == "mlp" or model == "test":
             x = self.images_outer_flat
             y = self.images_inner_flat
@@ -273,12 +273,18 @@ class BaseDataset(object):
             self.id_train, self.id_val
 
     def return_test_data(self):
+        X_test = []
+        for i in range(self.test_images.shape[0]):
+            X = np.copy(self.test_images[i])
+            center = (int(np.floor(X.shape[1] / 2.)), int(np.floor(X.shape[2] / 2.)))
+            X[:, center[0]-16:center[0]+16, center[1] - 16:center[1]+16] = 0
+            X_test.append(X)
         y_test = []
         for i in range(self.test_images.shape[0]):
             y = np.copy(self.test_images[i])
             center = (int(np.floor(y.shape[1] / 2.)), int(np.floor(y.shape[2] / 2.)))
             y_test.append(y[:, center[0]-16:center[0]+16, center[1] - 16:center[1]+16])
-        return self.test_images, np.array(y_test)
+        return normalize_data(np.array(X_test)), normalize_data(np.array(y_test))
 
     def get_data(self, X = False, Y = False, Train = False, Test = False):
         if X and Y:
