@@ -5,189 +5,37 @@
 
 # Download pretrained weights from:
 # https://s3.amazonaws.com/lasagne/recipes/pretrained/imagenet/vgg16.pkl
-
+import settings
 import numpy as np
 from lasagne_models import LasagneModel, Lasagne_Conv_Deconv
 import hyper_params
 from utils import print_critical, print_error, print_warning, print_info, print_positive, log, logout
 
-def naive_compute_all(batch_size=50):
-
-    input_var = T.tensor4('inputs')
-
-    model = build_model(batch_size, input_var)
-
-    prediction = lasagne.layers.get_output(model['conv6'],deterministic=True)
-    prediction = prediction.reshape((batch_size, -1,))
-
-    val_fn = theano.function([input_var], prediction)
-
-    # ---compute feature for a single image---
-
-    # img = load_bgr(sys.argv[3])
-    # imgs = make_batch(np.array([img], dtype=np.uint8), batch_size)
-    # imgs = imgs.astype(np.float32) / 255
-    # feat = val_fn(imgs)
-    #
-    # feat_part = (feat>0.5).astype(np.uint8)[0]
-
-    # ---compute feature for all imgs---
-    t = time.time()
-    imgs = dense_sample(img)
-    imgs = make_batch(imgs, batch_size)
-    imgs = imgs.astype(np.float32) / 255
-
-    feat = np.zeros((imgs.shape[0], 64))
-    for i in range(imgs.shape[0] / batch_size):
-        ret = val_fn(imgs[i*batch_size:(i+1)*batch_size])
-        feat[i*batch_size:(i+1)*batch_size] = ret
-    print time.time() - t
-    feat_all = (feat>0.5).astype(np.uint8)
-
-    # for i in range(feat_all.shape[0]):
-    #     if np.bitwise_xor(feat_all[i], feat_part).sum() <= 3:
-    #         print (i / 208) * 2, (i%208) * 2
-
-
-    w = len(range(0, W-64, 2))
-    compact = []
-    for i in range(feat_all.shape[0]):
-        compact.append((pack(feat_all[i]), (i/w)*2, (i%w)*2))
-    compact = np.array(compact, dtype=np.uint64)
-    # compact = np.unique(compact)
-    # print compact.shape
-    return compact
-
-
-def fc_compute_all(batch_size=1):
-    net = build_model(batch_size, None)
-
-    input_var = T.tensor4('inputs')
-    output_map = [[], []]
-    label_map = [[], []]
-    shape_map = [[], []]
-    prv = 0
-    cur = 1
-    output_map[prv] = [input_var]
-    label_map[prv] = [("", "")]
-    #shape_map[prv] = [(1, 3, H , W)]
-
-    for l in lasagne.layers.get_all_layers(net['conv6']): # stop at conv6
-        if isinstance(l, InputLayer):
-            continue
-
-        output_map[cur] = []
-        label_map[cur] = []
-        #shape_map[cur] = []
-
-        if isinstance(l, ConvLayer):
-            for j in range(len(output_map[prv])):
-                i = output_map[prv][j]
-                s,t = label_map[prv][j]
-                #sp = shape_map[prv][j]
-                o = T.nnet.conv2d(i,
-                                  l.W,
-                                  #sp,
-                                  #l.get_W_shape(),
-                                  subsample=(1, 1),
-                                  border_mode='valid',
-                                  filter_flip=False)
-                o = l.nonlinearity(o + l.b.dimshuffle('x', 0, 'x', 'x'))
-
-                output_map[cur].append(o)
-                label_map[cur].append((s, t))
-                #shape_map[cur].append(l.get_output_shape_for(sp))
-
-        elif isinstance(l, PoolLayer):
-            for j in range(len(output_map[prv])):
-                i = output_map[prv][j]
-                s,t = label_map[prv][j]
-                #sp = shape_map[prv][j]
-
-                o = pool_2d(i,
-                            ds=(2,2),
-                            st=(2,2),
-                            ignore_border=l.ignore_border,
-                            padding=(0,0),
-                            mode='max',
-                            )
-
-                output_map[cur].append(o)
-                label_map[cur].append(('0'+s, '0'+t))
-                #shape_map[cur].append((sp[0], sp[1], sp[2]/2, sp[3]/2))
-
-                output_map[cur].append(o[:,:, 1:, :])
-                label_map[cur].append(('1'+s, '0'+t))
-                #shape_map[cur].append((sp[0], sp[1], sp[2]/2-1, sp[3]/2))
-
-                output_map[cur].append(o[:,:, :, 1:])
-                label_map[cur].append(('0'+s, '1'+t))
-                #shape_map[cur].append((sp[0], sp[1], sp[2]/2, sp[3]/2-1))
-
-                output_map[cur].append(o[:,:, 1:, 1:])
-                label_map[cur].append(('1'+s, '1'+t))
-                #shape_map[cur].append((sp[0], sp[1], sp[2]/2-1, sp[3]/2-1))
-
-        elif isinstance(l, NonlinearityLayer): # rescale for dropout
-            for j in range(len(output_map[prv])):
-                i = output_map[prv][j]
-                s,t = label_map[prv][j]
-                #sp = shape_map[prv][j]
-
-                o = rescale(i)
-                output_map[cur].append(o)
-                label_map[cur].append((s, t))
-                #shape_map[cur].append(sp)
-
-        prv = 1-prv
-        cur = 1-cur
-
-    # print len(output_map[prv])
-    fc_func = theano.function([input_var], output_map[prv])
-
-    img_large = to_bgr(img)
-    img_large = np.array([img_large], dtype=np.float32) / 255
-
-    data = img_large
-    for i in range(batch_size-1):
-        data = np.concatenate((data, img_large), axis=0)
-
-
-    t = time.time()
-    res = fc_func(data)
-    print time.time() - t
-
-
-    feat_all = []
-    for r in res:
-        s = r.shape
-        r = (r>0.5).astype(np.uint8)
-        t = np.zeros((s[2], s[3]), dtype=np.uint64)
-
-        for i in range(s[2]):
-            for j in range(s[3]):
-                t[i][j] = pack(r[0,:,i,j].reshape((s[1],)))
-
-        feat_all.append(t)
-
-    return feat_all,label_map[prv]
-
     
-class VGG16_Model(BaseModel):
-    def __init__(self, model_name, hyperparams = hyper_params.default_vgg16_hyper_params):
-        super(VGG16_Model, self).__init__(model_name = model_name, hyperparams = hyperparams)
-        self.conv_deconv_model = None
-        self.vgg16_model = None
-        self.lasagne_model = None
-        
+class VGG16_Model(LasagneModel):
+    def __init__(self, hyperparams = hyper_params.default_vgg16_hyper_params):
+        super(VGG16_Model, self).__init__(hyperparams = hyperparams)
+        self.input_prevgg = None
+        self.input_prevgg_out = None
+        self.target_prevgg = None
+        self.target_prevgg_out = None
+        self.input_vgg_model = None
+        self.input_vgg_model_out = None
+        self.target_vgg_model = None
+        self.target_vgg_model_out = None
+
     def build(self):
+        pass
+        
+    def build_network_and_loss(self, input_var, target_var):
         import lasagne
         from lasagne.layers import InputLayer
         from lasagne.layers import DenseLayer
         from lasagne.layers import NonlinearityLayer
         from lasagne.layers import DropoutLayer
         from lasagne.layers import Pool2DLayer as PoolLayer
-        from lasagne.nonlinearities import softmax
+        from lasagne.layers import TransposedConv2DLayer as Deconv2DLayer
+        from lasagne.nonlinearities import softmax, sigmoid, tanh
         import cPickle as pickle
 
         try:
@@ -196,10 +44,55 @@ class VGG16_Model(BaseModel):
             from lasagne.layers import Conv2DLayer as ConvLayer
             print_warning("Cannot import 'lasagne.layers.dnn.Conv2DDNNLayer' as it requires GPU support and a functional cuDNN installation. Falling back on slower convolution function 'lasagne.layers.Conv2DLayer'.")
 
-            
-        log("Building VGG-16 model...")
+        batch_size = settings.BATCH_SIZE
+
         net = {}
-        net['input'] = InputLayer((None, 3, 224, 224))
+
+        net['input'] = InputLayer((batch_size, 3, 64, 64), input_var=input_var)
+        net['conv1'] = ConvLayer(net['input'], 256, 5, stride=2, pad='same') # 32x32
+        net['conv2'] = ConvLayer(net['conv1'], 256, 7, stride=2, pad='same') # 16x16
+        net['dropout1'] = DropoutLayer(net['conv2'], p=0.5)
+        net['deconv1'] = Deconv2DLayer(net['dropout1'], 256, 7, stride=1, crop='same', output_size=8) # 16x16
+        net['dropout2'] = DropoutLayer(net['deconv1'], p=0.5)
+        net['deconv2'] = Deconv2DLayer(net['dropout2'], 256, 7, stride=2, crop='same', output_size=16) # 32x32
+        net['dropout3'] = DropoutLayer(net['deconv2'], p=0.5)
+        net['deconv3'] = Deconv2DLayer(net['dropout3'], 256, 9, stride=1, crop='same', output_size=32) # 32x32
+        net['deconv4'] = Deconv2DLayer(net['deconv3'], 3, 9, stride=1, crop='same', output_size=32, nonlinearity=tanh)
+
+        self.network, self.network_out = net, net['deconv4']
+
+        self.input_prevgg, self.input_prevgg_out = self.build_prevgg(self.network.out)
+        self.target_prevgg, self.target_prevgg_out = self.build_prevgg(InputLayer((batch_size, 3, 32, 32), input_var=target_var))
+        self.input_vgg_model, self.input_vgg_model_out = self.build_vgg_model(self.input_prevgg_out)
+        self.target_vgg_model, self.target_vgg_model_out = self.build_vgg_model(self.target_prevgg_out)
+
+        ### Set the layer outputs used in the loss function
+        network_output = lasagne.layers.get_output(self.network_out)
+        loss_1 = lasagne.objectives.squared_error(network_output, target_var).mean()
+        conv_1_1_out = lasagne.layers.get_output(self.input_vgg_model['conv1_1'])
+        conv_1_1_target_out = lasagne.layers.get_output(self.target_vgg_model['conv1_1'])
+        loss_2 = lasagne.objectives.squared_error(conv_1_1_out, conv_1_1_target_out).mean()
+
+        loss = 0.2 * loss_1 + 0.8 * loss_2
+        return loss
+
+    def build_prevgg(self, previous_layer):
+        vggprenet = previous_layer
+        vggprenet['vggdeconv1'] = Deconv2DLayer(net['deconv3'], 256, 9, stride=2, crop='same', output_size=64) # 64x64
+        vggprenet['vggdropout1'] = DropoutLayer(vggprenet['vggdeconv1'], p=0.5)
+        vggprenet['vggdeconv2'] = Deconv2DLayer(vggprenet['vggdropout1'], 256, 9, stride=2, crop='same', output_size=128) # 128x128
+        vggprenet['vggdropout2'] = DropoutLayer(vggprenet['vggdeconv2'], p=0.5)
+        vggprenet['vggdeconv3'] = Deconv2DLayer(vggprenet['vggdropout2'], 256, 11, stride=2, crop='same', output_size=224) # 224x224
+        vggprenet['vggdeconv4'] = Deconv2DLayer(vggprenet['vggdeconv3'], 3, 11, stride=1, crop='same', output_size=224, nonlinearity=tanh)
+
+        vggprenet_out = vggprenet['vggdeconv4']
+        
+    def build_vgg_model(input_layer):
+        log("Building VGG-16 model...")
+
+        net = {}
+        #net['input'] = InputLayer((None, 3, 224, 224), input_var=target_var)
+        net['input'] = input_layer
         net['conv1_1'] = ConvLayer(
             net['input'], 64, 3, pad=1, flip_filters=False)
         net['conv1_2'] = ConvLayer(
@@ -247,23 +140,4 @@ class VGG16_Model(BaseModel):
         #net_output.initialize_layers()
         lasagne.layers.set_all_param_values(net['prob'], params['param values'])
 
-        self.lasagne_model = net
-
-        return net
-
-    def train(self, dataset):
-        from lasagne.layers import InputLayer, DenseLayer
-        import lasagne
-        from lasagne.updates import sgd, total_norm_constraint
-        import theano.tensor as T
-
-        x = T.matrix()
-        y = T.ivector()
-        l_in = InputLayer((5, 10))
-        l1 = DenseLayer(l_in, num_units=7, nonlinearity=T.nnet.softmax)
-        output = lasagne.layers.get_output(l1, x)
-        cost = T.mean(T.nnet.categorical_crossentropy(output, y))
-        all_params = lasagne.layers.get_all_params(l1)
-        all_grads = T.grad(cost, all_params)
-        scaled_grads = total_norm_constraint(all_grads, 5)
-        updates = sgd(scaled_grads, all_params, learning_rate=0.1)
+        return net, net['prob']

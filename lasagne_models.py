@@ -23,8 +23,9 @@ class LasagneModel(BaseModel):
     def __init__(self, hyperparams = hyper_params.default_lasagne_hyper_params): 
         super(LasagneModel, self).__init__(hyperparams = hyperparams)
         self.network = None
-        self.matching_layers = []
-        self.matching_layers_weights = []
+        self.network_out = None
+        self.list_matching_layers = []
+        self.list_matching_layers_weights = []
         
     def iterate_minibatches(self, inputs, targets, batchsize, shuffle=False,
                             forever=False):
@@ -42,6 +43,9 @@ class LasagneModel(BaseModel):
                 yield inputs[excerpt], targets[excerpt]
             if not forever:
                 break
+            
+    def build_network_and_loss(self, input_var, target_var):
+        raise NotImplemented("This is an abstract base class. Please implement this function.")
 
     def train(self, dataset):
         log("Fetching data...")
@@ -58,21 +62,16 @@ class LasagneModel(BaseModel):
 
         # Create neural network model
         log("Building model and compiling functions...")
-        self.build_network(input_var)
-        
-        # Training Loss expression
-        network_output = lasagne.layers.get_output(self.network)
-        loss = lasagne.objectives.squared_error(network_output, target_var).mean()
-        #loss = loss.mean() - StdevCoef * theano.tensor.std(network_output, axis=(1, 2, 3)).mean()
+        loss = self.build_network_and_loss(input_var, target_var)
 
         # Test/validation Loss expression (disable dropout and so on...)
-        network_prediction = lasagne.layers.get_output(self.network, deterministic=True)
+        network_prediction = lasagne.layers.get_output(self.network_out, deterministic=True)
         val_loss = lasagne.objectives.squared_error(network_prediction, target_var).mean()
 
         # Update expressions
         from theano import shared
         eta = shared(lasagne.utils.floatX(settings.LEARNING_RATE))
-        params = lasagne.layers.get_all_params(self.network, trainable=True)
+        params = lasagne.layers.get_all_params(self.network_out, trainable=True)
         updates = lasagne.updates.adam(loss, params, learning_rate=eta)
 
         # Train loss function
@@ -127,7 +126,7 @@ class LasagneModel(BaseModel):
         create_html_results_page(num_images)
 
     def save_model(self, filename):
-        np.savez(filename, *lasagne.layers.get_all_param_values(self.network))
+        np.savez(filename, *lasagne.layers.get_all_param_values(self.network_out))
 
 def rescale(x):
     return x*0.5
@@ -139,14 +138,14 @@ class Lasagne_Conv_Deconv(LasagneModel):
     def build(self):
         pass
 
-    def build_network(self, input_var):
+    def build_network_and_loss(self, input_var, target_var):
         from lasagne.layers import InputLayer
         from lasagne.layers import DenseLayer
         from lasagne.layers import NonlinearityLayer
         from lasagne.layers import DropoutLayer
         from lasagne.layers import Pool2DLayer as PoolLayer
         from lasagne.layers import TransposedConv2DLayer as Deconv2DLayer
-        from lasagne.nonlinearities import sigmoid
+        from lasagne.nonlinearities import sigmoid, tanh
 
         try:            
             from lasagne.layers.dnn import Conv2DDNNLayer as ConvLayer
@@ -157,17 +156,13 @@ class Lasagne_Conv_Deconv(LasagneModel):
         batch_size = settings.BATCH_SIZE
         
         net = {}
-        net['input'] = InputLayer((batch_size, 3, 64, 64), input_var=input_var)
-        net['conv1'] = ConvLayer(net['input'], 64, 5, stride=2, pad='same')
-        net['pool1'] = PoolLayer(net['conv1'], 2) # 16x16
-        net['conv2'] = ConvLayer(net['pool1'], 64, 5, stride=1, pad='same')
-        net['pool2'] = PoolLayer(net['conv2'], 2) # 8x8
-        net['conv3'] = ConvLayer(net['pool2'], 64, 5, stride=1, pad='same')
-        net['deconv1'] = Deconv2DLayer(net['conv3'], 64, 5, stride=1, crop='same', output_size=8) # 8x8
-        net['deconv2'] = Deconv2DLayer(net['deconv1'], 64, 5, stride=2, crop='same', output_size=16) # 16x16
-        net['deconv3'] = Deconv2DLayer(net['deconv2'], 64, 5, stride=2, crop='same', output_size=32) # 32x32
-        net['deconv4'] = Deconv2DLayer(net['deconv3'], 64, 5, stride=1, crop='same', output_size=32)
-        net['deconv5'] = Deconv2DLayer(net['deconv4'], 3, 5, stride=1, crop='same', output_size=32, nonlinearity=sigmoid)
+        # net['input'] = InputLayer((batch_size, 3, 64, 64), input_var=input_var)
+        # net['conv1'] = ConvLayer(net['input'], 128, 5, stride=2, pad='same') # 32x32
+        # net['conv2'] = ConvLayer(net['conv1'], 256, 7, stride=2, pad='same') # 16x16
+        # net['deconv1'] = Deconv2DLayer(net['conv2'], 128, 7, stride=1, crop='same', output_size=8) # 16x16
+        # net['deconv2'] = Deconv2DLayer(net['deconv1'], 256, 7, stride=2, crop='same', output_size=16) # 32x32
+        # net['deconv3'] = Deconv2DLayer(net['deconv2'], 256, 9, stride=1, crop='same', output_size=32) # 32x32
+        # net['deconv4'] = Deconv2DLayer(net['deconv3'], 3, 9, stride=1, crop='same', output_size=32, nonlinearity=sigmoid)
         
         # net['input'] = InputLayer((batch_size, 3, 64, 64), input_var=input_var)
         # net['conv1'] = ConvLayer(net['input'], 64, 5, pad=0)
@@ -185,8 +180,24 @@ class Lasagne_Conv_Deconv(LasagneModel):
         # net['conv6'] = ConvLayer(net['conv5_drop'], 64, 1, pad=0, nonlinearity=sigmoid)
         # net['conv7'] = ConvLayer(net['conv6'], 10, 1, pad=0, nonlinearity=softmax4d)
 
-        self.network = net['deconv5']
+        net['input'] = InputLayer((batch_size, 3, 64, 64), input_var=input_var)
+        net['conv1'] = ConvLayer(net['input'], 256, 5, stride=2, pad='same') # 32x32
+        net['conv2'] = ConvLayer(net['conv1'], 256, 7, stride=2, pad='same') # 16x16
+        net['dropout1'] = DropoutLayer(net['conv2'], p=0.5)
+        net['deconv1'] = Deconv2DLayer(net['dropout1'], 256, 7, stride=1, crop='same', output_size=8) # 16x16
+        net['dropout2'] = DropoutLayer(net['deconv1'], p=0.5)
+        net['deconv2'] = Deconv2DLayer(net['dropout2'], 256, 7, stride=2, crop='same', output_size=16) # 32x32
+        net['dropout3'] = DropoutLayer(net['deconv2'], p=0.5)
+        net['deconv3'] = Deconv2DLayer(net['dropout3'], 256, 9, stride=1, crop='same', output_size=32) # 32x32
+        net['deconv4'] = Deconv2DLayer(net['deconv3'], 3, 9, stride=1, crop='same', output_size=32, nonlinearity=sigmoid)
 
+        self.network, self.network_out = net, net['deconv4']
+
+        # Training Loss expression
+        network_output = lasagne.layers.get_output(self.network_out)
+        loss = lasagne.objectives.squared_error(network_output, target_var).mean()
+        return loss
+        
 class GAN_BaseModel(BaseModel):
     def __init__(self, hyperparams = hyper_params.default_gan_basemodel_hyper_params):
         super(GAN_BaseModel, self).__init__(hyperparams = hyperparams)

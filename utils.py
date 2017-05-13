@@ -247,6 +247,8 @@ def denormalize_and_save_jpg_results(preds, X_test, y_test, X_original_test, num
     assets_dir = settings.ASSETS_DIR
     if not os.path.exists(assets_dir):
         os.makedirs(assets_dir)
+        
+    print_info("Saving predictions and associated images as JPG files within directory: {}".format(assets_dir))
 
     # Denormalize images datasets
     preds  = transpose_colors_channel(denormalize_data(preds))
@@ -270,6 +272,7 @@ def create_html_results_page(num_images):
     filename = os.path.join(settings.PRED_DIR, "results.html")
     img_src = "assets/"
     html_file = filename
+    print_info("Creating HTML page to visualize results here: {}".format(html_file))
     with open(html_file, 'w') as fd:
         fd.write("""
 <table>

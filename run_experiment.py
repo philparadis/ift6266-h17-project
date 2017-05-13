@@ -272,7 +272,7 @@ def run_experiment():
         ### Save predictions to disk
         save_keras_predictions(Y_test_pred_2d, Dataset.id_val, NewDataset, num_images=50)
         create_html_results_page("results.html", "assets/", num_images=50)
-    elif settings.MODEL == "conv_deconv" or settings.MODEL == "vgg16":
+    elif settings.MODEL == "conv_deconv":
         Dataset.preprocess()
         Dataset.normalize()
         Dataset.preload()
@@ -295,7 +295,7 @@ def run_experiment():
         ### Save predictions to disk
         save_keras_predictions(Y_test_pred_2d, Dataset.id_val, NewDataset, num_images=50)
         create_html_results_page("results.html", "assets/", num_images=50)
-    elif settings.MODEL == "lasagne_conv_deconv":
+    elif settings.MODEL == "lasagne_conv_deconv" or settings.MODEL == "vgg16":
         Dataset.preprocess()
         Dataset.normalize()
         Dataset.preload()

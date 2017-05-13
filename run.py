@@ -82,7 +82,9 @@ if __name__ == "__main__":
                         help="Architecture type, only applies to the LSGAN critic's neural network (values: 0, 1 or 2).")
     parser.add_argument("-u", "--updates_per_epoch", type=int, default=settings.UPDATES_PER_EPOCH,
                         help="Number of times to update the generator and discriminator/critic per epoch. Applies to GAN models only.")
-    parser.add_argument("-m", "--feature_matching", action="store_true", default=settings.FEATURE_MATCHING, help="By default, feature matching is not used (equivalently, it is set to 0, meaning that the loss function uses the last layer's output). You can set this value to 1 to use the output of the second-to-last layer, or a value of 2 to use the output of the third-to-last layer, and so on. This technique is called 'feature matching' and many provide benefits in some cases. Note that it is not currently implemented in all models and you will receive a message indicating if feature matching is used for your model.")
+    parser.add_argument("-m", "--max_training_samples", type=int, default=settings.MAX_TRAINING_SAMPLES,
+                        help="Maximum number of training samples to use. Should be between 1000 and 82611 (or equivalently, None, to use the entire training dataset.")
+#    parser.add_argument("-m", "--feature_matching", action="store_true", default=settings.FEATURE_MATCHING, help="By default, feature matching is not used (equivalently, it is set to 0, meaning that the loss function uses the last layer's output). You can set this value to 1 to use the output of the second-to-last layer, or a value of 2 to use the output of the third-to-last layer, and so on. This technique is called 'feature matching' and many provide benefits in some cases. Note that it is not currently implemented in all models and you will receive a message indicating if feature matching is used for your model.")
     parser.add_argument("-t", "--tiny", action="store_true", default=settings.TINY_DATASET, help="Use a tiny dataset containing only 5000 training samples and 500 test samples, for testing purposes.")
     
 #                        help="Use CPU instead of GPU. Used for debugging and testing purposes.")
@@ -93,7 +95,7 @@ if __name__ == "__main__":
     settings.VERBOSE = args.verbose
 #    settings.PERFORM_INIT_ONLY = args.init
     settings.NUM_EPOCHS = args.epochs
-    #settings.MAX_EPOCHS = args.max_epochs
+    settings.MAX_TRAINING_SAMPLES = args.max_training_samples
     settings.BATCH_SIZE = args.batch_size
     settings.LEARNING_RATE = args.learning_rate
     settings.GAN_LEARNING_RATE = args.gan_learning_rate
@@ -103,7 +105,7 @@ if __name__ == "__main__":
     settings.KEEP_ALL_CHECKPOINTS = args.keep_all_checkpoints
     settings.LSGAN_ARCHITECTURE = args.architecture
     settings.UPDATES_PER_EPOCH = args.updates_per_epoch
-    settings.FEATURE_MATCHING = args.feature_matching
+    #settings.FEATURE_MATCHING = args.feature_matching
     settings.TINY_DATASET = args.tiny
 #    settings.USE_CPU = args.cpu
 

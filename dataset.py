@@ -77,6 +77,8 @@ class BaseDataset(object):
 
     def _read_jpgs_and_captions(self, force_reload = False):
         # Check if 'npy' dataset already exists
+        if settings.MAX_TRAINING_SAMPLES != settings.ACTUAL_TRAINING_SAMPLES:
+            force_reload = True
         if force_reload == True:
             self._is_dataset_loaded = False
         else:
@@ -105,6 +107,9 @@ class BaseDataset(object):
                 log(" * Number of {} images = {}".format(dataset_type, num_images_path))
 
                 for i, img_path in enumerate(images_paths):
+                    if dataset_type == "train" and i >= settings.MAX_TRAINING_SAMPLES:
+                        print_info("Reached maximum number of training samples: {}".format(i))
+                        break
                     img = Image.open(img_path)
                     img_array = np.array(img)
 
