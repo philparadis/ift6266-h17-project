@@ -62,17 +62,19 @@ class LasagneModel(BaseModel):
 
         # Create neural network model
         log("Building model and compiling functions...")
-        loss = self.build_network_and_loss(input_var, target_var)
+        self.build_network(input_var, target_var)
 
-        # Test/validation Loss expression (disable dropout and so on...)
-        network_prediction = lasagne.layers.get_output(self.network_out, deterministic=True)
-        val_loss = lasagne.objectives.squared_error(network_prediction, target_var).mean()
+        # Build loss function
+        loss = self.build_train_loss(input_var, target_var)
 
         # Update expressions
         from theano import shared
         eta = shared(lasagne.utils.floatX(settings.LEARNING_RATE))
         params = lasagne.layers.get_all_params(self.network_out, trainable=True)
         updates = lasagne.updates.adam(loss, params, learning_rate=eta)
+
+        # Test/validation Loss expression (disable dropout and so on...)
+        test_loss = self.build_test_loss(input_var, target_var)
 
         # Train loss function
         train_fn = theano.function([input_var, target_var], loss, updates=updates)
@@ -81,7 +83,7 @@ class LasagneModel(BaseModel):
         val_fn = theano.function([input_var, target_var], val_loss)
 
         # Predict function
-        predict_fn = theano.function([input_var], network_prediction)
+        predict_fn = theano.function([input_var], test_prediction)
         
         # Finally, launch the training loop.
         log("Starting training...")
@@ -138,7 +140,7 @@ class Lasagne_Conv_Deconv(LasagneModel):
     def build(self):
         pass
 
-    def build_network_and_loss(self, input_var, target_var):
+    def build_network(self, input_var, target_var):
         from lasagne.layers import InputLayer
         from lasagne.layers import DenseLayer
         from lasagne.layers import NonlinearityLayer
@@ -193,8 +195,15 @@ class Lasagne_Conv_Deconv(LasagneModel):
 
         self.network, self.network_out = net, net['deconv4']
 
+    def build_train_loss(self, input_var, target_var):
         # Training Loss expression
         network_output = lasagne.layers.get_output(self.network_out)
+        loss = lasagne.objectives.squared_error(network_output, target_var).mean()
+        return loss
+
+    def build_test_loss(self, input_var, target_var):
+        # Training Loss expression
+        network_output = lasagne.layers.get_output(self.network_out, deterministic=True)
         loss = lasagne.objectives.squared_error(network_output, target_var).mean()
         return loss
         

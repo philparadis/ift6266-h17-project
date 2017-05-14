@@ -60,39 +60,54 @@ class VGG16_Model(LasagneModel):
         net['deconv4'] = Deconv2DLayer(net['deconv3'], 3, 9, stride=1, crop='same', output_size=32, nonlinearity=tanh)
 
         self.network, self.network_out = net, net['deconv4']
+        self.input_pad, self.input_pad_out = self.build_pad_model(self.network_out)
+        self.target_pad, self.target_pad_out = self.build_pad_model(InputLayer((batch_size, 3, 32, 32), input_var=target_var))
 
-        self.input_prevgg, self.input_prevgg_out = self.build_prevgg(self.network.out)
-        self.target_prevgg, self.target_prevgg_out = self.build_prevgg(InputLayer((batch_size, 3, 32, 32), input_var=target_var))
-        self.input_vgg_model, self.input_vgg_model_out = self.build_vgg_model(self.input_prevgg_out)
-        self.target_vgg_model, self.target_vgg_model_out = self.build_vgg_model(self.target_prevgg_out)
+        self.input_vgg_model, self.input_vgg_model_out = self.build_vgg_model(self.input_pad_out)
+        self.target_vgg_model, self.target_vgg_model_out = self.build_vgg_model(self.target_pad_out)
 
-        ### Set the layer outputs used in the loss function
-        network_output = lasagne.layers.get_output(self.network_out)
-        loss_1 = lasagne.objectives.squared_error(network_output, target_var).mean()
-        conv_1_1_out = lasagne.layers.get_output(self.input_vgg_model['conv1_1'])
-        conv_1_1_target_out = lasagne.layers.get_output(self.target_vgg_model['conv1_1'])
-        loss_2 = lasagne.objectives.squared_error(conv_1_1_out, conv_1_1_target_out).mean()
+    def build_train_loss(self, input_var, target_var):
+        from lasagne.layers import get_output, squared_error
+        import theano
+        import theano.tensor as T
 
-        loss = 0.2 * loss_1 + 0.8 * loss_2
-        return loss
+        loss_conv_1_1 = squared_error(get_output(self.input_vgg_model['conv1_1']),
+                                      get_output(self.target_vgg_model['conv1_1'])).mean()
+        loss_conv_2_1 = squared_error(get_output(self.input_vgg_model['conv2_1']),
+                                      get_output(self.target_vgg_model['conv2_1'])).mean()
+        loss_conv_3_1 = squared_error(get_output(self.input_vgg_model['conv3_1']),
+                                      get_output(self.target_vgg_model['conv3_1'])).mean()
 
-    def build_prevgg(self, previous_layer):
-        vggprenet = previous_layer
-        vggprenet['vggdeconv1'] = Deconv2DLayer(net['deconv3'], 256, 9, stride=2, crop='same', output_size=64) # 64x64
-        vggprenet['vggdropout1'] = DropoutLayer(vggprenet['vggdeconv1'], p=0.5)
-        vggprenet['vggdeconv2'] = Deconv2DLayer(vggprenet['vggdropout1'], 256, 9, stride=2, crop='same', output_size=128) # 128x128
-        vggprenet['vggdropout2'] = DropoutLayer(vggprenet['vggdeconv2'], p=0.5)
-        vggprenet['vggdeconv3'] = Deconv2DLayer(vggprenet['vggdropout2'], 256, 11, stride=2, crop='same', output_size=224) # 224x224
-        vggprenet['vggdeconv4'] = Deconv2DLayer(vggprenet['vggdeconv3'], 3, 11, stride=1, crop='same', output_size=224, nonlinearity=tanh)
+        return loss_conv_1_1 + loss_conv_2_1 + loss_conv_3_1
 
-        vggprenet_out = vggprenet['vggdeconv4']
+    def build_test_loss(self, input_var, target_var):
+        from lasagne.layers import get_output, squared_error
+        import theano
+        import theano.tensor as T
+
+        loss_conv_1_1 = squared_error(get_output(self.input_vgg_model['conv1_1'], deterministic=True),
+                                      get_output(self.target_vgg_model['conv1_1'], deterministic=True)).mean()
+        loss_conv_2_1 = squared_error(get_output(self.input_vgg_model['conv2_1'], deterministic=True),
+                                      get_output(self.target_vgg_model['conv2_1'], deterministic=True)).mean()
+        loss_conv_3_1 = squared_error(get_output(self.input_vgg_model['conv3_1'], deterministic=True),
+                                      get_output(self.target_vgg_model['conv3_1'], deterministic=True)).mean()
+
+        return loss_conv_1_1 + loss_conv_2_1 + loss_conv_3_1
+    
+    def build_pad_model(self, previous_layer):
+        from lasagne.layers import InputLayer
+        from lasagne.layers import PadLayer
+
+        padnet = {}
+        padnet['input'] = previous_layer
+        padnet['pad'] = PadLayer(padnet['input'], (224-32)/2)
+        return padnet, padnet['pad']
         
-    def build_vgg_model(input_layer):
+    def build_vgg_model(previous_layer):
         log("Building VGG-16 model...")
 
         net = {}
-        #net['input'] = InputLayer((None, 3, 224, 224), input_var=target_var)
-        net['input'] = input_layer
+        net['input'] = previous_layer
         net['conv1_1'] = ConvLayer(
             net['input'], 64, 3, pad=1, flip_filters=False)
         net['conv1_2'] = ConvLayer(
