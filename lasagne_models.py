@@ -235,9 +235,9 @@ class Lasagne_Conv_Deconv(LasagneModel):
             net['dropout2'] = DropoutLayer(net['conv1'], p=0.5)
             net['conv2'] = ConvLayer(net['dropout2'], 256, 7, stride=2, pad='same') # 16x16
             net['dropout3'] = DropoutLayer(net['conv2'], p=0.5)
-            net['deconv1'] = Deconv2DLayer(net['dropout3'], 256, 7, stride=1, crop='same', output_size=8) # 16x16
+            net['deconv1'] = Deconv2DLayer(net['dropout3'], 256, 7, stride=1, crop='same', output_size=16) # 16x16
             net['dropout4'] = DropoutLayer(net['deconv1'], p=0.5)
-            net['deconv2'] = Deconv2DLayer(net['dropout4'], 256, 7, stride=2, crop='same', output_size=16) # 32x32
+            net['deconv2'] = Deconv2DLayer(net['dropout4'], 256, 7, stride=2, crop='same', output_size=32) # 32x32
             net['dropout5'] = DropoutLayer(net['deconv2'], p=0.5)
             net['deconv3'] = Deconv2DLayer(net['dropout5'], 256, 9, stride=1, crop='same', output_size=32) # 32x32
             net['dropout6'] = DropoutLayer(net['deconv2'], p=0.5)
@@ -246,8 +246,8 @@ class Lasagne_Conv_Deconv(LasagneModel):
             net['input'] = InputLayer((batch_size, 3, 64, 64), input_var=input_var)
             net['conv1'] = ConvLayer(net['input'], 256, 5, stride=2, pad='same') # 32x32
             net['conv2'] = ConvLayer(net['conv1'], 256, 7, stride=2, pad='same') # 16x16
-            net['deconv1'] = Deconv2DLayer(net['conv2'], 256, 7, stride=1, crop='same', output_size=8) # 16x16
-            net['deconv2'] = Deconv2DLayer(net['deconv1'], 256, 7, stride=2, crop='same', output_size=16) # 32x32
+            net['deconv1'] = Deconv2DLayer(net['conv2'], 256, 7, stride=1, crop='same', output_size=16) # 16x16
+            net['deconv2'] = Deconv2DLayer(net['deconv1'], 256, 7, stride=2, crop='same', output_size=32) # 32x32
             net['deconv3'] = Deconv2DLayer(net['deconv2'], 256, 9, stride=1, crop='same', output_size=32) # 32x32
             net['deconv4'] = Deconv2DLayer(net['deconv3'], 3, 9, stride=1, crop='same', output_size=32, nonlinearity=sigmoid)
 
