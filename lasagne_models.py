@@ -147,7 +147,7 @@ class LasagneModel(BaseModel):
                     best_val_loss = mean_val_loss
                     create_checkpoint = True
                     print_positive("New best val loss = {:.6f}!!! Creating model checkpoint!".format(best_val_loss))
-                elif epoch % settings.EPOCHS_PER_CHECKPOINT == 0:
+                elif (epoch+1) % settings.EPOCHS_PER_CHECKPOINT == 0:
                     create_checkpoint = True
                     print_info("Time for model checkpoint (every {} epochs)...".format(settings.EPOCHS_PER_CHECKPOINT))
 
@@ -160,7 +160,7 @@ class LasagneModel(BaseModel):
                     self.save_model(model_checkpoint_path)
 
                 # Save samples for this epoch
-                if epoch % settings.EPOCHS_PER_SAMPLES == 0:
+                if (epoch+1) % settings.EPOCHS_PER_SAMPLES == 0:
                     num_samples = 100
                     num_rows = 10
                     num_cols = 10
