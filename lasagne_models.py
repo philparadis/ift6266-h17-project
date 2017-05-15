@@ -93,6 +93,7 @@ class LasagneModel(BaseModel):
         # Finally, launch the training loop.
         log("Starting training...")
         batch_size = settings.BATCH_SIZE
+        best_val_loss = 1.0e30
         for epoch in range(settings.NUM_EPOCHS):
             start_time = time.time()
             train_losses = []
@@ -106,33 +107,48 @@ class LasagneModel(BaseModel):
                 val_losses.append(val_test_fn(inputs, targets))
 
             # Print the results for this epoch
+            mean_train_loss = np.mean(train_losses))
+            mean_val_loss = np.mean(val_losses))
             log("Epoch {} of {} took {:.3f}s".format(epoch + 1, settings.NUM_EPOCHS, time.time() - start_time))
-            log(" - training loss:    {:.6f}".format(np.mean(train_losses)))
-            log(" - validation loss:  {:.6f}".format(np.mean(val_losses)))
+            log(" - training loss:    {:.6f}".format(mean_train_loss))
+            log(" - validation loss:  {:.6f}".format(mean_val_loss))
 
-            # # Save checkpoint
-            # model_checkpoint_filename = "model_checkpoint_epoch{:0>3}.npz".format(epoch + 1)
-            # model_checkpoint_path = os.path.join(settings.CHECKPOINTS_DIR, model_checkpoint_filename)
-            # print_info("Saving model checkpoint: {}".format(model_checkpoint_path))
-            # # Save model
-            # self.save_model(model_checkpoint_path)
+            create_checkpoint = False
+            if mean_val_loss < best_val_loss:
+                best_val_loss_epoch = epoch + 1
+                best_val_loss = mean_val_loss
+                create_checkpoint = True
+                print_positive("New best val loss! Creating model checkpoint!")
+            elif epoch % settings.EPOCHS_PER_CHECKPOINT == 0:
+                create_checkpoint = True
+                print_info("Time for model checkpoint (every {} epochs)...".format(settings.EPOCHS_PER_CHECKPOINT))
 
-            # # Save samples for this epoch
-            # num_samples = 100
-            # num_rows = 10
-            # num_cols = 10
-            # samples = self.create_samples(X_val, y_val, batch_size, num_samples, predict_fn)
-            # samples = denormalize_data(samples)
-            # samples_path = os.path.join(settings.EPOCHS_DIR, 'samples_epoch_{0:0>5}.png'.format(epoch + 1))
-            # print_info("Saving {} sample images predicted from the validation dataset in the current epoch to directory: {}"
-            #            .format(num_samples, settings.EPOCHS_DIR))
-            # try:
-            #     import PIL.Image as Image
-            #     Image.fromarray(samples.reshape(num_rows, num_cols, 3, 32, 32)
-            #                     .transpose(0, 3, 1, 4, 2)
-            #                     .reshape(num_rows*32, num_cols*32, 3)).save(samples_path)
-            # except ImportError as e:
-            #     print_warning("Cannot import module 'PIL.Image', which is necessary for the Lasagne model to output its sample images. You should really install it!")
+            if create_checkpoint:
+                # Save checkpoint
+                model_checkpoint_filename = "model_checkpoint-val_loss.{:.5f}-epoch.{:0>3}.npz".format(best_val_loss, epoch + 1)
+                model_checkpoint_path = os.path.join(settings.CHECKPOINTS_DIR, model_checkpoint_filename)
+                print_info("Saving model checkpoint: {}".format(model_checkpoint_path))
+                # Save model
+                self.save_model(model_checkpoint_path)
+
+            # Save samples for this epoch
+            if epoch % settings.EPOCHS_PER_SAMPLES == 0:
+                num_samples = 100
+                num_rows = 10
+                num_cols = 10
+                samples = self.create_samples(X_val, y_val, batch_size, num_samples, predict_fn)
+                samples = denormalize_data(samples)
+                samples_path = os.path.join(settings.EPOCHS_DIR, 'samples_epoch_{0:0>5}.png'.format(epoch + 1))
+                print_info("Time for saving sample images (every {} epochs)... ".format(settings.EPOCHS_PER_SAMPLES)
+                           + "Saving {} sample images predicted validation dataset input images here: {}"
+                           .format(num_samples, samples_path))
+                try:
+                    import PIL.Image as Image
+                    Image.fromarray(samples.reshape(num_rows, num_cols, 3, 32, 32)
+                                    .transpose(0, 3, 1, 4, 2)
+                                    .reshape(num_rows*32, num_cols*32, 3)).save(samples_path)
+                except ImportError as e:
+                    print_warning("Cannot import module 'PIL.Image', which is necessary for the Lasagne model to output its sample images. You should really install it!")
 
 
         print_info("Training complete!")
@@ -150,6 +166,18 @@ class LasagneModel(BaseModel):
 
         # Save model
         self.save_model(os.path.join(settings.MODELS_DIR, settings.EXP_NAME + ".npz"))
+
+        # Save model's performance
+        path_model_score = os.path.join(settings.PERF_DIR, "score.txt")
+        print_info("Saving performance to file '{}'".format(path_model_score))
+        with open(path_model_score, "w") as fd:
+            fd.write("Performance statistics\n")
+            fd.write("----------------------\n")
+            fd.write("Model = {}\n".format(settings.MODEL))
+            fd.write("Number of training epochs = {0}\n".format(self.NUM_EPOCHS))
+            fd.write("Final training score (metric: {0: >6})    = {1:.5f}\n".format(metric, train_scores[1]))
+            fd.write("Final validation score  (metric: {0: >6}) = {1:.5f}\n".format(metric, train_scores[1]))
+            fd.write("Testing dataset  (metric: {0: >6})        = {1:.5f}\n".format(metric, train_scores[1]))
 
         # Save predictions and create HTML page to visualize them
         num_images = 100
