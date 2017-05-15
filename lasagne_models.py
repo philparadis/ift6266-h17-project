@@ -188,11 +188,22 @@ class LasagneModel(BaseModel):
             keyboard_interrupt = True
 
         print_info("Training complete!")
-        # Print the test error
+
+        num_images = 100
+
+        # Compute 'num_images' predictions to visualize and print the test error
         test_losses = []
         num_iter = 0
-        preds = np.zeros((X_test.shape[0], 3, 32, 32))
-        for batch in self.iterate_minibatches(X_test, y_test, batch_size, shuffle=False):
+        num_predictions = min(X_test.shape[0], num_images)
+        shuffle_indices = np.arange(X_test.shape[0])
+        np.random.shuffle(shuffle_indices)
+        max_indices = num_samples
+        if max_indices > X.shape[0]:
+            max_indices = X.shape[0]
+        X_test_small = X_test[shuffle_indices,:,:,:][0:max_indices,:,:,:]
+        y_test_small = y_test[shuffle_indices,:,:,:][0:max_indices,:,:,:]
+        preds = np.zeros((num_predictions, 3, 32, 32))
+        for batch in self.iterate_minibatches(X_test_small, y_test_small, batch_size, shuffle=False):
             inputs, targets = batch
             preds[num_iter*batch_size:(num_iter+1)*batch_size] = predict_fn(inputs)
             test_losses.append(val_test_fn(inputs, targets))
@@ -204,7 +215,6 @@ class LasagneModel(BaseModel):
         self.save_model(os.path.join(settings.MODELS_DIR, settings.EXP_NAME + ".npz"))
 
         # Save predictions and create HTML page to visualize them
-        num_images = 100
         test_images_original = np.copy(normalize_data(dataset.test_images))
         denormalize_and_save_jpg_results(preds, X_test, y_test, test_images_original, num_images)
         create_html_results_page(num_images)
