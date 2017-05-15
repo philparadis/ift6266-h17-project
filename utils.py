@@ -15,15 +15,16 @@ def cf_to_cl(x):
     return x.transpose(0, 2, 3, 1).reshape(x.shape[0], width, height, 3)
 
 def normalize_vgg16_data(data):
-    data = data.astype('float32')
+    data = data.astype('float64')
     for col_index, mean in enumerate([103.939, 116.779, 123.68]):
         data[:, col_index, :, :] -= mean
     data = data.clip(-127.5, 127.5)
     r, g, b = data[:,0,:,:], data[:,1,:,:], data[:,2,:,:]
     data[:,0,:,:], data[:,1,:,:], data[:,2,:,:] = b, g, r
-    return data
+    return data.astype('float32')
 
 def denormalize_vgg16_data(data):
+    data = data.astype('float64')
     b, g, r = data[:,0,:,:], data[:,1,:,:], data[:,2,:,:]
     data[:,0,:,:], data[:,1,:,:], data[:,2,:,:] = r, g, b
     for col_index, mean in enumerate([103.939, 116.779, 123.68]):
