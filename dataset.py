@@ -150,8 +150,8 @@ class BaseDataset(object):
 
 
 
-            self.images = self.transform_images(images)
-            self.test_images = self.transform_images(test_images)
+            self.images = self.transform_images(np.array(images))
+            self.test_images = self.transform_images(np.array(test_images))
             self.captions_ids = np.array(captions_ids)
             self.captions_dict = np.array(captions_dict)
             self._is_dataset_loaded = True
