@@ -124,7 +124,7 @@ class LasagneModel(BaseModel):
             samples = self.create_samples(X_val, y_val, batch_size, num_samples, predict_fn)
             samples = denormalize_data(samples)
             samples_path = os.path.join(settings.EPOCHS_DIR, 'samples_epoch_{0:0>5}.png'.format(epoch + 1))
-            print_info("Saving {} sample images predicted from the validation dataset in the current epoch to directory: "
+            print_info("Saving {} sample images predicted from the validation dataset in the current epoch to directory: {}"
                        .format(num_samples, settings.EPOCHS_DIR))
             try:
                 import PIL.Image as Image
@@ -158,7 +158,6 @@ class LasagneModel(BaseModel):
 
     def create_samples(self, X, y, batch_size, num_samples, predict_fn):
         # Print the test error
-        num_iter = 0
         shuffle_indices = np.arange(X.shape[0])
         np.random.shuffle(shuffle_indices)
         if num_samples > X.shape[0]:
@@ -167,9 +166,11 @@ class LasagneModel(BaseModel):
         y = y[shuffle_indices][0:num_samples]
 
         samples = np.zeros((num_samples, 3, 32, 32))
+        num_iter = 0
         for batch in self.iterate_minibatches(X, y, batch_size, shuffle=False):
             inputs, targets = batch
             samples[num_iter*batch_size:(num_iter+1)*batch_size] = predict_fn(inputs)
+            num_iter += 1
         return samples
 
     def save_model(self, filename):
