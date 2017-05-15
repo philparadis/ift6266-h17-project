@@ -37,6 +37,7 @@ class VGG16_Model(LasagneModel):
         from lasagne.layers import DenseLayer
         from lasagne.layers import NonlinearityLayer
         from lasagne.layers import DropoutLayer
+        from lasagne.layers import ReshapeLayer
         from lasagne.layers import Pool2DLayer as PoolLayer
         from lasagne.layers import TransposedConv2DLayer as Deconv2DLayer
         from lasagne.nonlinearities import softmax, sigmoid, tanh
@@ -78,26 +79,48 @@ class VGG16_Model(LasagneModel):
         net['dropout6'] = DropoutLayer(net['fc1'], p=0.5)
         net['fc2'] = DenseLayer(net['dropout6'], 2048)
         net['dropout7'] = DropoutLayer(net['fc2'], p=0.5)
-        net['fc3'] = DenseLayer(net['dropout7'], 2048)
-        net['reshape'] = ReshapeLayer(net['fc3', ([0], 3, 32, 32)))
-        net['deconv4'] = Deconv2DLayer(net['reshape'], 3, 9, stride=1, crop='same', output_size=32, nonlinearity=sigmoid)
+        net['fc3'] = DenseLayer(net['dropout7'], 3*32*32)
+        net['dropout8'] = DropoutLayer(net['fc3'], p=0.5)
+        net['reshape'] = ReshapeLayer(net['dropout8'], ([0], 3, 32, 32))
+        net['output'] = Deconv2DLayer(net['reshape'], 3, 9, stride=1, crop='same', output_size=32, nonlinearity=sigmoid)
 
-        self.network, self.network_out = net, net['deconv4']
-        self.input_pad, self.input_pad_out = self.build_pad_model(self.network_out)
-        self.target_pad, self.target_pad_out = self.build_pad_model(InputLayer((batch_size, 3, 32, 32), input_var=target_var))
+        self.network, self.network_out = net, net['output']
+        print ("Conv_Deconv network output shape:   {}".format(self.network_out.output_shape))
+        # self.input_pad, self.input_pad_out = self.build_pad_model(self.network_out)
+        # self.target_pad, self.target_pad_out = self.build_pad_model(InputLayer((batch_size, 3, 32, 32), input_var=target_var))
+        self.input_scaled, self.input_scaled_out = self.build_scaled_model(self.network_out)
+        self.target_scaled, self.target_scaled_out = self.build_scaled_model(InputLayer((batch_size, 3, 32, 32), input_var=target_var))
+        print("(Input) scaled network output shape:  {}".format(self.input_scaled_out.output_shape))
+        print("(Target) scaled network output shape: {}".format(self.target_scaled_out.output_shape))
 
-        self.vgg_padded_var = T.tensor4('padded_vars')
+        self.vgg_scaled_var = T.tensor4('scaled_vars')
         
-        self.vgg_model, self.vgg_model_out = self.build_vgg_model(self.vgg_padded_var)
+        self.vgg_model, self.vgg_model_out = self.build_vgg_model(self.vgg_scaled_var)
+        print("VGG model conv1_1 output shape: {}".format(self.vgg_model['conv1_1'].output_shape))
+        print("VGG model conv2_1 output shape: {}".format(self.vgg_model['conv2_1'].output_shape))
+        print("VGG model conv3_1 output shape: {}".format(self.vgg_model['conv3_1'].output_shape))
 
     def build_pad_model(self, previous_layer):
-        from lasagne.layers import InputLayer
         from lasagne.layers import PadLayer
-
         padnet = {}
         padnet['input'] = previous_layer
         padnet['pad'] = PadLayer(padnet['input'], (224-32)/2)
         return padnet, padnet['pad']
+
+    def build_scaled_model(self, previous_layer):
+        from lasagne.layers import TransformerLayer
+
+        b = np.zeros((2, 3), dtype='float32')
+        b[0, 0] = 7.0
+        b[1, 1] = 7.0
+        b = b.flatten()  # identity transform
+        W = lasagne.init.Constant(0.0)
+        scalenet = {}
+        scalenet['input'] = previous_layer
+        scalenet['scale_init'] = lasagne.layers.DenseLayer(scalenet['input'], num_units=6, W=W, b=b, nonlinearity=None)
+        scalenet['scale'] = TransformerLayer(scalenet['input'], scalenet['scale_init'], downsample_factor=1.0/7.0) # Output should be 3x224x224
+        
+        return scalenet, scalenet['scale']
         
     def build_vgg_model(self, input_var):
         from lasagne.layers import InputLayer
@@ -174,19 +197,19 @@ class VGG16_Model(LasagneModel):
         from lasagne.layers import get_output
         from lasagne.objectives import squared_error
 
-        x_padded = get_output(self.input_pad_out, deterministic=deterministic)
-        y_padded = get_output(self.target_pad_out, deterministic=deterministic)
+        x_scaled = get_output(self.input_scaled_out, deterministic=deterministic)
+        y_scaled = get_output(self.target_scaled_out, deterministic=deterministic)
 
-        # x_1 = get_output(self.vgg_model['conv1_1'], x_padded, deterministic=deterministic)
-        # y_1 = get_output(self.vgg_model['conv1_1'], y_padded, deterministic=deterministic)
-        # x_1 = get_output(self.vgg_model['conv2_1'], x_padded, deterministic=deterministic)
-        # y_1 = get_output(self.vgg_model['conv2_1'], y_padded, deterministic=deterministic)
-        # x_1 = get_output(self.vgg_model['conv3_1'], x_padded, deterministic=deterministic)
-        # y_1 = get_output(self.vgg_model['conv3_1'], y_padded, deterministic=deterministic)
+        # x_1 = get_output(self.vgg_model['conv1_1'], x_scaled, deterministic=deterministic)
+        # y_1 = get_output(self.vgg_model['conv1_1'], y_scaled, deterministic=deterministic)
+        # x_1 = get_output(self.vgg_model['conv2_1'], x_scaled, deterministic=deterministic)
+        # y_1 = get_output(self.vgg_model['conv2_1'], y_scaled, deterministic=deterministic)
+        # x_1 = get_output(self.vgg_model['conv3_1'], x_scaled, deterministic=deterministic)
+        # y_1 = get_output(self.vgg_model['conv3_1'], y_scaled, deterministic=deterministic)
 
         layers = [self.vgg_model['conv1_1'], self.vgg_model['conv2_1'], self.vgg_model['conv3_1']]
-        x_1, x_2, x_3 = get_output(layers, inputs=x_padded, deterministic=deterministic)
-        y_1, y_2, y_3 = get_output(layers, inputs=y_padded, deterministic=deterministic)
+        x_1, x_2, x_3 = get_output(layers, inputs=x_scaled, deterministic=deterministic)
+        y_1, y_2, y_3 = get_output(layers, inputs=y_scaled, deterministic=deterministic)
 
         loss_conv_1_1 = squared_error(x_1, y_1).mean()
         loss_conv_2_1 = squared_error(x_2, y_3).mean()

@@ -165,7 +165,7 @@ class LasagneModel(BaseModel):
         X = X[shuffle_indices][0:num_samples]
         y = y[shuffle_indices][0:num_samples]
 
-        samples = np.zeros(num_samples, 3, 32, 32)
+        samples = np.zeros((num_samples, 3, 32, 32))
         for batch in self.iterate_minibatches(X, y, batch_size, shuffle=False):
             inputs, targets = batch
             samples[num_iter*batch_size:(num_iter+1)*batch_size] = predict_fn(inputs)
