@@ -54,19 +54,14 @@ class VGG16_Model(LasagneModel):
         net = {}
 
         net['input'] = InputLayer((batch_size, 3, 64, 64), input_var=input_var)
-        net['conv1'] = ConvLayer(net['input'], 512, 5, stride=2, pad='same') # 32x32
-        net['conv2'] = ConvLayer(net['conv1'], 256, 7, stride=1, pad='same') # 32x32
+        net['conv1'] = ConvLayer(net['input'], 64, 3, stride=1, pad='same') # 64x64
+        net['pool1'] = PoolLayer(net['conv1'], 2) # 32x32
+        net['conv2'] = ConvLayer(net['pool1'], 64, 3, stride=1, pad='same') # 32x32
         net['dropout1'] = DropoutLayer(net['conv2'], p=0.5)
-        net['deconv1'] = Deconv2DLayer(net['dropout1'], 256, 7, stride=1, crop='same', output_size=32) # 32x32
-        net['dropout2'] = DropoutLayer(net['deconv1'], p=0.5)
-        net['deconv2'] = Deconv2DLayer(net['dropout2'], 256, 7, stride=1, crop='same', output_size=32) # 32x32
-        net['dropout3'] = DropoutLayer(net['deconv2'], p=0.5)
-        net['deconv3'] = Deconv2DLayer(net['dropout3'], 256, 9, stride=1, crop='same', output_size=32) # 32x32
-        net['dropout4'] = DropoutLayer(net['deconv3'], p=0.5)
-        net['fc1'] = DenseLayer(net['dropout4'], 1024)
-        net['dropout5'] = DropoutLayer(net['fc1'], p=0.5)
-        net['fc2'] = DenseLayer(net['dropout5'], 3*32*32)
-        net['output'] = ReshapeLayer(net['fc2'], ([0], 3, 32, 32))
+        net['conv3'] = ConvLayer(net['dropout1'], 64, 3, stride=1, pad='same') # 32x32
+        net['dropout3'] = DropoutLayer(net['conv3'], p=0.5)
+        net['fc1'] = DenseLayer(net['dropout3'], 3*32*32)
+        net['output'] = ReshapeLayer(net['fc1'], (batch_size, 3, 32, 32))
         
         # net['input'] = InputLayer((batch_size, 3, 64, 64), input_var=input_var)
         # net['dropout1'] = DropoutLayer(net['input'], p=0.1)

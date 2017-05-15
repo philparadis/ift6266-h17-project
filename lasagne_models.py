@@ -160,7 +160,7 @@ class LasagneModel(BaseModel):
                     self.save_model(model_checkpoint_path)
 
                 # Save samples for this epoch
-                if (epoch+1) % settings.EPOCHS_PER_SAMPLES == 0:
+                if (epoch + 1) % settings.EPOCHS_PER_SAMPLES == 0:
                     num_samples = 100
                     num_rows = 10
                     num_cols = 10
@@ -197,13 +197,11 @@ class LasagneModel(BaseModel):
         test_losses = []
         num_iter = 0
         num_predictions = min(X_test.shape[0], num_images)
-        shuffle_indices = np.arange(X_test.shape[0])
-        np.random.shuffle(shuffle_indices)
-        max_indices = num_samples
-        if max_indices > X_test.shape[0]:
-            max_indices = X_test.shape[0]
-        X_test_small = X_test[shuffle_indices,:,:,:][0:max_indices,:,:,:]
-        y_test_small = y_test[shuffle_indices,:,:,:][0:max_indices,:,:,:]
+        indices = np.arange(X_test.shape[0])
+        if num_images < X_test.shape[0]:
+            indices = indices[0:num_images]
+        X_test_small = X_test[indices,:,:,:]
+        y_test_small = y_test[indices,:,:,:]
         preds = np.zeros((num_predictions, 3, 32, 32))
         for batch in self.iterate_minibatches(X_test_small, y_test_small, batch_size, shuffle=False):
             inputs, targets = batch
