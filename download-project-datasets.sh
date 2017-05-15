@@ -39,7 +39,7 @@ skip_extract=0
 if [[ -d "${target_dir}" ]]; then
     echo "Found directory '${target_dir}' already exists. Verifying integrity of data..."
     digest=$(find "${target_dir}" -type f \( -iname '*.pkl' -o -iname '*.jpg' \) -print0 | sort -z | xargs -0 -n5000 cat | openssl dgst -sha1 | sed 's/(stdin)= //')
-    if [[ "$digest" == "b089be985b1c0c0643700c3e0550cfaef1c6f5f8" ]]; then
+    if [[ "$digest" == "da39a3ee5e6b4b0d3255bfef95601890afd80709" ]]; then
 	echo "Okay, directory is valid! We can skip extracting the archive."
 	skip_extract=1
     else
