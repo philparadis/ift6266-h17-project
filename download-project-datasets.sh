@@ -3,7 +3,7 @@
 #set -o verbose on
 
 SAVE_DIR=""
-TESTING_DATASET_SIZE=1000
+TESTING_DATASET_SIZE=1050
 
 if [[ -d "/Tmp" ]]; then
     SAVE_DIR="/Tmp"

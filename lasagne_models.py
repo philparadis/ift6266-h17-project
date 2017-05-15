@@ -119,8 +119,10 @@ class LasagneModel(BaseModel):
             log(" - validation loss:  {:.6f}".format(mean_val_loss))
 
             create_checkpoint = False
+            STOP_FILE = False
 
-            if check_stop_file():
+            if self.check_stop_file():
+                STOP_FILE = True
                 create_checkpoint = True
             
             if epochs >= 8 and mean_val_loss < best_val_loss:
@@ -160,7 +162,7 @@ class LasagneModel(BaseModel):
                     print_warning("Cannot import module 'PIL.Image', which is necessary for the Lasagne model to output its sample images. You should really install it!")
 
             
-            if check_stop_file():
+            if STOP_FILE:
                 print_critical("STOP file found. Ending training here! Still producing results...")
                 break
 
