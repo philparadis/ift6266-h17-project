@@ -68,25 +68,26 @@ class LasagneModel(BaseModel):
         self.build_network(input_var, target_var)
 
         # Build loss function
-        loss = self.build_loss(input_var, target_var)
+        train_loss = self.build_loss(input_var, target_var)
 
         # Update expressions
         from theano import shared
         eta = shared(lasagne.utils.floatX(settings.LEARNING_RATE))
         params = lasagne.layers.get_all_params(self.network_out, trainable=True)
-        updates = lasagne.updates.adam(loss, params, learning_rate=eta)
+        updates = lasagne.updates.adam(train_loss, params, learning_rate=eta)
+
+        # Train loss function
+        train_fn = theano.function([input_var, target_var], train_loss, updates=updates)
 
         # Test/validation Loss expression (disable dropout and so on...)
         test_loss = self.build_loss(input_var, target_var, deterministic=True)
-
-        # Train loss function
-        train_fn = theano.function([input_var, target_var], loss, updates=updates)
 
         # Validation loss function
         val_test_fn = theano.function([input_var, target_var], test_loss)
 
         # Predict function
-        predict_fn = theano.function([input_var], test_prediction)
+        predict_fn = theano.function([input_var],
+                                     lasagne.layers.get_output(self.network_out, deterministic=True))
         
         # Finally, launch the training loop.
         log("Starting training...")
@@ -107,6 +108,30 @@ class LasagneModel(BaseModel):
             log("Epoch {} of {} took {:.3f}s".format(epoch + 1, settings.NUM_EPOCHS, time.time() - start_time))
             log(" - training loss:    {:.6f}".format(np.mean(train_losses)))
             log(" - validation loss:  {:.6f}".format(np.mean(val_losses)))
+
+            # Save checkpoint
+            model_checkpoint_filename = "model_checkpoint_epoch{:0>3}.npz".format(epoch + 1)
+            model_checkpoint_path = os.path.join(settings.CHECKPOINTS_DIR, model_checkpoint_filename)
+            print_info("Saving model checkpoint: {}".format(model_checkpoint_path))
+            # Save model
+            self.save_model(model_checkpoint_path)
+
+            # Save samples for this epoch
+            num_samples = 100
+            num_rows = 10
+            num_cols = 10
+            samples = self.create_samples(X_val, y_val, batch_size, num_samples, predict_fn)
+            samples = denormalize_data(samples)
+            samples_path = os.path.join(settings.EPOCHS_DIR, 'samples_epoch_{0:0>5}.png'.format(epoch + 1))
+            print_info("Saving {} sample images predicted from the validation dataset in the current epoch to directory: "
+                       .format(num_samples, settings.EPOCHS_DIR))
+            try:
+                import PIL.Image as Image
+                Image.fromarray(samples.reshape(num_rows, num_cols, 3, 32, 32)
+                                .transpose(0, 3, 1, 4, 2)
+                                .reshape(num_rows*32, num_cols*32, 3)).save(samples_path)
+            except ImportError as e:
+                print_warning("Cannot import module 'PIL.Image', which is necessary for the Lasagne model to output its sample images. You should really install it!")
 
 
         print_info("Training complete!")
@@ -129,6 +154,22 @@ class LasagneModel(BaseModel):
         num_images = 100
         denormalize_and_save_jpg_results(preds, X_test, y_test, dataset.test_images, num_images)
         create_html_results_page(num_images)
+
+    def create_samples(self, X, y, batch_size, num_samples, predict_fn):
+        # Print the test error
+        num_iter = 0
+        shuffle_indices = np.arange(X.shape[0])
+        np.random.shuffle(shuffle_indices)
+        if num_samples > X.shape[0]:
+            num_samples = X.shape[0]
+        X = X[shuffle_indices][0:num_samples]
+        y = y[shuffle_indices][0:num_samples]
+
+        samples = np.zeros(num_samples, 3, 32, 32)
+        for batch in self.iterate_minibatches(X, y, batch_size, shuffle=False):
+            inputs, targets = batch
+            samples[num_iter*batch_size:(num_iter+1)*batch_size] = predict_fn(inputs)
+        return samples
 
     def save_model(self, filename):
         np.savez(filename, *lasagne.layers.get_all_param_values(self.network_out))

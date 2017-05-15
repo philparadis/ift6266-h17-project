@@ -9,6 +9,7 @@ import numpy as np
 import theano
 import theano.tensor as T
 import lasagne
+
 from lasagne_models import LasagneModel, Lasagne_Conv_Deconv
 
 import settings
@@ -157,20 +158,20 @@ class VGG16_Model(LasagneModel):
         x_padded = get_output(self.input_pad_out, deterministic=deterministic)
         y_padded = get_output(self.target_pad_out, deterministic=deterministic)
 
-        # x_1 = get_output(self.vgg_model['conv1_1'], [x_padded], deterministic=deterministic)
-        # y_1 = get_output(self.vgg_model['conv1_1'], [y_padded], deterministic=deterministic)
-        # x_1 = get_output(self.vgg_model['conv2_1'], [x_padded], deterministic=deterministic)
-        # y_1 = get_output(self.vgg_model['conv2_1'], [y_padded], deterministic=deterministic)
-        # x_1 = get_output(self.vgg_model['conv3_1'], [x_padded], deterministic=deterministic)
-        # y_1 = get_output(self.vgg_model['conv3_1'], [y_padded], deterministic=deterministic)
+        # x_1 = get_output(self.vgg_model['conv1_1'], x_padded, deterministic=deterministic)
+        # y_1 = get_output(self.vgg_model['conv1_1'], y_padded, deterministic=deterministic)
+        # x_1 = get_output(self.vgg_model['conv2_1'], x_padded, deterministic=deterministic)
+        # y_1 = get_output(self.vgg_model['conv2_1'], y_padded, deterministic=deterministic)
+        # x_1 = get_output(self.vgg_model['conv3_1'], x_padded, deterministic=deterministic)
+        # y_1 = get_output(self.vgg_model['conv3_1'], y_padded, deterministic=deterministic)
 
         layers = [self.vgg_model['conv1_1'], self.vgg_model['conv2_1'], self.vgg_model['conv3_1']]
-        x_1, x_2, x_3 = get_output(layers, [x_padded], deterministic=deterministic)
-        y_1, y_2, y_3 = get_output(layers, [y_padded], deterministic=deterministic)
+        x_1, x_2, x_3 = get_output(layers, inputs=x_padded, deterministic=deterministic)
+        y_1, y_2, y_3 = get_output(layers, inputs=y_padded, deterministic=deterministic)
 
         loss_conv_1_1 = squared_error(x_1, y_1).mean()
-        loss_conv_1_1 = squared_error(x_2, y_3).mean()
-        loss_conv_1_1 = squared_error(x_2, y_3).mean()
+        loss_conv_2_1 = squared_error(x_2, y_3).mean()
+        loss_conv_3_1 = squared_error(x_2, y_3).mean()
 
         return 0.25*loss_conv_1_1 + 0.25*loss_conv_2_1 + 0.5*loss_conv_3_1
     
