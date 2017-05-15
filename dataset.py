@@ -106,8 +106,9 @@ class BaseDataset(object):
                 num_images_path = len(images_paths)
                 log(" * Number of {} images = {}".format(dataset_type, num_images_path))
 
+                num_loaded_images = 0
                 for i, img_path in enumerate(images_paths):
-                    if dataset_type == "train" and i >= settings.MAX_TRAINING_SAMPLES:
+                    if dataset_type == "train" and num_loaded_images >= settings.MAX_TRAINING_SAMPLES:
                         print_info("Reached maximum number of training samples: {}".format(i))
                         break
                     img = Image.open(img_path)
@@ -116,6 +117,8 @@ class BaseDataset(object):
                     # For now, discard greyscale images
                     if len(img_array.shape) != 3:
                         continue
+                    else:
+                        num_loaded_images += 1
 
                     if dataset_type == "train":
                         images.append(img_array)                
@@ -206,14 +209,22 @@ class BaseDataset(object):
         elif model == "conv_mlp":
             self.images_outer2d = normalize_data(self.images_outer2d)
             self.images_inner_flat = normalize_data(self.images_inner_flat)
-        elif model == "conv_deconv" or model == "vgg16" or model == "lasagne_conv_deconv":
+        elif model == "conv_deconv" or model == "lasagne_conv_deconv":
             self.images_outer2d = normalize_data(self.images_outer2d)
             self.images_inner2d = normalize_data(self.images_inner2d)
         elif model == "dcgan" or model == "wgan" or model == "lsgan":
             self.images = normalize_data(self.images)
             self.images_inner2d = normalize_data(self.images_inner2d)
-
-            
+        elif model == "vgg16":
+            self.images_outer2d = self.images_outer2d.astype('float32')
+            self.images_inner2d = self.images_inner2d.astype('float32')
+            for col_index, subtract in enumerate([103.939, 116.779, 123.68]):
+                self.images_outer2d[:,col_index,:,:] -= subtract
+                self.images_inner2d[:,col_index,:,:] -= subtract
+            r, g, b = self.images_outer2d[:,0,:,:], self.images_outer2d[:,1,:,:], self.images_outer2d[:,2,:,:]
+            self.images_outer2d[:,0,:,:], self.images_outer2d[:,1,:,:], self.images_outer2d[:,2,:,:] = b, g, r
+            r, g, b = self.images_inner2d[:,0,:,:], self.images_inner2d[:,1,:,:], self.images_inner2d[:,2,:,:]
+            self.images_inner2d[:,0,:,:], self.images_inner2d[:,1,:,:], self.images_inner2d[:,2,:,:] = b, g, r
     def preload(self, test_size = 0.1, seed = 0, model = settings.MODEL):
         if model == "mlp" or model == "test":
             x = self.images_outer_flat
