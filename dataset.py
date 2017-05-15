@@ -68,17 +68,19 @@ class BaseDataset(object):
         if not self._images_filename:
             raise Exception("ERROR: You did not define the filename the '.npy' dataset containing images.")
 
-        images_path = os.path.join(settings.MSCOCO_DIR, self._images_filename)
-        test_images_path = os.path.join(settings.MSCOCO_DIR, self._test_images_filename)
-        captions_ids_path = os.path.join(settings.MSCOCO_DIR, self._captions_ids_filename)
-        captions_dict_path = os.path.join(settings.MSCOCO_DIR, self._captions_dict_filename)
+        prefix = ""
+        if settings.MAX_TRAINING_SAMPLES == None:
+            prefix = "subset_"
+
+        images_path = os.path.join(settings.MSCOCO_DIR, prefix + self._images_filename)
+        test_images_path = os.path.join(settings.MSCOCO_DIR, prefix + self._test_images_filename)
+        captions_ids_path = os.path.join(settings.MSCOCO_DIR, prefix + self._captions_ids_filename)
+        captions_dict_path = os.path.join(settings.MSCOCO_DIR, prefix + self._captions_dict_filename)
         if all([os.path.isfile(images_path), os.path.isfile(captions_ids_path), os.path.isfile(captions_dict_path)]):
             self._load_jpgs_and_captions_npy()
 
     def _read_jpgs_and_captions(self, force_reload = False):
         # Check if 'npy' dataset already exists
-        if settings.MAX_TRAINING_SAMPLES != settings.ACTUAL_TRAINING_SAMPLES:
-            force_reload = True
         if force_reload == True:
             self._is_dataset_loaded = False
         else:
@@ -108,9 +110,14 @@ class BaseDataset(object):
 
                 num_loaded_images = 0
                 for i, img_path in enumerate(images_paths):
-                    if dataset_type == "train" and num_loaded_images >= settings.MAX_TRAINING_SAMPLES:
-                        print_info("Reached maximum number of training samples: {}".format(i))
-                        break
+                    if dataset_type == "train":
+                        if settings.MAX_TRAINING_SAMPLES != None:
+                            if dataset_type == "train" and num_loaded_images >= settings.MAX_TRAINING_SAMPLES:
+                                print_info("Reached maximum number of training samples: {}".format(i))
+                                break
+                    else:
+                        if num_loaded_images >= 1000:
+                            break
                     img = Image.open(img_path)
                     img_array = np.array(img)
 
@@ -160,9 +167,12 @@ class BaseDataset(object):
 
     def _load_jpgs_and_captions_npy(self):
         print_positive("Found the project datasets encoded as a 4-tensor in '.npy' format. Attempting to load...")
+        prefix = ""
+        if settings.MAX_TRAINING_SAMPLES == None:
+            prefix = "subset_"
         try:
             for i, filename in enumerate([self._images_filename, self._test_images_filename,  self._captions_ids_filename, self._captions_dict_filename]):
-                path = os.path.join(settings.MSCOCO_DIR, filename)
+                path = os.path.join(settings.MSCOCO_DIR, prefix + filename)
                 if i == 0:
                     self.images = np.load(path)
                     print_info("Loaded: {}".format(path))
@@ -183,8 +193,12 @@ class BaseDataset(object):
             self._is_dataset_loaded = False
         
     def _save_jpgs_and_captions_npy(self):
+        prefix = ""
+        if settings.MAX_TRAINING_SAMPLES == None:
+            prefix = "subset_"
         for i, filename in enumerate([self._images_filename, self._test_images_filename, self._captions_ids_filename, self._captions_dict_filename]):
-            path = os.path.join(settings.MSCOCO_DIR, filename)
+            
+            path = os.path.join(settings.MSCOCO_DIR, prefix + filename)
             if i == 0:
                 print_info("Writing to disk training images: {}".format(path))
                 np.save(path, self.images)
