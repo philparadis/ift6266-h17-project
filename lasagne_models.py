@@ -207,6 +207,7 @@ class LasagneModel(BaseModel):
         # Save model's performance
         path_model_score = os.path.join(settings.PERF_DIR, "score.txt")
         print_info("Saving performance to file '{}'".format(path_model_score))
+        metric = settings.LOSS_FUNCTION
         log("")
         log("Performance statistics")
         log("----------------------")
