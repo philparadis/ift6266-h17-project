@@ -153,7 +153,7 @@ class LasagneModel(BaseModel):
 
         # Save predictions and create HTML page to visualize them
         num_images = 100
-        denormalize_and_save_jpg_results(preds, X_test, y_test, dataset.test_images, num_images)
+        denormalize_and_save_jpg_results(preds, X_test, y_test, normalize_data(dataset.test_images), num_images)
         create_html_results_page(num_images)
 
     def create_samples(self, X, y, batch_size, num_samples, predict_fn):
