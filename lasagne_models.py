@@ -27,6 +27,7 @@ class LasagneModel(BaseModel):
         self.network_out = None
         self.list_matching_layers = []
         self.list_matching_layers_weights = []
+        self.path_stop_file = os.path.join(settings.BASE_DIR, "STOP")
         
     def iterate_minibatches(self, inputs, targets, batchsize, shuffle=False,
                             forever=False):
@@ -45,6 +46,10 @@ class LasagneModel(BaseModel):
             if not forever:
                 break
             
+    def check_stop_file(self):
+        """Return True if a file with name STOP is found in the base directory, return False otherwise"""
+        return os.path.isfile(self.path_stop_file)
+
     def build_network(self, input_var, target_var):
         raise NotImplemented("This is an abstract base class. Please implement this function.")
 
@@ -114,7 +119,11 @@ class LasagneModel(BaseModel):
             log(" - validation loss:  {:.6f}".format(mean_val_loss))
 
             create_checkpoint = False
-            if mean_val_loss < best_val_loss:
+
+            if check_stop_file():
+                create_checkpoint = True
+            
+            if epochs >= 8 and mean_val_loss < best_val_loss:
                 best_val_loss_epoch = epoch + 1
                 best_val_loss = mean_val_loss
                 create_checkpoint = True
@@ -150,6 +159,11 @@ class LasagneModel(BaseModel):
                 except ImportError as e:
                     print_warning("Cannot import module 'PIL.Image', which is necessary for the Lasagne model to output its sample images. You should really install it!")
 
+            
+            if check_stop_file():
+                print_critical("STOP file found. Ending training here! Still producing results...")
+                break
+
 
         print_info("Training complete!")
         # Print the test error
@@ -182,7 +196,7 @@ class LasagneModel(BaseModel):
         # Save predictions and create HTML page to visualize them
         num_images = 100
         test_images_original = np.copy(normalize_data(dataset.test_images))
-        denormalize_and_save_jpg_results(preds, X_test, test_images_originial, y_test, , num_images)
+        denormalize_and_save_jpg_results(preds, X_test, y_test, test_images_original, num_images)
         create_html_results_page(num_images)
 
     def create_samples(self, X, y, batch_size, num_samples, predict_fn):
