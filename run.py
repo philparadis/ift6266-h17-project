@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+!/usr/bin/env python2
 # coding: utf-8
 
 import os, sys
@@ -47,8 +47,6 @@ if __name__ == "__main__":
 
     np.random.seed(0)
 
-    sys.excepthook = ultratb.FormattedTB(mode='Verbose', color_scheme='Linux', call_pdb=1)
-        
     ### Parse arguments
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("model",
@@ -86,8 +84,8 @@ if __name__ == "__main__":
                         help="Maximum number of training samples to use. Should be between 1000 and 82611 (or equivalently, None, to use the entire training dataset.")
 #    parser.add_argument("-m", "--feature_matching", action="store_true", default=settings.FEATURE_MATCHING, help="By default, feature matching is not used (equivalently, it is set to 0, meaning that the loss function uses the last layer's output). You can set this value to 1 to use the output of the second-to-last layer, or a value of 2 to use the output of the third-to-last layer, and so on. This technique is called 'feature matching' and many provide benefits in some cases. Note that it is not currently implemented in all models and you will receive a message indicating if feature matching is used for your model.")
     parser.add_argument("-t", "--tiny", action="store_true", default=settings.TINY_DATASET, help="Use a tiny dataset containing only 5000 training samples and 500 test samples, for testing purposes.")
-    
 #                        help="Use CPU instead of GPU. Used for debugging and testing purposes.")
+    parser.add_argument("-d", "--debug", action="store_true", default=settings.DEBUG_MODE, help="Enable debug mode. This will hook the debugger to the program's exceptions; that is, whenever an unhandled exception is raised, pdb will be launched to examine the program post-mortem, instead of the program automatically exiting.")
 
     args = parser.parse_args()
     settings.MODEL = args.model.lower()
@@ -107,8 +105,11 @@ if __name__ == "__main__":
     settings.UPDATES_PER_EPOCH = args.updates_per_epoch
     #settings.FEATURE_MATCHING = args.feature_matching
     settings.TINY_DATASET = args.tiny
-#    settings.USE_CPU = args.cpu
+    #settings.USE_CPU = args.cpu
+    settings.DEBUG_MODE = args.debug
 
+    if settings.DEBUG_MODE:
+        sys.excepthook = ultratb.FormattedTB(mode='Verbose', color_scheme='Linux', call_pdb=1)
 
     if not settings.MODEL in ["test", "mlp", "conv_mlp", "conv_deconv", "lasagne_conv_deconv", "lasagne_conv_deconv_dropout", "vgg16", "dcgan", "wgan", "lsgan"]:
         raise NotImplementedError("The model '{}' is not yet implemented yet, sorry!".format(settings.MODEL))

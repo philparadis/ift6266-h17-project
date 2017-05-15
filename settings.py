@@ -31,6 +31,7 @@ UPDATES_PER_EPOCH = 10
 FEATURE_MATCHING = False
 TRAINING_BATCH_SIZE = 0 # Total number of training examples (i.e. size of first dimension of training tensor)
 TINY_DATASET = False
+DEBUG_MODE = False
 
 ACTUAL_TRAINING_SAMPLES = 82611
 
