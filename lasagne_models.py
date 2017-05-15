@@ -60,6 +60,9 @@ class LasagneModel(BaseModel):
         log("Fetching data...")
         X_train, X_val, y_train, y_val, ind_train, ind_val = dataset.return_train_data()
         X_test, y_test = dataset.return_test_data()
+
+        if self.load_model(os.path.join(settings.MODELS_DIR, settings.EXP_NAME + ".npz")):
+            print_positive("Loaded saved model... Resuming training from here!")
         
         #Variance of the prediction can be maximized to obtain sharper images.
         #If this coefficient is set to "0", the loss is just the L2 loss.
@@ -234,6 +237,27 @@ class LasagneModel(BaseModel):
     def save_model(self, filename):
         np.savez(filename, *lasagne.layers.get_all_param_values(self.network_out))
 
+    def load_model(self, filename):
+        """Return True if a valid model was found and correctly loaded. Return False if no model was loaded."""
+        import numpy as np
+        from lasagne.layers import set_all_param_values
+
+        if os.path.isfile(filename):
+            print_positive("Found latest '.npz' model's weights files saved to disk at path: {}".format(filename))
+        else:
+            print_info("Cannot resume from checkpoint. Could not find '.npz'  weights file at path: {}".format(filename))
+            
+        try:
+            ### Load the generator model's weights
+            print_info("Attempting to load model...")
+            with np.load(filename) as fp:
+                param_values = [fp['arr_%d' % i] for i in range(len(fp.files))]
+            set_all_param_values(self.network_out, param_values)
+        except Exception as e:
+            handle_error("Failed to read or parse the '.npz' weights files: {}.".format(filename), e)
+            return False
+        return True
+        
 def rescale(x):
     return x*0.5
         
