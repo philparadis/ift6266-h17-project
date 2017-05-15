@@ -184,14 +184,27 @@ class LasagneModel(BaseModel):
         # Save model's performance
         path_model_score = os.path.join(settings.PERF_DIR, "score.txt")
         print_info("Saving performance to file '{}'".format(path_model_score))
+        log("")
+        log("Performance statistics")
+        log("----------------------")
+        log(" * Model = {}".format(settings.MODEL))
+        log(" * Number of training epochs = {0}".format(settings.NUM_EPOCHS))
+        log(" * Final training score (metric: {0: >6})    = {1:.5f}".format(metric, np.mean(train_losses)))
+        log(" * Final validation score  (metric: {0: >6}) = {1:.5f}".format(metric, np.mean(val_losses)))
+        log(" * Best validation score   (metric: {0: >6}) = {1:.5f}".format(metric, best_val_loss))
+        log(" * Epoch for best validation score           = {}"..format(best_val_loss_epoch))
+        log(" * Testing dataset  (metric: {0: >6})        = {1:.5f}".format(metric, np.mean(test_losses)))
+        log("")
         with open(path_model_score, "w") as fd:
             fd.write("Performance statistics\n")
             fd.write("----------------------\n")
             fd.write("Model = {}\n".format(settings.MODEL))
-            fd.write("Number of training epochs = {0}\n".format(self.NUM_EPOCHS))
-            fd.write("Final training score (metric: {0: >6})    = {1:.5f}\n".format(metric, train_scores[1]))
-            fd.write("Final validation score  (metric: {0: >6}) = {1:.5f}\n".format(metric, train_scores[1]))
-            fd.write("Testing dataset  (metric: {0: >6})        = {1:.5f}\n".format(metric, train_scores[1]))
+            fd.write("Number of training epochs = {0}\n".format(settings.NUM_EPOCHS))
+            fd.write("Final training score (metric: {0: >6})    = {1:.5f}\n".format(metric, np.mean(train_losses)))
+            fd.write("Final validation score  (metric: {0: >6}) = {1:.5f}\n".format(metric, np.mean(val_losses)))
+            fd.write("Best validation score   (metric: {0: >6}) = {1:.5f}\n".format(metric, best_val_loss))
+            fd.write("Epoch for best validation score           = {}\n"..format(best_val_loss_epoch))
+            fd.write("Testing dataset  (metric: {0: >6})        = {1:.5f}\n".format(metric, np.mean(test_losses)))
 
         # Save predictions and create HTML page to visualize them
         num_images = 100
