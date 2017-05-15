@@ -27,7 +27,7 @@ class VGG16_Model(LasagneModel):
     def build(self):
         pass
         
-    def build_network_and_loss(self, input_var, target_var):
+    def build_network(self, input_var, target_var):
         import lasagne
         from lasagne.layers import InputLayer
         from lasagne.layers import DenseLayer
@@ -66,34 +66,6 @@ class VGG16_Model(LasagneModel):
         self.input_vgg_model, self.input_vgg_model_out = self.build_vgg_model(self.input_pad_out)
         self.target_vgg_model, self.target_vgg_model_out = self.build_vgg_model(self.target_pad_out)
 
-    def build_train_loss(self, input_var, target_var):
-        from lasagne.layers import get_output, squared_error
-        import theano
-        import theano.tensor as T
-
-        loss_conv_1_1 = squared_error(get_output(self.input_vgg_model['conv1_1']),
-                                      get_output(self.target_vgg_model['conv1_1'])).mean()
-        loss_conv_2_1 = squared_error(get_output(self.input_vgg_model['conv2_1']),
-                                      get_output(self.target_vgg_model['conv2_1'])).mean()
-        loss_conv_3_1 = squared_error(get_output(self.input_vgg_model['conv3_1']),
-                                      get_output(self.target_vgg_model['conv3_1'])).mean()
-
-        return loss_conv_1_1 + loss_conv_2_1 + loss_conv_3_1
-
-    def build_test_loss(self, input_var, target_var):
-        from lasagne.layers import get_output, squared_error
-        import theano
-        import theano.tensor as T
-
-        loss_conv_1_1 = squared_error(get_output(self.input_vgg_model['conv1_1'], deterministic=True),
-                                      get_output(self.target_vgg_model['conv1_1'], deterministic=True)).mean()
-        loss_conv_2_1 = squared_error(get_output(self.input_vgg_model['conv2_1'], deterministic=True),
-                                      get_output(self.target_vgg_model['conv2_1'], deterministic=True)).mean()
-        loss_conv_3_1 = squared_error(get_output(self.input_vgg_model['conv3_1'], deterministic=True),
-                                      get_output(self.target_vgg_model['conv3_1'], deterministic=True)).mean()
-
-        return loss_conv_1_1 + loss_conv_2_1 + loss_conv_3_1
-    
     def build_pad_model(self, previous_layer):
         from lasagne.layers import InputLayer
         from lasagne.layers import PadLayer
@@ -103,8 +75,24 @@ class VGG16_Model(LasagneModel):
         padnet['pad'] = PadLayer(padnet['input'], (224-32)/2)
         return padnet, padnet['pad']
         
-    def build_vgg_model(previous_layer):
-        log("Building VGG-16 model...")
+    def build_vgg_model(self, previous_layer):
+        import lasagne
+        from lasagne.layers import InputLayer
+        from lasagne.layers import DenseLayer
+        from lasagne.layers import NonlinearityLayer
+        from lasagne.layers import DropoutLayer
+        from lasagne.layers import Pool2DLayer as PoolLayer
+        from lasagne.layers import TransposedConv2DLayer as Deconv2DLayer
+        from lasagne.nonlinearities import softmax, sigmoid, tanh
+        import cPickle as pickle
+
+        try:
+            from lasagne.layers.dnn import Conv2DDNNLayer as ConvLayer
+        except ImportError as e:
+            from lasagne.layers import Conv2DLayer as ConvLayer
+            print_warning("Cannot import 'lasagne.layers.dnn.Conv2DDNNLayer' as it requires GPU support and a functional cuDNN installation. Falling back on slower convolution function 'lasagne.layers.Conv2DLayer'.")
+
+        print_info("Building VGG-16 model...")
 
         net = {}
         net['input'] = previous_layer
@@ -148,11 +136,27 @@ class VGG16_Model(LasagneModel):
         net['prob'] = NonlinearityLayer(net['fc8'], softmax)
         net_output = net['prob']
 
-        log("Loading VGG16 pre-trained weights from file 'vgg16.pkl'...")
+        print_info("Loading VGG16 pre-trained weights from file 'vgg16.pkl'...")
         with open('vgg16.pkl', 'rb') as f:
             params = pickle.load(f)
 
         #net_output.initialize_layers()
         lasagne.layers.set_all_param_values(net['prob'], params['param values'])
+        print_info("Alright, pre-trained VGG16 model is ready!")
 
         return net, net['prob']
+
+    def build_loss(self, input_var, target_var, deterministic=False):
+        from lasagne.layers import get_output, squared_error
+        import theano
+        import theano.tensor as T
+
+        loss_conv_1_1 = squared_error(get_output(self.input_vgg_model['conv1_1'], deterministic=deterministic),
+                                      get_output(self.target_vgg_model['conv1_1'], deterministic=deterministic)).mean()
+        loss_conv_2_1 = squared_error(get_output(self.input_vgg_model['conv2_1'], deterministic=deterministic),
+                                      get_output(self.target_vgg_model['conv2_1'], deterministic=deterministic)).mean()
+        loss_conv_3_1 = squared_error(get_output(self.input_vgg_model['conv3_1'], deterministic=deterministic),
+                                      get_output(self.target_vgg_model['conv3_1'], deterministic=deterministic)).mean()
+
+        return loss_conv_1_1 + loss_conv_2_1 + loss_conv_3_1
+    

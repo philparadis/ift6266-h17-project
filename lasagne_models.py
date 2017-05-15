@@ -44,7 +44,10 @@ class LasagneModel(BaseModel):
             if not forever:
                 break
             
-    def build_network_and_loss(self, input_var, target_var):
+    def build_network(self, input_var, target_var):
+        raise NotImplemented("This is an abstract base class. Please implement this function.")
+
+    def build_loss(self, input_var, target_var, deterministic=False):
         raise NotImplemented("This is an abstract base class. Please implement this function.")
 
     def train(self, dataset):
@@ -65,7 +68,7 @@ class LasagneModel(BaseModel):
         self.build_network(input_var, target_var)
 
         # Build loss function
-        loss = self.build_train_loss(input_var, target_var)
+        loss = self.build_loss(input_var, target_var)
 
         # Update expressions
         from theano import shared
@@ -74,13 +77,13 @@ class LasagneModel(BaseModel):
         updates = lasagne.updates.adam(loss, params, learning_rate=eta)
 
         # Test/validation Loss expression (disable dropout and so on...)
-        test_loss = self.build_test_loss(input_var, target_var)
+        test_loss = self.build_loss(input_var, target_var, deterministic=True)
 
         # Train loss function
         train_fn = theano.function([input_var, target_var], loss, updates=updates)
 
         # Validation loss function
-        val_fn = theano.function([input_var, target_var], val_loss)
+        val_test_fn = theano.function([input_var, target_var], test_loss)
 
         # Predict function
         predict_fn = theano.function([input_var], test_prediction)
@@ -98,7 +101,7 @@ class LasagneModel(BaseModel):
             val_losses = []
             for batch in self.iterate_minibatches(X_val, y_val, batch_size, shuffle=False):
                 inputs, targets = batch
-                val_losses.append(val_fn(inputs, targets))
+                val_losses.append(val_test_fn(inputs, targets))
 
             # Print the results for this epoch
             log("Epoch {} of {} took {:.3f}s".format(epoch + 1, settings.NUM_EPOCHS, time.time() - start_time))
@@ -114,7 +117,7 @@ class LasagneModel(BaseModel):
         for batch in self.iterate_minibatches(X_test, y_test, batch_size, shuffle=False):
             inputs, targets = batch
             preds[num_iter*batch_size:(num_iter+1)*batch_size] = predict_fn(inputs)
-            test_losses.append(val_fn(inputs, targets))
+            test_losses.append(val_test_fn(inputs, targets))
             num_iter += 1
         log("Final results:")
         log(" - test loss:        {:.6f}".format(np.mean(test_losses)))
@@ -195,15 +198,9 @@ class Lasagne_Conv_Deconv(LasagneModel):
 
         self.network, self.network_out = net, net['deconv4']
 
-    def build_train_loss(self, input_var, target_var):
+    def build_loss(self, input_var, target_var, deterministic=False):
         # Training Loss expression
-        network_output = lasagne.layers.get_output(self.network_out)
-        loss = lasagne.objectives.squared_error(network_output, target_var).mean()
-        return loss
-
-    def build_test_loss(self, input_var, target_var):
-        # Training Loss expression
-        network_output = lasagne.layers.get_output(self.network_out, deterministic=True)
+        network_output = lasagne.layers.get_output(self.network_out, deterministic=deterministic)
         loss = lasagne.objectives.squared_error(network_output, target_var).mean()
         return loss
         
