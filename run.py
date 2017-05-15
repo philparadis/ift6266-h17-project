@@ -143,6 +143,8 @@ if __name__ == "__main__":
     ### All systems are go, let's fire up this ship to infinity and beyond!
     from run_experiment import run_experiment
     t = datetime.datetime.now()
+    log("")
+    log("============================================================")
     log("Current stardate: {0}".format(t.strftime("%Y-%m-%d %H:%M:%S")))
     log("")
     log("All output is logged on disk to: {}".format(settings.OUTLOGFILE))
