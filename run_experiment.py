@@ -104,7 +104,11 @@ def run_experiment():
         model = Conv_Deconv()
     elif settings.MODEL == "lasagne_conv_deconv":
         from lasagne_models import Lasagne_Conv_Deconv
-        model = Lasagne_Conv_Deconv()
+        model = Lasagne_Conv_Deconv(use_dropout=False)
+    elif settings.MODEL == "lasagne_conv_deconv_dropout":
+        from lasagne_models import Lasagne_Conv_Deconv
+        model = Lasagne_Conv_Deconv(use_dropout=True)
+        settings.MODEL = "lasagne_conv_deconv"
     elif settings.MODEL == "dcgan":
         model = models.DCGAN_Model()
     elif settings.MODEL == "wgan":

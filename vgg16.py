@@ -5,9 +5,13 @@
 
 # Download pretrained weights from:
 # https://s3.amazonaws.com/lasagne/recipes/pretrained/imagenet/vgg16.pkl
-import settings
 import numpy as np
+import theano
+import theano.tensor as T
+import lasagne
 from lasagne_models import LasagneModel, Lasagne_Conv_Deconv
+
+import settings
 import hyper_params
 from utils import print_critical, print_error, print_warning, print_info, print_positive, log, logout
 
@@ -28,7 +32,6 @@ class VGG16_Model(LasagneModel):
         pass
         
     def build_network(self, input_var, target_var):
-        import lasagne
         from lasagne.layers import InputLayer
         from lasagne.layers import DenseLayer
         from lasagne.layers import NonlinearityLayer
@@ -63,8 +66,9 @@ class VGG16_Model(LasagneModel):
         self.input_pad, self.input_pad_out = self.build_pad_model(self.network_out)
         self.target_pad, self.target_pad_out = self.build_pad_model(InputLayer((batch_size, 3, 32, 32), input_var=target_var))
 
-        self.input_vgg_model, self.input_vgg_model_out = self.build_vgg_model(self.input_pad_out)
-        self.target_vgg_model, self.target_vgg_model_out = self.build_vgg_model(self.target_pad_out)
+        self.vgg_padded_var = T.tensor4('padded_vars')
+        
+        self.vgg_model, self.vgg_model_out = self.build_vgg_model(self.vgg_padded_var)
 
     def build_pad_model(self, previous_layer):
         from lasagne.layers import InputLayer
@@ -75,8 +79,7 @@ class VGG16_Model(LasagneModel):
         padnet['pad'] = PadLayer(padnet['input'], (224-32)/2)
         return padnet, padnet['pad']
         
-    def build_vgg_model(self, previous_layer):
-        import lasagne
+    def build_vgg_model(self, input_var):
         from lasagne.layers import InputLayer
         from lasagne.layers import DenseLayer
         from lasagne.layers import NonlinearityLayer
@@ -95,7 +98,8 @@ class VGG16_Model(LasagneModel):
         print_info("Building VGG-16 model...")
 
         net = {}
-        net['input'] = previous_layer
+        
+        net['input'] = InputLayer(shape = (None, 3, 224, 224), input_var = input_var, name = 'vgg_input')
         net['conv1_1'] = ConvLayer(
             net['input'], 64, 3, pad=1, flip_filters=False)
         net['conv1_2'] = ConvLayer(
@@ -147,16 +151,26 @@ class VGG16_Model(LasagneModel):
         return net, net['prob']
 
     def build_loss(self, input_var, target_var, deterministic=False):
-        from lasagne.layers import get_output, squared_error
-        import theano
-        import theano.tensor as T
+        from lasagne.layers import get_output
+        from lasagne.objectives import squared_error
 
-        loss_conv_1_1 = squared_error(get_output(self.input_vgg_model['conv1_1'], deterministic=deterministic),
-                                      get_output(self.target_vgg_model['conv1_1'], deterministic=deterministic)).mean()
-        loss_conv_2_1 = squared_error(get_output(self.input_vgg_model['conv2_1'], deterministic=deterministic),
-                                      get_output(self.target_vgg_model['conv2_1'], deterministic=deterministic)).mean()
-        loss_conv_3_1 = squared_error(get_output(self.input_vgg_model['conv3_1'], deterministic=deterministic),
-                                      get_output(self.target_vgg_model['conv3_1'], deterministic=deterministic)).mean()
+        x_padded = get_output(self.input_pad_out, deterministic=deterministic)
+        y_padded = get_output(self.target_pad_out, deterministic=deterministic)
 
-        return loss_conv_1_1 + loss_conv_2_1 + loss_conv_3_1
+        # x_1 = get_output(self.vgg_model['conv1_1'], [x_padded], deterministic=deterministic)
+        # y_1 = get_output(self.vgg_model['conv1_1'], [y_padded], deterministic=deterministic)
+        # x_1 = get_output(self.vgg_model['conv2_1'], [x_padded], deterministic=deterministic)
+        # y_1 = get_output(self.vgg_model['conv2_1'], [y_padded], deterministic=deterministic)
+        # x_1 = get_output(self.vgg_model['conv3_1'], [x_padded], deterministic=deterministic)
+        # y_1 = get_output(self.vgg_model['conv3_1'], [y_padded], deterministic=deterministic)
+
+        layers = [self.vgg_model['conv1_1'], self.vgg_model['conv2_1'], self.vgg_model['conv3_1']]
+        x_1, x_2, x_3 = get_output(layers, [x_padded], deterministic=deterministic)
+        y_1, y_2, y_3 = get_output(layers, [y_padded], deterministic=deterministic)
+
+        loss_conv_1_1 = squared_error(x_1, y_1).mean()
+        loss_conv_1_1 = squared_error(x_2, y_3).mean()
+        loss_conv_1_1 = squared_error(x_2, y_3).mean()
+
+        return 0.25*loss_conv_1_1 + 0.25*loss_conv_2_1 + 0.5*loss_conv_3_1
     

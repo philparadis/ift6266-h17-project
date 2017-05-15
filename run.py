@@ -52,7 +52,7 @@ if __name__ == "__main__":
     ### Parse arguments
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("model",
-                        help="Model type, among: mlp, conv_mlp, conv_deconv, lasagne_conv_deconv, vgg16, dcgan, wgan, lsgan.")
+                        help="Model type, among: mlp, conv_mlp, conv_deconv, lasagne_conv_deconv, lasagne_conv_deconv_dropout, vgg16, dcgan, wgan, lsgan.")
     parser.add_argument("exp_name_prefix", help="Prefix used at the beginning of the name of the experiment. Your results will be stored in various subfolders and files which start with this prefix. The exact name of the experiment depends on the model used and various hyperparameters.")
     parser.add_argument("-v", "--verbose", type=int,
                         default=settings.VERBOSE, help="0 means quiet, 1 means verbose and 2 means limited verbosity.")
@@ -110,7 +110,7 @@ if __name__ == "__main__":
 #    settings.USE_CPU = args.cpu
 
 
-    if not settings.MODEL in ["test", "mlp", "conv_mlp", "conv_deconv", "lasagne_conv_deconv", "vgg16", "dcgan", "wgan", "lsgan"]:
+    if not settings.MODEL in ["test", "mlp", "conv_mlp", "conv_deconv", "lasagne_conv_deconv", "lasagne_conv_deconv_dropout", "vgg16", "dcgan", "wgan", "lsgan"]:
         raise NotImplementedError("The model '{}' is not yet implemented yet, sorry!".format(settings.MODEL))
 
     from utils import print_warning, handle_error, log
