@@ -229,31 +229,72 @@ class Lasagne_Conv_Deconv(LasagneModel):
         # net['conv6'] = ConvLayer(net['conv5_drop'], 64, 1, pad=0, nonlinearity=sigmoid)
         # net['conv7'] = ConvLayer(net['conv6'], 10, 1, pad=0, nonlinearity=softmax4d)
 
+        # net = {}
+        # if self.use_dropout == True:
+        #     net['input'] = InputLayer((batch_size, 3, 64, 64), input_var=input_var)
+        #     net['dropout1'] = DropoutLayer(net['input'], p=0.1)
+        #     net['conv1'] = ConvLayer(net['dropout1'], 512, 5, stride=2, pad='same') # 32x32
+        #     net['dropout2'] = DropoutLayer(net['conv1'], p=0.5)
+        #     net['conv2'] = ConvLayer(net['dropout2'], 256, 7, stride=1, pad='same') # 32x32
+        #     net['dropout3'] = DropoutLayer(net['conv2'], p=0.5)
+        #     net['deconv1'] = Deconv2DLayer(net['dropout3'], 256, 7, stride=1, crop='same', output_size=32) # 32x32
+        #     net['dropout4'] = DropoutLayer(net['deconv1'], p=0.5)
+        #     net['deconv2'] = Deconv2DLayer(net['dropout4'], 256, 7, stride=1, crop='same', output_size=32) # 32x32
+        #     net['dropout5'] = DropoutLayer(net['deconv2'], p=0.5)
+        #     net['deconv3'] = Deconv2DLayer(net['dropout5'], 256, 7, stride=1, crop='same', output_size=32) # 32x32
+        #     net['dropout6'] = DropoutLayer(net['deconv2'], p=0.5)
+        #     net['deconv4'] = Deconv2DLayer(net['dropout6'], 3, 7, stride=1, crop='same', output_size=32, nonlinearity=sigmoid)
+        # else:
+        #     net['input'] = InputLayer((batch_size, 3, 64, 64), input_var=input_var)
+        #     net['conv1'] = ConvLayer(net['input'], 512, 5, stride=2, pad='same') # 32x32
+        #     net['conv2'] = ConvLayer(net['conv1'], 256, 7, stride=1, pad='same') # 32x32
+        #     net['deconv1'] = Deconv2DLayer(net['conv2'], 256, 7, stride=1, crop='same', output_size=32) # 32x32
+        #     net['deconv2'] = Deconv2DLayer(net['deconv1'], 256, 7, stride=1, crop='same', output_size=32) # 32x32
+        #     net['deconv3'] = Deconv2DLayer(net['deconv2'], 256, 7, stride=1, crop='same', output_size=32) # 32x32
+        #     net['deconv4'] = Deconv2DLayer(net['deconv3'], 3, 7, stride=1, crop='same', output_size=32, nonlinearity=sigmoid)
+
         net = {}
         if self.use_dropout == True:
-            net['input'] = InputLayer((batch_size, 3, 64, 64), input_var=input_var)
-            net['dropout1'] = DropoutLayer(net['input'], p=0.1)
-            net['conv1'] = ConvLayer(net['dropout1'], 512, 5, stride=2, pad='same') # 32x32
-            net['dropout2'] = DropoutLayer(net['conv1'], p=0.5)
-            net['conv2'] = ConvLayer(net['dropout2'], 256, 7, stride=1, pad='same') # 32x32
-            net['dropout3'] = DropoutLayer(net['conv2'], p=0.5)
-            net['deconv1'] = Deconv2DLayer(net['dropout3'], 256, 7, stride=1, crop='same', output_size=32) # 32x32
-            net['dropout4'] = DropoutLayer(net['deconv1'], p=0.5)
-            net['deconv2'] = Deconv2DLayer(net['dropout4'], 256, 7, stride=1, crop='same', output_size=32) # 32x32
-            net['dropout5'] = DropoutLayer(net['deconv2'], p=0.5)
-            net['deconv3'] = Deconv2DLayer(net['dropout5'], 256, 7, stride=1, crop='same', output_size=32) # 32x32
-            net['dropout6'] = DropoutLayer(net['deconv2'], p=0.5)
-            net['deconv4'] = Deconv2DLayer(net['dropout6'], 3, 7, stride=1, crop='same', output_size=32, nonlinearity=sigmoid)
+            net = InputLayer((batch_size, 3, 64, 64), input_var=input_var)
+            net = ConvLayer(net, 64, 3, stride=1, pad='same') #64x64
+            net = ConvLayer(net, 64, 3, stride=1, pad='same') #64x64
+            net = PoolLayer(net, 2) # 32x32
+            net = ConvLayer(net, 64, 5, stride=1, pad='same') #32x32
+            net = PoolLayer(net, 2) # 16x16
+            net = ConvLayer(net, 96, 5, stride=1, pad='same') #16x16
+            net = ConvLayer(net, 96, 5, stride=1, pad='same') #16x16
+            net = PoolLayer(net, 2) # 8x8
+            net = ConvLayer(net, 128, 3, stride=1, pad='same') #8x8
+            net = ConvLayer(net, 128, 3, stride=1, pad='same') #8x8
+            net = DropoutLayer(net, p=0.5)
+            net = DenseLayer(net, 512)
+            net = DropoutLayer(net, p=0.5)
+            net = DenseLayer(net, 1024)
+            net = DropoutLayer(net, p=0.5)
+            net = DenseLayer(net, 3*32*32)
+            net = DropoutLayer(net, p=0.5)
+            net = ReshapeLayer(net, ([0], 3, 32, 32))
+            net = ConvLayer(net, 3, 3, stride=1, pad='same', nonlinearity=sigmoid)
         else:
-            net['input'] = InputLayer((batch_size, 3, 64, 64), input_var=input_var)
-            net['conv1'] = ConvLayer(net['input'], 512, 5, stride=2, pad='same') # 32x32
-            net['conv2'] = ConvLayer(net['conv1'], 256, 7, stride=1, pad='same') # 32x32
-            net['deconv1'] = Deconv2DLayer(net['conv2'], 256, 7, stride=1, crop='same', output_size=32) # 32x32
-            net['deconv2'] = Deconv2DLayer(net['deconv1'], 256, 7, stride=1, crop='same', output_size=32) # 32x32
-            net['deconv3'] = Deconv2DLayer(net['deconv2'], 256, 7, stride=1, crop='same', output_size=32) # 32x32
-            net['deconv4'] = Deconv2DLayer(net['deconv3'], 3, 7, stride=1, crop='same', output_size=32, nonlinearity=sigmoid)
-
-        self.network, self.network_out = net, net['deconv4']
+            net = InputLayer((batch_size, 3, 64, 64), input_var=input_var)
+            net = ConvLayer(net, 64, 3, stride=1, pad='same') #64x64
+            net = ConvLayer(net, 64, 3, stride=1, pad='same') #64x64
+            net = PoolLayer(net, 2) # 32x32
+            net = ConvLayer(net, 64, 5, stride=1, pad='same') #32x32
+            net = PoolLayer(net, 2) # 16x16
+            net = ConvLayer(net, 96, 5, stride=1, pad='same') #16x16
+            net = ConvLayer(net, 96, 5, stride=1, pad='same') #16x16
+            net = PoolLayer(net, 2) # 8x8
+            net = ConvLayer(net, 128, 3, stride=1, pad='same') #8x8
+            net = ConvLayer(net, 128, 3, stride=1, pad='same') #8x8
+            net = DenseLayer(net, 512)
+            net = DenseLayer(net, 1024)
+            net = DenseLayer(net, 3*32*32)
+            net = ReshapeLayer(net, ([0], 3, 32, 32))
+            net = ConvLayer(net, 3, 3, stride=1, pad='same', nonlinearity=sigmoid)
+            
+        #self.network, self.network_out = net, net['deconv4']
+        self.network, self.network_out = {}, net
 
     def build_loss(self, input_var, target_var, deterministic=False):
         # Training Loss expression
