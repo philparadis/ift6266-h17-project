@@ -201,8 +201,8 @@ class VGG16_Model(LasagneModel):
         from lasagne.objectives import squared_error
 
         # Compute good ol' L2-norm loss between prediction and target
-        network_output = lasagne.layers.get_output(self.network_out, deterministic=deterministic)
-        l2_loss = lasagne.objectives.squared_error(network_output, target_var).mean()
+        network_output = get_output(self.network_out, deterministic=deterministic)
+        l2_loss = squared_error(network_output, target_var).mean()
 
         # Compute loss from VGG's intermediate layers
         x_scaled = get_output(self.input_scaled_out, deterministic=deterministic)
@@ -216,8 +216,6 @@ class VGG16_Model(LasagneModel):
         loss_conv_2_1 = squared_error(x_2, y_3).mean()
         loss_conv_3_1 = squared_error(x_3, y_3).mean()
         loss_conv_4_2 = squared_error(x_4, y_4).mean()
-
-        layers = [self.network['output']
 
         return l2_loss + 0.001*loss_conv_1_1 + 0.001*loss_conv_2_1 + 0.005*loss_conv_3_1 + 0.01*loss_conv_4_2
     
