@@ -15,6 +15,7 @@ import settings
 from utils import handle_critical, handle_error, handle_warning
 from utils import print_critical, print_error, print_warning, print_info, print_positive, log, logout
 from utils import force_symlink, get_json_pretty_print
+from utils import normalize_data, denormalize_data
 from utils import denormalize_and_save_jpg_results, create_html_results_page
 
 from models import BaseModel

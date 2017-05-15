@@ -14,15 +14,35 @@ def cf_to_cl(x):
     height = x.shape[3]
     return x.transpose(0, 2, 3, 1).reshape(x.shape[0], width, height, 3)
 
+def normalize_vgg16_data(data):
+    data = data.astype('float32')
+    for col_index, mean in enumerate([103.939, 116.779, 123.68]):
+        data[:, col_index, :, :] -= mean
+    r, g, b = data[:,0,:,:], data[:,1,:,:], data[:,2,:,:]
+    data[:,0,:,:], data[:,1,:,:], data[:,2,:,:] = b, g, r
+    return data
+
+def denormalize_vgg16_data(data):
+    b, g, r = data[:,0,:,:], data[:,1,:,:], data[:,2,:,:]
+    data[:,0,:,:], data[:,1,:,:], data[:,2,:,:] = r, g, b
+    for col_index, mean in enumerate([103.939, 116.779, 123.68]):
+        data[:, col_index, :, :] += mean
+    return data.clip(0.0, 255.5).astype('uint8')
+
 def normalize_data(data):
-    scaler = MinMaxScaler(feature_range=(0, 1))
-    return scaler.fit_transform(data.astype('float32').reshape(data.shape[0], -1)).reshape(data.shape)
+    #scaler = MinMaxScaler(feature_range=(0, 1))
+    #return scaler.fit_transform(data.astype('float32').reshape(data.shape[0], -1)).reshape(data.shape)
+    if settings.MODEL == "vgg16":
+        return normalize_vgg16_data(data)
+    return (data.astype('float32')/256.0).clip(0.0, 1.0)
 
 def denormalize_data(data):
-    if data.dtype == 'uint8':
-        return data
+    #if data.dtype == 'uint8':
+    #    return data
     #unscaler = MinMaxScaler(feature_range=(0, 256))
     #return unscaler.fit_transform(data.reshape(data.shape[0], -1)).reshape(data.shape).astype('uint8')
+    if settings.MODEL == "vgg16":
+        return denormalize_vgg16_data(data)
     return (data*256.0).clip(0.0, 255.5).astype('uint8')
 
 def normalize_data_tanh(data):
