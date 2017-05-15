@@ -1,4 +1,4 @@
-!/usr/bin/env python2
+#!/usr/bin/env python2
 # coding: utf-8
 
 import os, sys
@@ -109,7 +109,7 @@ if __name__ == "__main__":
     settings.DEBUG_MODE = args.debug
 
     if settings.DEBUG_MODE:
-        sys.excepthook = ultratb.FormattedTB(mode='Verbose', color_scheme='Linux', call_pdb=1)
+        sys.excepthook = ultratb.FormattedTB(mode='Verbose', color_scheme='Linux', call_pdb=1)        
 
     if not settings.MODEL in ["test", "mlp", "conv_mlp", "conv_deconv", "lasagne_conv_deconv", "lasagne_conv_deconv_dropout", "vgg16", "dcgan", "wgan", "lsgan"]:
         raise NotImplementedError("The model '{}' is not yet implemented yet, sorry!".format(settings.MODEL))
