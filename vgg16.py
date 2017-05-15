@@ -66,7 +66,7 @@ class VGG16_Model(LasagneModel):
         net['fc1'] = DenseLayer(net['dropout4'], 1024)
         net['dropout5'] = DropoutLayer(net['fc1'], p=0.5)
         net['fc2'] = DenseLayer(net['dropout5'], 3*32*32)
-        net['output'] = net['reshape'] = ReshapeLayer(net['fc2'], ([0], 3, 32, 32))
+        net['output'] = ReshapeLayer(net['fc2'], ([0], 3, 32, 32))
         
         # net['input'] = InputLayer((batch_size, 3, 64, 64), input_var=input_var)
         # net['dropout1'] = DropoutLayer(net['input'], p=0.1)
@@ -198,11 +198,16 @@ class VGG16_Model(LasagneModel):
 
     def build_loss(self, input_var, target_var, deterministic=False):
         from lasagne.layers import get_output
-        from lasagne.objectives import squared_error
-
+        from lasagne.objectives import squared_error, aggregate
+        from lasagne.regularization import regularize_layer_params, l2, l1
+        
         # Compute good ol' L2-norm loss between prediction and target
         network_output = get_output(self.network_out, deterministic=deterministic)
-        l2_loss = squared_error(network_output, target_var).mean()
+        l2_loss = squared_error(network_output, target_var).mean() / 1000.0
+
+        # Penalties
+        #l2_penalty = regularize_layer_params(self.network, l2) / 1000.0
+        #l1_penalty = regularize_layer_params(self.network, l1) * 1e-8
 
         # Compute loss from VGG's intermediate layers
         x_scaled = get_output(self.input_scaled_out, deterministic=deterministic)
@@ -212,10 +217,11 @@ class VGG16_Model(LasagneModel):
         x_1, x_2, x_3, x_4 = get_output(layers, inputs=x_scaled, deterministic=deterministic)
         y_1, y_2, y_3, y_4 = get_output(layers, inputs=y_scaled, deterministic=deterministic)
 
-        loss_conv1_1 = squared_error(x_1, y_1).mean()
-        loss_conv2_1 = squared_error(x_2, y_3).mean()
-        loss_conv3_1 = squared_error(x_3, y_3).mean()
-        loss_conv4_2 = squared_error(x_4, y_4).mean()
+        loss_conv1_1 = squared_error(x_1, y_1).mean() / 1000.0
+        loss_conv2_1 = squared_error(x_2, y_3).mean() / 1000.0
+        loss_conv3_1 = squared_error(x_3, y_3).mean() / 1000.0
+        loss_conv4_2 = squared_error(x_4, y_4).mean() / 1000.0
 
-        return l2_loss + 0.001*loss_conv1_1 + 0.001*loss_conv2_1 + 0.005*loss_conv3_1 + 0.01*loss_conv4_2
+        #return l2_loss + l2_penalty + l1_penalty + 0.001*loss_conv1_1 + 0.001*loss_conv2_1 + 0.005*loss_conv3_1 + 0.01*loss_conv4_2
+        return l2_loss + loss_conv4_2
     
