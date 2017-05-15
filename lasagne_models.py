@@ -110,29 +110,29 @@ class LasagneModel(BaseModel):
             log(" - training loss:    {:.6f}".format(np.mean(train_losses)))
             log(" - validation loss:  {:.6f}".format(np.mean(val_losses)))
 
-            # Save checkpoint
-            model_checkpoint_filename = "model_checkpoint_epoch{:0>3}.npz".format(epoch + 1)
-            model_checkpoint_path = os.path.join(settings.CHECKPOINTS_DIR, model_checkpoint_filename)
-            print_info("Saving model checkpoint: {}".format(model_checkpoint_path))
-            # Save model
-            self.save_model(model_checkpoint_path)
+            # # Save checkpoint
+            # model_checkpoint_filename = "model_checkpoint_epoch{:0>3}.npz".format(epoch + 1)
+            # model_checkpoint_path = os.path.join(settings.CHECKPOINTS_DIR, model_checkpoint_filename)
+            # print_info("Saving model checkpoint: {}".format(model_checkpoint_path))
+            # # Save model
+            # self.save_model(model_checkpoint_path)
 
-            # Save samples for this epoch
-            num_samples = 100
-            num_rows = 10
-            num_cols = 10
-            samples = self.create_samples(X_val, y_val, batch_size, num_samples, predict_fn)
-            samples = denormalize_data(samples)
-            samples_path = os.path.join(settings.EPOCHS_DIR, 'samples_epoch_{0:0>5}.png'.format(epoch + 1))
-            print_info("Saving {} sample images predicted from the validation dataset in the current epoch to directory: {}"
-                       .format(num_samples, settings.EPOCHS_DIR))
-            try:
-                import PIL.Image as Image
-                Image.fromarray(samples.reshape(num_rows, num_cols, 3, 32, 32)
-                                .transpose(0, 3, 1, 4, 2)
-                                .reshape(num_rows*32, num_cols*32, 3)).save(samples_path)
-            except ImportError as e:
-                print_warning("Cannot import module 'PIL.Image', which is necessary for the Lasagne model to output its sample images. You should really install it!")
+            # # Save samples for this epoch
+            # num_samples = 100
+            # num_rows = 10
+            # num_cols = 10
+            # samples = self.create_samples(X_val, y_val, batch_size, num_samples, predict_fn)
+            # samples = denormalize_data(samples)
+            # samples_path = os.path.join(settings.EPOCHS_DIR, 'samples_epoch_{0:0>5}.png'.format(epoch + 1))
+            # print_info("Saving {} sample images predicted from the validation dataset in the current epoch to directory: {}"
+            #            .format(num_samples, settings.EPOCHS_DIR))
+            # try:
+            #     import PIL.Image as Image
+            #     Image.fromarray(samples.reshape(num_rows, num_cols, 3, 32, 32)
+            #                     .transpose(0, 3, 1, 4, 2)
+            #                     .reshape(num_rows*32, num_cols*32, 3)).save(samples_path)
+            # except ImportError as e:
+            #     print_warning("Cannot import module 'PIL.Image', which is necessary for the Lasagne model to output its sample images. You should really install it!")
 
 
         print_info("Training complete!")
