@@ -74,8 +74,13 @@ class LasagneModel(BaseModel):
         self.build_network(input_var, target_var)
 
         # See if we can resume from previously saved model
-        if self.load_model(os.path.join(settings.MODELS_DIR, settings.EXP_NAME + ".npz")):
-            print_positive("Loaded saved model... Resuming training from here!")
+        print_info("Looking for existing model to resume training from...")
+        model_path = os.path.join(settings.MODELS_DIR, settings.EXP_NAME + ".npz")
+        if self.load_model(model_path):
+            print_positive("Loaded saved model weights found on disk at: {}!".format(model_path))
+            print_positive("Resuming training from exisiting weights!")
+        else:
+            print_info("Unable to find exisiting or load valid model file. Starting training from scratch!")
         
         # Build loss function
         train_loss = self.build_loss(input_var, target_var)
@@ -259,10 +264,9 @@ class LasagneModel(BaseModel):
         import numpy as np
         from lasagne.layers import set_all_param_values
 
-        if os.path.isfile(filename):
-            print_positive("Found latest '.npz' model's weights files saved to disk at path: {}".format(filename))
-        else:
-            print_info("Cannot resume from checkpoint. Could not find '.npz'  weights file at path: {}".format(filename))
+        if not os.path.isfile(filename):
+            print_warning("Could not find '.npz' weights file at path: {}".format(filename))
+            return False
             
         try:
             ### Load the generator model's weights
@@ -271,7 +275,7 @@ class LasagneModel(BaseModel):
                 param_values = [fp['arr_%d' % i] for i in range(len(fp.files))]
             set_all_param_values(self.network_out, param_values)
         except Exception as e:
-            print_error("Failed to read or parse the '.npz' weights files: {}.".format(filename))
+            print_warning("Found '.npz' weights file, but it must be corrupted, cannot read or parse it properly: {}.".format(filename))
             return False
         return True
         
@@ -371,10 +375,8 @@ class Lasagne_Conv_Deconv(LasagneModel):
             net = DropoutLayer(net, p=0.5)
             net = DenseLayer(net, 1024)
             net = DropoutLayer(net, p=0.5)
-            net = DenseLayer(net, 3*32*32)
-            net = DropoutLayer(net, p=0.5)
+            net = DenseLayer(net, 3*32*32, nonlinearity=sigmoid)
             net = ReshapeLayer(net, ([0], 3, 32, 32))
-            net = ConvLayer(net, 3, 3, stride=1, pad='same', nonlinearity=sigmoid)
         else:
             net = InputLayer((batch_size, 3, 64, 64), input_var=input_var)
             net = ConvLayer(net, 64, 3, stride=1, pad='same') #64x64
@@ -389,9 +391,8 @@ class Lasagne_Conv_Deconv(LasagneModel):
             net = ConvLayer(net, 128, 3, stride=1, pad='same') #8x8
             net = DenseLayer(net, 512)
             net = DenseLayer(net, 1024)
-            net = DenseLayer(net, 3*32*32)
+            net = DenseLayer(net, 3*32*32, nonlinearity=sigmoid)
             net = ReshapeLayer(net, ([0], 3, 32, 32))
-            net = ConvLayer(net, 3, 3, stride=1, pad='same', nonlinearity=sigmoid)
             
         #self.network, self.network_out = net, net['deconv4']
         self.network, self.network_out = {}, net

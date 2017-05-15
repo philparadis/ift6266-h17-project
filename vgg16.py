@@ -63,7 +63,10 @@ class VGG16_Model(LasagneModel):
         net['dropout3'] = DropoutLayer(net['deconv2'], p=0.5)
         net['deconv3'] = Deconv2DLayer(net['dropout3'], 256, 9, stride=1, crop='same', output_size=32) # 32x32
         net['dropout4'] = DropoutLayer(net['deconv3'], p=0.5)
-        net['output'] = Deconv2DLayer(net['dropout4'], 3, 9, stride=1, crop='same', output_size=32)
+        net['fc1'] = DenseLayer(net['dropout4'], 1024)
+        net['dropout5'] = DropoutLayer(net['fc1'], p=0.5)
+        net['fc2'] = DenseLayer(net['dropout5'], 3*32*32)
+        net['output'] = net['reshape'] = ReshapeLayer(net['fc2'], ([0], 3, 32, 32))
         
         # net['input'] = InputLayer((batch_size, 3, 64, 64), input_var=input_var)
         # net['dropout1'] = DropoutLayer(net['input'], p=0.1)
