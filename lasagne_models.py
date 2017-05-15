@@ -189,17 +189,19 @@ class LasagneModel(BaseModel):
 
         print_info("Training complete!")
 
-        num_images = 100
+        # Save model
+        self.save_model(os.path.join(settings.MODELS_DIR, settings.EXP_NAME + ".npz"))
 
         # Compute 'num_images' predictions to visualize and print the test error
+        num_images = 100
         test_losses = []
         num_iter = 0
         num_predictions = min(X_test.shape[0], num_images)
         shuffle_indices = np.arange(X_test.shape[0])
         np.random.shuffle(shuffle_indices)
         max_indices = num_samples
-        if max_indices > X.shape[0]:
-            max_indices = X.shape[0]
+        if max_indices > X_test.shape[0]:
+            max_indices = X_test.shape[0]
         X_test_small = X_test[shuffle_indices,:,:,:][0:max_indices,:,:,:]
         y_test_small = y_test[shuffle_indices,:,:,:][0:max_indices,:,:,:]
         preds = np.zeros((num_predictions, 3, 32, 32))
@@ -210,9 +212,6 @@ class LasagneModel(BaseModel):
             num_iter += 1
         log("Final results:")
         log(" - test loss:        {:.6f}".format(np.mean(test_losses)))
-
-        # Save model
-        self.save_model(os.path.join(settings.MODELS_DIR, settings.EXP_NAME + ".npz"))
 
         # Save predictions and create HTML page to visualize them
         test_images_original = np.copy(normalize_data(dataset.test_images))
