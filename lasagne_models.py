@@ -103,6 +103,7 @@ class LasagneModel(BaseModel):
         # Finally, launch the training loop.
         ##########################################
         keyboard_interrupt = False
+        completed_epochs = 0
         try:
             log("Starting training...")
             batch_size = settings.BATCH_SIZE
@@ -120,6 +121,8 @@ class LasagneModel(BaseModel):
                     inputs, targets = batch
                     val_losses.append(val_test_fn(inputs, targets))
 
+                completed_epochs += 1
+                
                 # Print the results for this epoch
                 mean_train_loss = np.mean(train_losses)
                 mean_val_loss = np.mean(val_losses)
@@ -134,7 +137,7 @@ class LasagneModel(BaseModel):
                     STOP_FILE = True
                     create_checkpoint = True
 
-                if epochs >= 8 and mean_val_loss < best_val_loss:
+                if epoch >= 8 and mean_val_loss < best_val_loss:
                     best_val_loss_epoch = epoch + 1
                     best_val_loss = mean_val_loss
                     create_checkpoint = True
@@ -195,6 +198,12 @@ class LasagneModel(BaseModel):
         # Save model
         self.save_model(os.path.join(settings.MODELS_DIR, settings.EXP_NAME + ".npz"))
 
+        # Save predictions and create HTML page to visualize them
+        num_images = 100
+        test_images_original = np.copy(normalize_data(dataset.test_images))
+        denormalize_and_save_jpg_results(preds, X_test, y_test, test_images_original, num_images)
+        create_html_results_page(num_images)
+
         # Save model's performance
         path_model_score = os.path.join(settings.PERF_DIR, "score.txt")
         print_info("Saving performance to file '{}'".format(path_model_score))
@@ -202,7 +211,7 @@ class LasagneModel(BaseModel):
         log("Performance statistics")
         log("----------------------")
         log(" * Model = {}".format(settings.MODEL))
-        log(" * Number of training epochs = {0}".format(settings.NUM_EPOCHS))
+        log(" * Number of training epochs = {0}".format(completed_epochs))
         log(" * Final training score (metric: {0: >6})    = {1:.5f}".format(metric, np.mean(train_losses)))
         log(" * Final validation score  (metric: {0: >6}) = {1:.5f}".format(metric, np.mean(val_losses)))
         log(" * Best validation score   (metric: {0: >6}) = {1:.5f}".format(metric, best_val_loss))
@@ -213,19 +222,14 @@ class LasagneModel(BaseModel):
             fd.write("Performance statistics\n")
             fd.write("----------------------\n")
             fd.write("Model = {}\n".format(settings.MODEL))
-            fd.write("Number of training epochs = {0}\n".format(settings.NUM_EPOCHS))
+            fd.write("Number of training epochs = {0}\n".format(completed_epochs))
             fd.write("Final training score (metric: {0: >6})    = {1:.5f}\n".format(metric, np.mean(train_losses)))
             fd.write("Final validation score  (metric: {0: >6}) = {1:.5f}\n".format(metric, np.mean(val_losses)))
             fd.write("Best validation score   (metric: {0: >6}) = {1:.5f}\n".format(metric, best_val_loss))
             fd.write("Epoch for best validation score           = {}\n".format(best_val_loss_epoch))
             fd.write("Testing dataset  (metric: {0: >6})        = {1:.5f}\n".format(metric, np.mean(test_losses)))
 
-        # Save predictions and create HTML page to visualize them
-        num_images = 100
-        test_images_original = np.copy(normalize_data(dataset.test_images))
-        denormalize_and_save_jpg_results(preds, X_test, y_test, test_images_original, num_images)
-        create_html_results_page(num_images)
-
+        
         if keyboard_interrupt:
             raise KeyboardInterrupt
 
