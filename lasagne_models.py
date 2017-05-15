@@ -243,8 +243,9 @@ class LasagneModel(BaseModel):
         # Print the test error
         shuffle_indices = np.arange(X.shape[0])
         np.random.shuffle(shuffle_indices)
-        if num_samples > X.shape[0]:
-            num_samples = X.shape[0]
+        max_indices = num_samples
+        if max_indices > X.shape[0]:
+            max_indices = X.shape[0]
         X = X[shuffle_indices,:,:,:][0:num_samples,:,:,:]
         y = y[shuffle_indices,:,:,:][0:num_samples,:,:,:]
 

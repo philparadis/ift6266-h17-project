@@ -200,26 +200,24 @@ class VGG16_Model(LasagneModel):
         from lasagne.layers import get_output
         from lasagne.objectives import squared_error
 
+        # Compute good ol' L2-norm loss between prediction and target
+        network_output = lasagne.layers.get_output(self.network_out, deterministic=deterministic)
+        l2_loss = lasagne.objectives.squared_error(network_output, target_var).mean()
+
+        # Compute loss from VGG's intermediate layers
         x_scaled = get_output(self.input_scaled_out, deterministic=deterministic)
         y_scaled = get_output(self.target_scaled_out, deterministic=deterministic)
 
-        # x_1 = get_output(self.vgg_model['conv1_1'], x_scaled, deterministic=deterministic)
-        # y_1 = get_output(self.vgg_model['conv1_1'], y_scaled, deterministic=deterministic)
-        # x_1 = get_output(self.vgg_model['conv2_1'], x_scaled, deterministic=deterministic)
-        # y_1 = get_output(self.vgg_model['conv2_1'], y_scaled, deterministic=deterministic)
-        # x_1 = get_output(self.vgg_model['conv3_1'], x_scaled, deterministic=deterministic)
-        # y_1 = get_output(self.vgg_model['conv3_1'], y_scaled, deterministic=deterministic)
+        layers = [self.vgg_model['conv1_1'], self.vgg_model['conv2_1'], self.vgg_model['conv3_1'], self.vgg_model['conv_4_2']]
+        x_1, x_2, x_3, x_4 = get_output(layers, inputs=x_scaled, deterministic=deterministic)
+        y_1, y_2, y_3, y_4 = get_output(layers, inputs=y_scaled, deterministic=deterministic)
 
-        #layers = [self.vgg_model['conv1_1'], self.vgg_model['conv2_1'], self.vgg_model['conv3_1']]
-        #x_1, x_2, x_3 = get_output(layers, inputs=x_scaled, deterministic=deterministic)
-        #y_1, y_2, y_3 = get_output(layers, inputs=y_scaled, deterministic=deterministic)
-        x_1 = get_output(self.vgg_model['conv3_1'], x_scaled, deterministic=deterministic)
-        y_1 = get_output(self.vgg_model['conv3_1'], y_scaled, deterministic=deterministic)
+        loss_conv_1_1 = squared_error(x_1, y_1).mean()
+        loss_conv_2_1 = squared_error(x_2, y_3).mean()
+        loss_conv_3_1 = squared_error(x_3, y_3).mean()
+        loss_conv_4_2 = squared_error(x_4, y_4).mean()
 
-        #loss_conv_1_1 = squared_error(x_1, y_1).mean()
-        #loss_conv_2_1 = squared_error(x_2, y_3).mean()
-        #loss_conv_3_1 = squared_error(x_3, y_3).mean()
+        layers = [self.network['output']
 
-        #return 0.25*loss_conv_1_1 + 0.25*loss_conv_2_1 + 0.5*loss_conv_3_1
-        return squared_error(x_1, y_1).mean()
+        return l2_loss + 0.001*loss_conv_1_1 + 0.001*loss_conv_2_1 + 0.005*loss_conv_3_1 + 0.01*loss_conv_4_2
     
