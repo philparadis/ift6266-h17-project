@@ -18,6 +18,7 @@ def normalize_vgg16_data(data):
     data = data.astype('float32')
     for col_index, mean in enumerate([103.939, 116.779, 123.68]):
         data[:, col_index, :, :] -= mean
+    data = data.clip(-127.5, 127.5)
     r, g, b = data[:,0,:,:], data[:,1,:,:], data[:,2,:,:]
     data[:,0,:,:], data[:,1,:,:], data[:,2,:,:] = b, g, r
     return data
@@ -27,7 +28,8 @@ def denormalize_vgg16_data(data):
     data[:,0,:,:], data[:,1,:,:], data[:,2,:,:] = r, g, b
     for col_index, mean in enumerate([103.939, 116.779, 123.68]):
         data[:, col_index, :, :] += mean
-    return data.clip(0.0, 255.5).astype('uint8')
+    data = data.clip(0.0, 255.5)
+    return data.astype('uint8')
 
 def normalize_data(data):
     #scaler = MinMaxScaler(feature_range=(0, 1))

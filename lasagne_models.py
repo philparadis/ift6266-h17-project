@@ -107,8 +107,8 @@ class LasagneModel(BaseModel):
                 val_losses.append(val_test_fn(inputs, targets))
 
             # Print the results for this epoch
-            mean_train_loss = np.mean(train_losses))
-            mean_val_loss = np.mean(val_losses))
+            mean_train_loss = np.mean(train_losses)
+            mean_val_loss = np.mean(val_losses)
             log("Epoch {} of {} took {:.3f}s".format(epoch + 1, settings.NUM_EPOCHS, time.time() - start_time))
             log(" - training loss:    {:.6f}".format(mean_train_loss))
             log(" - validation loss:  {:.6f}".format(mean_val_loss))
@@ -118,14 +118,14 @@ class LasagneModel(BaseModel):
                 best_val_loss_epoch = epoch + 1
                 best_val_loss = mean_val_loss
                 create_checkpoint = True
-                print_positive("New best val loss! Creating model checkpoint!")
+                print_positive("New best val loss = {:.6f}!!! Creating model checkpoint!".format(best_val_loss))
             elif epoch % settings.EPOCHS_PER_CHECKPOINT == 0:
                 create_checkpoint = True
                 print_info("Time for model checkpoint (every {} epochs)...".format(settings.EPOCHS_PER_CHECKPOINT))
 
             if create_checkpoint:
                 # Save checkpoint
-                model_checkpoint_filename = "model_checkpoint-val_loss.{:.5f}-epoch.{:0>3}.npz".format(best_val_loss, epoch + 1)
+                model_checkpoint_filename = "model_checkpoint-val_loss.{:.6f}-epoch.{:0>3}.npz".format(best_val_loss, epoch + 1)
                 model_checkpoint_path = os.path.join(settings.CHECKPOINTS_DIR, model_checkpoint_filename)
                 print_info("Saving model checkpoint: {}".format(model_checkpoint_path))
                 # Save model
