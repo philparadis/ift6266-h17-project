@@ -102,6 +102,7 @@ class LasagneModel(BaseModel):
         log("Starting training...")
         batch_size = settings.BATCH_SIZE
         best_val_loss = 1.0e30
+        best_val_loss_epoch = -1
         for epoch in range(settings.NUM_EPOCHS):
             start_time = time.time()
             train_losses = []
@@ -197,7 +198,7 @@ class LasagneModel(BaseModel):
         log(" * Final training score (metric: {0: >6})    = {1:.5f}".format(metric, np.mean(train_losses)))
         log(" * Final validation score  (metric: {0: >6}) = {1:.5f}".format(metric, np.mean(val_losses)))
         log(" * Best validation score   (metric: {0: >6}) = {1:.5f}".format(metric, best_val_loss))
-        log(" * Epoch for best validation score           = {}"..format(best_val_loss_epoch))
+        log(" * Epoch for best validation score           = {}".format(best_val_loss_epoch))
         log(" * Testing dataset  (metric: {0: >6})        = {1:.5f}".format(metric, np.mean(test_losses)))
         log("")
         with open(path_model_score, "w") as fd:
@@ -208,7 +209,7 @@ class LasagneModel(BaseModel):
             fd.write("Final training score (metric: {0: >6})    = {1:.5f}\n".format(metric, np.mean(train_losses)))
             fd.write("Final validation score  (metric: {0: >6}) = {1:.5f}\n".format(metric, np.mean(val_losses)))
             fd.write("Best validation score   (metric: {0: >6}) = {1:.5f}\n".format(metric, best_val_loss))
-            fd.write("Epoch for best validation score           = {}\n"..format(best_val_loss_epoch))
+            fd.write("Epoch for best validation score           = {}\n".format(best_val_loss_epoch))
             fd.write("Testing dataset  (metric: {0: >6})        = {1:.5f}\n".format(metric, np.mean(test_losses)))
 
         # Save predictions and create HTML page to visualize them
