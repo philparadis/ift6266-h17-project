@@ -240,8 +240,8 @@ class LasagneModel(BaseModel):
         np.random.shuffle(shuffle_indices)
         if num_samples > X.shape[0]:
             num_samples = X.shape[0]
-        X = X[shuffle_indices][0:num_samples]
-        y = y[shuffle_indices][0:num_samples]
+        X = X[shuffle_indices,:,:,:][0:num_samples,:,:,:]
+        y = y[shuffle_indices,:,:,:][0:num_samples,:,:,:]
 
         samples = np.zeros((num_samples, 3, 32, 32))
         num_iter = 0
