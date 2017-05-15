@@ -220,6 +220,7 @@ class Lasagne_Conv_Deconv(LasagneModel):
         from lasagne.layers import DenseLayer
         from lasagne.layers import NonlinearityLayer
         from lasagne.layers import DropoutLayer
+        from lasagne.layers import ReshapeLayer
         from lasagne.layers import Pool2DLayer as PoolLayer
         from lasagne.layers import TransposedConv2DLayer as Deconv2DLayer
         from lasagne.nonlinearities import sigmoid, tanh
