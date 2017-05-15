@@ -61,9 +61,6 @@ class LasagneModel(BaseModel):
         X_train, X_val, y_train, y_val, ind_train, ind_val = dataset.return_train_data()
         X_test, y_test = dataset.return_test_data()
 
-        if self.load_model(os.path.join(settings.MODELS_DIR, settings.EXP_NAME + ".npz")):
-            print_positive("Loaded saved model... Resuming training from here!")
-        
         #Variance of the prediction can be maximized to obtain sharper images.
         #If this coefficient is set to "0", the loss is just the L2 loss.
         StdevCoef = 0
@@ -76,6 +73,10 @@ class LasagneModel(BaseModel):
         log("Building model and compiling functions...")
         self.build_network(input_var, target_var)
 
+        # See if we can resume from previously saved model
+        if self.load_model(os.path.join(settings.MODELS_DIR, settings.EXP_NAME + ".npz")):
+            print_positive("Loaded saved model... Resuming training from here!")
+        
         # Build loss function
         train_loss = self.build_loss(input_var, target_var)
 
@@ -97,79 +98,86 @@ class LasagneModel(BaseModel):
         # Predict function
         predict_fn = theano.function([input_var],
                                      lasagne.layers.get_output(self.network_out, deterministic=True))
-        
+
+        ##########################################
         # Finally, launch the training loop.
-        log("Starting training...")
-        batch_size = settings.BATCH_SIZE
-        best_val_loss = 1.0e30
-        best_val_loss_epoch = -1
-        for epoch in range(settings.NUM_EPOCHS):
-            start_time = time.time()
-            train_losses = []
-            for batch in self.iterate_minibatches(X_train, y_train, batch_size, shuffle=True):
-                inputs, targets = batch
-                train_losses.append(train_fn(inputs, targets))
-                
-            val_losses = []
-            for batch in self.iterate_minibatches(X_val, y_val, batch_size, shuffle=False):
-                inputs, targets = batch
-                val_losses.append(val_test_fn(inputs, targets))
+        ##########################################
+        keyboard_interrupt = False
+        try:
+            log("Starting training...")
+            batch_size = settings.BATCH_SIZE
+            best_val_loss = 1.0e30
+            best_val_loss_epoch = -1
+            for epoch in range(settings.NUM_EPOCHS):
+                start_time = time.time()
+                train_losses = []
+                for batch in self.iterate_minibatches(X_train, y_train, batch_size, shuffle=True):
+                    inputs, targets = batch
+                    train_losses.append(train_fn(inputs, targets))
 
-            # Print the results for this epoch
-            mean_train_loss = np.mean(train_losses)
-            mean_val_loss = np.mean(val_losses)
-            log("Epoch {} of {} took {:.3f}s".format(epoch + 1, settings.NUM_EPOCHS, time.time() - start_time))
-            log(" - training loss:    {:.6f}".format(mean_train_loss))
-            log(" - validation loss:  {:.6f}".format(mean_val_loss))
+                val_losses = []
+                for batch in self.iterate_minibatches(X_val, y_val, batch_size, shuffle=False):
+                    inputs, targets = batch
+                    val_losses.append(val_test_fn(inputs, targets))
 
-            create_checkpoint = False
-            STOP_FILE = False
+                # Print the results for this epoch
+                mean_train_loss = np.mean(train_losses)
+                mean_val_loss = np.mean(val_losses)
+                log("Epoch {} of {} took {:.3f}s".format(epoch + 1, settings.NUM_EPOCHS, time.time() - start_time))
+                log(" - training loss:    {:.6f}".format(mean_train_loss))
+                log(" - validation loss:  {:.6f}".format(mean_val_loss))
 
-            if self.check_stop_file():
-                STOP_FILE = True
-                create_checkpoint = True
-            
-            if epochs >= 8 and mean_val_loss < best_val_loss:
-                best_val_loss_epoch = epoch + 1
-                best_val_loss = mean_val_loss
-                create_checkpoint = True
-                print_positive("New best val loss = {:.6f}!!! Creating model checkpoint!".format(best_val_loss))
-            elif epoch % settings.EPOCHS_PER_CHECKPOINT == 0:
-                create_checkpoint = True
-                print_info("Time for model checkpoint (every {} epochs)...".format(settings.EPOCHS_PER_CHECKPOINT))
+                create_checkpoint = False
+                STOP_FILE = False
 
-            if create_checkpoint:
-                # Save checkpoint
-                model_checkpoint_filename = "model_checkpoint-val_loss.{:.6f}-epoch.{:0>3}.npz".format(best_val_loss, epoch + 1)
-                model_checkpoint_path = os.path.join(settings.CHECKPOINTS_DIR, model_checkpoint_filename)
-                print_info("Saving model checkpoint: {}".format(model_checkpoint_path))
-                # Save model
-                self.save_model(model_checkpoint_path)
+                if self.check_stop_file():
+                    STOP_FILE = True
+                    create_checkpoint = True
 
-            # Save samples for this epoch
-            if epoch % settings.EPOCHS_PER_SAMPLES == 0:
-                num_samples = 100
-                num_rows = 10
-                num_cols = 10
-                samples = self.create_samples(X_val, y_val, batch_size, num_samples, predict_fn)
-                samples = denormalize_data(samples)
-                samples_path = os.path.join(settings.EPOCHS_DIR, 'samples_epoch_{0:0>5}.png'.format(epoch + 1))
-                print_info("Time for saving sample images (every {} epochs)... ".format(settings.EPOCHS_PER_SAMPLES)
-                           + "Saving {} sample images predicted validation dataset input images here: {}"
-                           .format(num_samples, samples_path))
-                try:
-                    import PIL.Image as Image
-                    Image.fromarray(samples.reshape(num_rows, num_cols, 3, 32, 32)
-                                    .transpose(0, 3, 1, 4, 2)
-                                    .reshape(num_rows*32, num_cols*32, 3)).save(samples_path)
-                except ImportError as e:
-                    print_warning("Cannot import module 'PIL.Image', which is necessary for the Lasagne model to output its sample images. You should really install it!")
+                if epochs >= 8 and mean_val_loss < best_val_loss:
+                    best_val_loss_epoch = epoch + 1
+                    best_val_loss = mean_val_loss
+                    create_checkpoint = True
+                    print_positive("New best val loss = {:.6f}!!! Creating model checkpoint!".format(best_val_loss))
+                elif epoch % settings.EPOCHS_PER_CHECKPOINT == 0:
+                    create_checkpoint = True
+                    print_info("Time for model checkpoint (every {} epochs)...".format(settings.EPOCHS_PER_CHECKPOINT))
 
-            
-            if STOP_FILE:
-                print_critical("STOP file found. Ending training here! Still producing results...")
-                break
+                if create_checkpoint:
+                    # Save checkpoint
+                    model_checkpoint_filename = "model_checkpoint-val_loss.{:.6f}-epoch.{:0>3}.npz".format(best_val_loss, epoch + 1)
+                    model_checkpoint_path = os.path.join(settings.CHECKPOINTS_DIR, model_checkpoint_filename)
+                    print_info("Saving model checkpoint: {}".format(model_checkpoint_path))
+                    # Save model
+                    self.save_model(model_checkpoint_path)
 
+                # Save samples for this epoch
+                if epoch % settings.EPOCHS_PER_SAMPLES == 0:
+                    num_samples = 100
+                    num_rows = 10
+                    num_cols = 10
+                    samples = self.create_samples(X_val, y_val, batch_size, num_samples, predict_fn)
+                    samples = denormalize_data(samples)
+                    samples_path = os.path.join(settings.EPOCHS_DIR, 'samples_epoch_{0:0>5}.png'.format(epoch + 1))
+                    print_info("Time for saving sample images (every {} epochs)... ".format(settings.EPOCHS_PER_SAMPLES)
+                               + "Saving {} sample images predicted validation dataset input images here: {}"
+                               .format(num_samples, samples_path))
+                    try:
+                        import PIL.Image as Image
+                        Image.fromarray(samples.reshape(num_rows, num_cols, 3, 32, 32)
+                                        .transpose(0, 3, 1, 4, 2)
+                                        .reshape(num_rows*32, num_cols*32, 3)).save(samples_path)
+                    except ImportError as e:
+                        print_warning("Cannot import module 'PIL.Image', which is necessary for the Lasagne model to output its sample images. You should really install it!")
+
+
+                if STOP_FILE:
+                    print_critical("STOP file found. Ending training here! Still producing results...")
+                    break
+        except KeyboardInterrupt:
+            print_critical("Training interrupted by KeyboardInterrupt (^C)!")
+            print_info("Before shutting down, attempt to saving valid checkpoint, produce preliminary results, and so on.")
+            keyboard_interrupt = True
 
         print_info("Training complete!")
         # Print the test error
@@ -218,6 +226,9 @@ class LasagneModel(BaseModel):
         denormalize_and_save_jpg_results(preds, X_test, y_test, test_images_original, num_images)
         create_html_results_page(num_images)
 
+        if keyboard_interrupt:
+            raise KeyboardInterrupt
+
     def create_samples(self, X, y, batch_size, num_samples, predict_fn):
         # Print the test error
         shuffle_indices = np.arange(X.shape[0])
@@ -255,7 +266,7 @@ class LasagneModel(BaseModel):
                 param_values = [fp['arr_%d' % i] for i in range(len(fp.files))]
             set_all_param_values(self.network_out, param_values)
         except Exception as e:
-            handle_error("Failed to read or parse the '.npz' weights files: {}.".format(filename), e)
+            print_error("Failed to read or parse the '.npz' weights files: {}.".format(filename))
             return False
         return True
         
