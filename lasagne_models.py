@@ -187,7 +187,7 @@ class Lasagne_Conv_Deconv(LasagneModel):
         # net['conv7'] = ConvLayer(net['conv6'], 10, 1, pad=0, nonlinearity=softmax4d)
 
         net = {}
-        if use_dropout == True:
+        if self.use_dropout == True:
             net['input'] = InputLayer((batch_size, 3, 64, 64), input_var=input_var)
             net['dropout1'] = DropoutLayer(net['input'], p=0.1)
             net['conv1'] = ConvLayer(net['dropout1'], 256, 5, stride=2, pad='same') # 32x32
