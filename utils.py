@@ -8,12 +8,6 @@ from sklearn.preprocessing import MinMaxScaler
 import settings
 
 ### Utility functions to manipule numpy datasets
-def cf_to_cl(x):
-    rows = x.shape[0]
-    width = x.shape[2]
-    height = x.shape[3]
-    return x.transpose(0, 2, 3, 1).reshape(x.shape[0], width, height, 3)
-
 def normalize_vgg16_data(data):
     data = data.astype('float64')
     for col_index, mean in enumerate([103.939, 116.779, 123.68]):

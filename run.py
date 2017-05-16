@@ -74,14 +74,16 @@ if __name__ == "__main__":
     parser.add_argument("-c", "--epochs_per_checkpoint", type=int, default=settings.EPOCHS_PER_CHECKPOINT,
                         help="Amount of epochs to perform during training between every checkpoint.")
     parser.add_argument("-s", "--epochs_per_samples", type=int, default=settings.EPOCHS_PER_SAMPLES,
+    parser.add_argument("-m", "--max_training_samples", type=int, default=settings.MAX_TRAINING_SAMPLES,
+                        help="Maximum number of training samples to use. Should be between 1000 and 82611 (or equivalently, None, to use the entire training dataset.")
+    parser.add_argument("-r", "--ratio", type=float, default=settings.RATIO_VGG_LOSS,
+                        help="Ratio between the target-prediction L2 loss and the target-prediction loss as output of a VGG-16 intermediate convolutional layer (layer 'conv4_2' by default). Typical values may be 0.001, but you can increase it such as 0.1 to favor the VGG feature maps space loss or decrease it such as 0.00001 to favor the pixel space L2 loss."
                         help="Amount of epochs to perform during training between every generation of image samples (typically 100 images in a 10x10 grid). If your epochs are rather short, you might want to increase this value, as generating images and saving them to disk can be relatively costly.")
     parser.add_argument("-k", "--keep_all_checkpoints", action="store_true", default=settings.KEEP_ALL_CHECKPOINTS, help="By default, only the model saved during the last checkpoint is saved. Pass this flag if you want to keep a models on disk with its associated epoch in the filename at every checkpoint.")
     parser.add_argument("-a", "--architecture", type=int, default=settings.LSGAN_ARCHITECTURE,
                         help="Architecture type, only applies to the LSGAN critic's neural network (values: 0, 1 or 2).")
     parser.add_argument("-u", "--updates_per_epoch", type=int, default=settings.UPDATES_PER_EPOCH,
                         help="Number of times to update the generator and discriminator/critic per epoch. Applies to GAN models only.")
-    parser.add_argument("-m", "--max_training_samples", type=int, default=settings.MAX_TRAINING_SAMPLES,
-                        help="Maximum number of training samples to use. Should be between 1000 and 82611 (or equivalently, None, to use the entire training dataset.")
 #    parser.add_argument("-m", "--feature_matching", action="store_true", default=settings.FEATURE_MATCHING, help="By default, feature matching is not used (equivalently, it is set to 0, meaning that the loss function uses the last layer's output). You can set this value to 1 to use the output of the second-to-last layer, or a value of 2 to use the output of the third-to-last layer, and so on. This technique is called 'feature matching' and many provide benefits in some cases. Note that it is not currently implemented in all models and you will receive a message indicating if feature matching is used for your model.")
     parser.add_argument("-t", "--tiny", action="store_true", default=settings.TINY_DATASET, help="Use a tiny dataset containing only 5000 training samples and 500 test samples, for testing purposes.")
 #                        help="Use CPU instead of GPU. Used for debugging and testing purposes.")
@@ -93,13 +95,14 @@ if __name__ == "__main__":
     settings.VERBOSE = args.verbose
 #    settings.PERFORM_INIT_ONLY = args.init
     settings.NUM_EPOCHS = args.epochs
-    settings.MAX_TRAINING_SAMPLES = args.max_training_samples
     settings.BATCH_SIZE = args.batch_size
     settings.LEARNING_RATE = args.learning_rate
     settings.GAN_LEARNING_RATE = args.gan_learning_rate
     settings.FORCE_RUN = args.force
     settings.EPOCHS_PER_CHECKPOINT = args.epochs_per_checkpoint
     settings.EPOCHS_PER_SAMPLES = args.epochs_per_samples
+    settings.MAX_TRAINING_SAMPLES = args.max_training_samples
+    settings.RATIO_VGG_LOSS = args.ratio
     settings.KEEP_ALL_CHECKPOINTS = args.keep_all_checkpoints
     settings.LSGAN_ARCHITECTURE = args.architecture
     settings.UPDATES_PER_EPOCH = args.updates_per_epoch

@@ -69,7 +69,7 @@ class BaseDataset(object):
             raise Exception("ERROR: You did not define the filename the '.npy' dataset containing images.")
 
         prefix = ""
-        if settings.MAX_TRAINING_SAMPLES == -1:
+        if settings.MAX_TRAINING_SAMPLES != -1:
             prefix = "subset_"
 
         images_path = os.path.join(settings.MSCOCO_DIR, prefix + self._images_filename)
@@ -110,7 +110,7 @@ class BaseDataset(object):
 
                 num_loaded_images = 0
                 for i, img_path in enumerate(images_paths):
-                    if dataset_type == "train" and settings.MAX_TRAINING_SAMPLES > 0:
+                    if dataset_type == "train" and settings.MAX_TRAINING_SAMPLES != -1:
                         if num_loaded_images >= settings.MAX_TRAINING_SAMPLES:
                             print_info("Reached maximum number of training samples: {}".format(i))
                             break
@@ -167,13 +167,15 @@ class BaseDataset(object):
     def _load_jpgs_and_captions_npy(self):
         print_positive("Found the project datasets encoded as a 4-tensor in '.npy' format. Attempting to load...")
         prefix = ""
-        if settings.MAX_TRAINING_SAMPLES == -1:
+        if settings.MAX_TRAINING_SAMPLES != -1:
             prefix = "subset_"
         try:
             for i, filename in enumerate([self._images_filename, self._test_images_filename,  self._captions_ids_filename, self._captions_dict_filename]):
                 path = os.path.join(settings.MSCOCO_DIR, prefix + filename)
                 if i == 0:
                     self.images = np.load(path)
+                    if settings.MAX_TRAINING_SAMPLES != -1 and self.images.shape[0] != settings.MAX_TRAINING_SAMPLES:
+                        raise Exception("Incorrect number of images")
                     print_info("Loaded: {}".format(path))
                 elif i == 1:
                     self.test_images = np.load(path)
@@ -193,7 +195,7 @@ class BaseDataset(object):
         
     def _save_jpgs_and_captions_npy(self):
         prefix = ""
-        if settings.MAX_TRAINING_SAMPLES == -1:
+        if settings.MAX_TRAINING_SAMPLES != -1:
             prefix = "subset_"
         for i, filename in enumerate([self._images_filename, self._test_images_filename, self._captions_ids_filename, self._captions_dict_filename]):
             

@@ -208,15 +208,19 @@ class VGG16_Model(LasagneModel):
         x_scaled = get_output(self.input_scaled_out, deterministic=deterministic)
         y_scaled = get_output(self.target_scaled_out, deterministic=deterministic)
 
-        layers = [self.vgg_model['conv1_1'], self.vgg_model['conv2_1'], self.vgg_model['conv3_1'], self.vgg_model['conv4_2']]
-        x_1, x_2, x_3, x_4 = get_output(layers, inputs=x_scaled, deterministic=deterministic)
-        y_1, y_2, y_3, y_4 = get_output(layers, inputs=y_scaled, deterministic=deterministic)
+        #layers = [self.vgg_model['conv1_1'], self.vgg_model['conv2_1'], self.vgg_model['conv3_1'], self.vgg_model['conv4_2']]
+        #x_1, x_2, x_3, x_4 = get_output(layers, inputs=x_scaled, deterministic=deterministic)
+        #y_1, y_2, y_3, y_4 = get_output(layers, inputs=y_scaled, deterministic=deterministic)
 
-        loss_conv1_1 = squared_error(x_1, y_1).mean() / 1000.0
-        loss_conv2_1 = squared_error(x_2, y_3).mean() / 1000.0
-        loss_conv3_1 = squared_error(x_3, y_3).mean() / 1000.0
+        #loss_conv1_1 = squared_error(x_1, y_1).mean() / 1000.0
+        #loss_conv2_1 = squared_error(x_2, y_3).mean() / 1000.0
+        #loss_conv3_1 = squared_error(x_3, y_3).mean() / 1000.0
+        #loss_conv4_2 = squared_error(x_4, y_4).mean() / 1000.0
+
+        x_4 = get_output(self.vgg_model['conv4_2'], x_scaled, deterministic=deterministic)
+        y_4 = get_output(self.vgg_model['conv4_2'], y_scaled, deterministic=deterministic)
         loss_conv4_2 = squared_error(x_4, y_4).mean() / 1000.0
 
         #return l2_loss + l2_penalty + l1_penalty + 0.001*loss_conv1_1 + 0.001*loss_conv2_1 + 0.005*loss_conv3_1 + 0.01*loss_conv4_2
-        return l2_loss + loss_conv4_2
+        return l2_loss + settings.RATIO_VGG_LOSS * loss_conv4_2
     
