@@ -74,11 +74,11 @@ if __name__ == "__main__":
     parser.add_argument("-c", "--epochs_per_checkpoint", type=int, default=settings.EPOCHS_PER_CHECKPOINT,
                         help="Amount of epochs to perform during training between every checkpoint.")
     parser.add_argument("-s", "--epochs_per_samples", type=int, default=settings.EPOCHS_PER_SAMPLES,
+                        help="Amount of epochs to perform during training between every generation of image samples (typically 100 images in a 10x10 grid). If your epochs are rather short, you might want to increase this value, as generating images and saving them to disk can be relatively costly.")
     parser.add_argument("-m", "--max_training_samples", type=int, default=settings.MAX_TRAINING_SAMPLES,
                         help="Maximum number of training samples to use. Should be between 1000 and 82611 (or equivalently, None, to use the entire training dataset.")
     parser.add_argument("-r", "--ratio", type=float, default=settings.RATIO_VGG_LOSS,
-                        help="Ratio between the target-prediction L2 loss and the target-prediction loss as output of a VGG-16 intermediate convolutional layer (layer 'conv4_2' by default). Typical values may be 0.001, but you can increase it such as 0.1 to favor the VGG feature maps space loss or decrease it such as 0.00001 to favor the pixel space L2 loss."
-                        help="Amount of epochs to perform during training between every generation of image samples (typically 100 images in a 10x10 grid). If your epochs are rather short, you might want to increase this value, as generating images and saving them to disk can be relatively costly.")
+                        help="Ratio between the target-prediction L2 loss and the target-prediction loss as output of a VGG-16 intermediate convolutional layer (layer 'conv4_2' by default). Typical values may be 0.001, but you can increase it such as 0.1 to favor the VGG feature maps space loss or decrease it such as 0.00001 to favor the pixel space L2 loss.")
     parser.add_argument("-k", "--keep_all_checkpoints", action="store_true", default=settings.KEEP_ALL_CHECKPOINTS, help="By default, only the model saved during the last checkpoint is saved. Pass this flag if you want to keep a models on disk with its associated epoch in the filename at every checkpoint.")
     parser.add_argument("-a", "--architecture", type=int, default=settings.LSGAN_ARCHITECTURE,
                         help="Architecture type, only applies to the LSGAN critic's neural network (values: 0, 1 or 2).")
